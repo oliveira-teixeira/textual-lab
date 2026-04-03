@@ -1786,44 +1786,55 @@ const analyzeSentiment = (text, stopwords = null, options = {}) => {
 
 const buildWordTree = (text, centerWord, maxBranches = 30, contextWords = 5, minLength = 4) => {
   if (!centerWord || !text) return { left: [], right: [], center: centerWord };
-  
-  // Forçar mínimo de 4 caracteres
-  const effectiveMinLength = Math.max(minLength, 4);
-  
-  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  const centerLower = centerWord.toLowerCase().replace(/[^\w\sáàâãéèêíïóôõöúçñ]/gi, '');
-  
-  const leftContext = new Map(); // palavras que vêm ANTES
-  const rightContext = new Map(); // palavras que vêm DEPOIS
-  
-  // Função para verificar se palavra é válida
-  const isValidWord = (w) => w.length >= effectiveMinLength && !MANDATORY_SHORT_WORDS_PT.has(w);
-  
+
+  const sentences = text.split(/[.!?\n]+/).filter(s => s.trim().length > 0);
+  const centerLower = centerWord.toLowerCase().replace(/[^\wáàâãéèêíïóôõöúçñü]/gi, '').trim();
+
+  if (!centerLower) return { left: [], right: [], center: centerWord };
+
+  const leftContext = new Map();
+  const rightContext = new Map();
+
+  // Função para verificar se palavra de contexto é válida (mais permissiva)
+  const isContextWord = (w) => w.length >= 2 && !MANDATORY_SHORT_WORDS_PT.has(w);
+
   sentences.forEach(sentence => {
-    // Limpar pontuação, filtrar por tamanho mínimo E remover palavras curtas obrigatórias
-    const words = sentence.toLowerCase()
+    // Limpar pontuação mas manter TODAS as palavras para encontrar o centro
+    const allWords = sentence.toLowerCase()
       .split(/\s+/)
-      .map(w => w.replace(/[^\w\sáàâãéèêíïóôõöúçñ]/gi, ''))
-      .filter(isValidWord);
-    
-    words.forEach((word, idx) => {
-      if (word === centerLower || word.includes(centerLower)) {
-        // Coletar contexto à esquerda
-        for (let i = Math.max(0, idx - contextWords); i < idx; i++) {
-          const leftWord = words[i];
-          if (leftWord && isValidWord(leftWord)) {
-            const path = words.slice(i, idx).filter(isValidWord).join(' ');
+      .map(w => w.replace(/[^\wáàâãéèêíïóôõöúçñü]/gi, '').trim())
+      .filter(w => w.length > 0);
+
+    allWords.forEach((word, idx) => {
+      // Match exato ou stem match (palavra começa com o termo buscado)
+      if (word === centerLower || word.startsWith(centerLower)) {
+        // Coletar contexto à esquerda (palavras válidas antes do centro)
+        const leftWords = [];
+        for (let i = idx - 1; i >= Math.max(0, idx - contextWords - 3) && leftWords.length < contextWords; i--) {
+          if (isContextWord(allWords[i])) {
+            leftWords.unshift(allWords[i]);
+          }
+        }
+        if (leftWords.length > 0) {
+          // Adicionar caminhos progressivos (1 palavra, 2 palavras, etc.)
+          for (let len = 1; len <= leftWords.length; len++) {
+            const path = leftWords.slice(leftWords.length - len).join(' ');
             if (path.trim()) {
               leftContext.set(path, (leftContext.get(path) || 0) + 1);
             }
           }
         }
-        
-        // Coletar contexto à direita
-        for (let i = idx + 1; i <= Math.min(words.length - 1, idx + contextWords); i++) {
-          const rightWord = words[i];
-          if (rightWord && isValidWord(rightWord)) {
-            const path = words.slice(idx + 1, i + 1).filter(isValidWord).join(' ');
+
+        // Coletar contexto à direita (palavras válidas depois do centro)
+        const rightWords = [];
+        for (let i = idx + 1; i < Math.min(allWords.length, idx + contextWords + 3) && rightWords.length < contextWords; i++) {
+          if (isContextWord(allWords[i])) {
+            rightWords.push(allWords[i]);
+          }
+        }
+        if (rightWords.length > 0) {
+          for (let len = 1; len <= rightWords.length; len++) {
+            const path = rightWords.slice(0, len).join(' ');
             if (path.trim()) {
               rightContext.set(path, (rightContext.get(path) || 0) + 1);
             }
@@ -1832,30 +1843,29 @@ const buildWordTree = (text, centerWord, maxBranches = 30, contextWords = 5, min
       }
     });
   });
-  
-  // Converter para arrays ordenados e filtrar caminhos que contenham palavras curtas
-  const filterPath = (path) => {
-    const pathWords = path.split(' ').filter(w => w.trim());
-    return pathWords.length > 0 && pathWords.every(isValidWord);
-  };
-  
+
   const leftBranches = Array.from(leftContext.entries())
-    .filter(([path]) => filterPath(path))
     .map(([path, count]) => ({ path, count, words: path.split(' ') }))
     .sort((a, b) => b.count - a.count)
     .slice(0, maxBranches);
-  
+
   const rightBranches = Array.from(rightContext.entries())
-    .filter(([path]) => filterPath(path))
     .map(([path, count]) => ({ path, count, words: path.split(' ') }))
     .sort((a, b) => b.count - a.count)
     .slice(0, maxBranches);
-  
+
+  // Contar ocorrências totais da palavra central
+  let totalOccurrences = 0;
+  sentences.forEach(sentence => {
+    const words = sentence.toLowerCase().split(/\s+/).map(w => w.replace(/[^\wáàâãéèêíïóôõöúçñü]/gi, '').trim());
+    totalOccurrences += words.filter(w => w === centerLower || w.startsWith(centerLower)).length;
+  });
+
   return {
     center: centerWord,
     left: leftBranches,
     right: rightBranches,
-    totalOccurrences: leftBranches.reduce((sum, b) => sum + b.count, 0) + rightBranches.reduce((sum, b) => sum + b.count, 0)
+    totalOccurrences
   };
 };
 
@@ -7005,7 +7015,7 @@ export default function TextAnalysisApp() {
   ]);
   const [activeCorpus, setActiveCorpus] = useState('default');
   const [showCorpusManager, setShowCorpusManager] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState(true);
   const [newCorpusName, setNewCorpusName] = useState('');
   const [corpusFilter, setCorpusFilter] = useState('all'); // 'all' ou id do corpus
   
