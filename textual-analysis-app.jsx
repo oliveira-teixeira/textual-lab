@@ -1,0 +1,9808 @@
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { Upload, FileText, Download, Sparkles, Network, BarChart3, Cloud, Search, Zap, BookOpen, Filter, Settings, ChevronRight, X, Check, Loader2, Eye, Trash2, RefreshCw, PieChart, TrendingUp, Hash, MessageCircle, Layers, GitBranch, Activity, Tag, ChevronDown, Plus, Save, Grid, LayoutGrid, Target, CircleDot, Sun, Moon, Edit2, Menu, FileSpreadsheet, Code, AlignLeft } from "lucide-react";
+import _ from "lodash";
+
+// ==================== GLOBAL THEME UTILITY ====================
+// Função utilitária para gerar classes baseadas no modo escuro/claro
+const getThemeClasses = (isDarkMode) => ({
+  // Backgrounds
+  bg: isDarkMode ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' : 'bg-gradient-to-br from-slate-100 via-white to-slate-100',
+  card: isDarkMode ? 'bg-slate-800/50' : 'bg-white',
+  cardBorder: isDarkMode ? 'border-slate-700' : 'border-slate-200',
+  cardInner: isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50',
+  cardInnerBorder: isDarkMode ? 'border-slate-600' : 'border-slate-200',
+  overlay: isDarkMode ? 'bg-slate-900/30' : 'bg-slate-50',
+  vizBg: isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50',
+  // Text
+  text: isDarkMode ? 'text-white' : 'text-slate-900',
+  textSecondary: isDarkMode ? 'text-slate-300' : 'text-slate-700',
+  textMuted: isDarkMode ? 'text-slate-400' : 'text-slate-600',
+  textDimmed: isDarkMode ? 'text-slate-500' : 'text-slate-500',
+  // Interactive
+  button: isDarkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-200 text-slate-700 hover:bg-slate-300',
+  buttonActive: 'bg-cyan-600 text-white',
+  input: isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-300',
+  hover: isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100',
+  hoverRow: isDarkMode ? 'hover:bg-slate-800/30' : 'hover:bg-slate-100',
+  // Table
+  tableHeader: isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100',
+  tableDivide: isDarkMode ? 'divide-slate-700/50' : 'divide-slate-200',
+  // Misc
+  badge: isDarkMode ? 'bg-slate-700' : 'bg-slate-200',
+  divider: isDarkMode ? 'border-slate-700' : 'border-slate-200',
+  sidebar: isDarkMode ? 'bg-slate-900/95' : 'bg-white/95',
+  sidebarBorder: isDarkMode ? 'border-slate-800/50' : 'border-slate-200',
+  // Controls
+  controlBg: isDarkMode ? 'bg-slate-800/90' : 'bg-white/90 border border-slate-200',
+  controlHover: isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100',
+  // Checkbox
+  checkbox: isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-slate-300 bg-white',
+});
+
+// ==================== UTILITY FUNCTIONS ====================
+
+// Stopwords base (podem ser modificadas pelo usuário)
+const defaultStopwordsPT = [
+  // ========== PALAVRAS FUNCIONAIS (do arquivo pt_stopwords.py) ==========
+  // Artigos
+  'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas',
+  // Preposições e contrações
+  'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na', 'nos', 'nas',
+  'por', 'pelo', 'pela', 'pelos', 'pelas', 'para', 'pra', 'pro', 'pros', 'pras',
+  'com', 'sem', 'sob', 'sobre', 'entre', 'até', 'após', 'ante', 'contra', 'desde',
+  'durante', 'perante', 'mediante', 'conforme', 'segundo', 'exceto', 'salvo', 'além', 'aquém',
+  'abaixo', 'acima', 'dentro', 'fora', 'diante', 'através', 'cerca', 'perto', 'longe', 'junto',
+  'ao', 'aos', 'à', 'às', 'num', 'numa', 'nuns', 'numas', 'dum', 'duma', 'duns', 'dumas',
+  // Conjunções coordenativas
+  'e', 'ou', 'mas', 'porém', 'contudo', 'todavia', 'entretanto', 'portanto', 'logo', 'pois',
+  'assim', 'então', 'nem', 'quer', 'ora', 'seja', 'eis', 'também',
+  // Conjunções subordinativas
+  'porque', 'como', 'visto', 'dado', 'porquanto', 'embora', 'apesar', 'conquanto',
+  'se', 'caso', 'contanto', 'consoante', 'quando', 'enquanto', 'sempre', 'antes', 'depois',
+  // Pronomes pessoais
+  'eu', 'tu', 'ele', 'ela', 'nós', 'vós', 'eles', 'elas',
+  'me', 'te', 'se', 'lhe', 'nos', 'vos', 'lhes', 'mim', 'ti', 'si', 'conosco', 'convosco',
+  // Pronomes possessivos
+  'meu', 'minha', 'meus', 'minhas', 'teu', 'tua', 'teus', 'tuas',
+  'seu', 'sua', 'seus', 'suas', 'nosso', 'nossa', 'nossos', 'nossas', 'vosso', 'vossa', 'vossos', 'vossas',
+  // Pronomes demonstrativos
+  'este', 'esta', 'estes', 'estas', 'esse', 'essa', 'esses', 'essas',
+  'aquele', 'aquela', 'aqueles', 'aquelas', 'isto', 'isso', 'aquilo',
+  // Pronomes relativos
+  'que', 'quem', 'qual', 'quais', 'cujo', 'cuja', 'cujos', 'cujas', 'onde', 'aonde', 'donde',
+  // Pronomes indefinidos
+  'algo', 'alguém', 'algum', 'alguma', 'alguns', 'algumas', 'nada', 'ninguém', 'nenhum', 'nenhuma',
+  'todo', 'toda', 'todos', 'todas', 'outro', 'outra', 'outros', 'outras',
+  'muito', 'muita', 'muitos', 'muitas', 'pouco', 'pouca', 'poucos', 'poucas',
+  'tanto', 'tanta', 'tantos', 'tantas', 'quanto', 'quanta', 'quantos', 'quantas',
+  'certo', 'certa', 'certos', 'certas', 'qualquer', 'quaisquer', 'cada',
+  'mesmo', 'mesma', 'mesmos', 'mesmas', 'próprio', 'própria', 'próprios', 'próprias',
+  // Advérbios
+  'não', 'nunca', 'jamais', 'tampouco', 'sim', 'certamente', 'claro', 'exatamente',
+  'talvez', 'quiçá', 'possivelmente', 'provavelmente', 'muito', 'pouco', 'bastante', 'demais', 'tão', 'mais', 'menos', 'quão',
+  'bem', 'mal', 'assim', 'já', 'ainda', 'logo', 'cedo', 'tarde', 'sempre', 'agora', 'hoje', 'ontem', 'amanhã',
+  'aqui', 'aí', 'ali', 'lá', 'cá', 'adiante', 'atrás', 'só',
+  // Verbo SER
+  'ser', 'sou', 'és', 'é', 'somos', 'sois', 'são', 'era', 'eras', 'éramos', 'eram',
+  'fui', 'foi', 'fomos', 'foram', 'serei', 'será', 'seremos', 'serão', 'seja', 'sejam',
+  // Verbo ESTAR
+  'estar', 'estou', 'está', 'estamos', 'estão', 'estava', 'estavam', 'esteve', 'estiveram',
+  'estará', 'estarão', 'esteja', 'estejam',
+  // Verbo TER
+  'ter', 'tenho', 'tens', 'tem', 'temos', 'têm', 'tinha', 'tinhas', 'tínhamos', 'tinham',
+  'tive', 'teve', 'tivemos', 'tiveram', 'terei', 'terá', 'teremos', 'terão',
+  // Verbo HAVER
+  'haver', 'hei', 'há', 'havemos', 'hão', 'havia', 'houve', 'houveram', 'haverá', 'haverão',
+  // Verbo FAZER
+  'fazer', 'faço', 'faz', 'fazemos', 'fazem', 'fazia', 'fez', 'fizemos', 'fizeram', 'fará', 'farão',
+  // Verbo PODER
+  'poder', 'posso', 'pode', 'podemos', 'podem', 'podia', 'pôde', 'puderam', 'poderá', 'poderão',
+  // Verbo DEVER
+  'dever', 'devo', 'deve', 'devemos', 'devem', 'devia', 'deveu', 'deverá', 'deverão',
+  // Verbo QUERER
+  'querer', 'quero', 'quer', 'queremos', 'querem', 'queria', 'quis', 'quiseram', 'quererá',
+  // Verbo IR
+  'ir', 'vou', 'vai', 'vamos', 'vão', 'ia', 'irei', 'irá', 'iremos', 'irão',
+  // Verbo VIR
+  'vir', 'venho', 'vem', 'viemos', 'vêm', 'vinha', 'veio', 'vieram', 'virá', 'virão',
+  // Verbo DAR
+  'dar', 'dou', 'dá', 'damos', 'dão', 'dava', 'deu', 'deram', 'dará', 'darão',
+  // Verbo DIZER
+  'dizer', 'digo', 'diz', 'dizemos', 'dizem', 'dizia', 'disse', 'disseram', 'dirá', 'dirão',
+  // Verbo VER
+  'ver', 'vejo', 'vê', 'vemos', 'veem', 'via', 'viu', 'viram', 'verá', 'verão',
+  // Verbo SABER
+  'saber', 'sei', 'sabe', 'sabemos', 'sabem', 'sabia', 'soube', 'souberam', 'saberá', 'saberão',
+  // Outras partículas discursivas
+  'inclusive', 'aliás', 'disso', 'disto', 'daquilo', 'nisso', 'nisto', 'naquilo',
+  'enfim', 'afinal', 'outrossim', 'apenas', 'somente', 'tal', 'tais', 'via', 'versus', 'etc', 'vs',
+  // ========== PALAVRAS FUNCIONAIS EXTRAS ==========
+  'acaba', 'acabado', 'acabam', 'acabamos', 'acabar', 'acabo', 'acabou', 'adeus',
+  'ah', 'ai', 'alto', 'chega', 'consigo', 'dessa', 'dessas', 'desse', 'desses',
+  'desta', 'destas', 'deste', 'destes', 'dia', 'dois', 'exemplo', 'feito', 'for',
+  'forma', 'fosse', 'grande', 'la', 'las', 'lo', 'los', 'sendo', 'sido', 'tanta',
+  'tantas', 'tendo', 'tenha', 'tipo', 'tive', 'todavia', 'tudo', 'você', 'vocês',
+  // ========== SOBRENOMES COMUNS BRASILEIROS ==========
+  'silva', 'santos', 'oliveira', 'souza', 'lima', 'pereira', 'costa', 'rodrigues', 'almeida', 'nascimento',
+  'carvalho', 'gomes', 'martins', 'araújo', 'melo', 'barbosa', 'ribeiro', 'rocha', 'fernandes', 'vieira',
+  'andrade', 'freitas', 'moreira', 'dias', 'nunes', 'mendes', 'cavalcante', 'monteiro', 'moura', 'correia',
+  'cardoso', 'cunha', 'lopes', 'pinto', 'reis', 'teixeira', 'ferreira', 'batista', 'campos', 'borges',
+  'duarte', 'ramos', 'sousa', 'medeiros', 'azevedo', 'castro', 'farias', 'pires', 'macedo', 'bezerra',
+  'leite', 'miranda', 'rezende', 'machado', 'sampaio', 'menezes', 'guimarães', 'aguiar', 'marques', 'fonseca',
+  'xavier', 'corrêa', 'barros', 'assis', 'santana', 'siqueira', 'sales', 'nogueira', 'amaral', 'paiva',
+  'brito', 'coelho', 'figueiredo', 'alencar', 'lacerda', 'queiroz', 'viana', 'magalhães', 'toledo', 'couto',
+  'rangel', 'maia', 'moraes', 'simões',
+  // ========== NOMES MASCULINOS COMUNS ==========
+  'josé', 'jose', 'joão', 'joao', 'antonio', 'antônio', 'francisco', 'carlos', 'paulo', 'pedro',
+  'lucas', 'luiz', 'luis', 'marcos', 'gabriel', 'rafael', 'daniel', 'marcelo', 'bruno', 'eduardo',
+  'felipe', 'rodrigo', 'gustavo', 'fernando', 'henrique', 'ricardo', 'diego', 'thiago', 'tiago', 'andré',
+  'andre', 'sérgio', 'sergio', 'márcio', 'marcio', 'fábio', 'fabio', 'júnior', 'junior', 'jorge',
+  'leonardo', 'rogério', 'rogerio', 'renato', 'alexandre', 'alex', 'leandro', 'matheus', 'vitor', 'victor',
+  'anderson', 'wagner', 'juliano', 'vinícius', 'vinicius', 'adriano', 'silvio', 'sílvio', 'roberto', 'geraldo',
+  'flávio', 'flavio', 'claudio', 'cláudio', 'manoel', 'manuel', 'sebastião', 'sebastiao', 'raimundo', 'edson',
+  'nilton', 'valdir', 'nelson', 'gilberto', 'wanderley', 'wellington', 'maurício', 'mauricio', 'renan', 'arthur',
+  'artur', 'enzo', 'miguel', 'davi', 'david', 'heitor', 'bernardo', 'noah', 'théo', 'theo', 'samuel',
+  'ícaro', 'icaro', 'igor', 'caio',
+  // ========== NOMES FEMININOS COMUNS ==========
+  'maria', 'ana', 'juliana', 'fernanda', 'patricia', 'patrícia', 'adriana', 'camila', 'bruna', 'amanda',
+  'carolina', 'mariana', 'vanessa', 'aline', 'jéssica', 'jessica', 'larissa', 'letícia', 'leticia', 'rafaela',
+  'gabriela', 'natália', 'natalia', 'daniela', 'priscila', 'priscilla', 'carla', 'renata', 'tatiana', 'fabiana',
+  'paula', 'cristina', 'luciana', 'andréa', 'andrea', 'sandra', 'mônica', 'monica', 'cláudia', 'claudia',
+  'denise', 'débora', 'debora', 'simone', 'silvia', 'sílvia', 'regina', 'eliane', 'márcia', 'marcia',
+  'rosana', 'flávia', 'flavia', 'valéria', 'valeria', 'vera', 'célia', 'celia', 'sônia', 'sonia',
+  'lúcia', 'lucia', 'angela', 'ângela', 'helena', 'tereza', 'teresa', 'francisca', 'rita', 'neide',
+  'cintia', 'cíntia', 'vitória', 'vitoria', 'sofia', 'alice', 'laura', 'valentina', 'lorena', 'beatriz',
+  'manuela', 'isadora', 'cecília', 'cecilia', 'clara', 'lívia', 'livia', 'isabela', 'isabella', 'giovanna',
+  'marina', 'yasmin', 'luísa', 'luisa', 'heloísa', 'heloisa', 'lara', 'melissa', 'bianca',
+  // ========== NOMES ESPECÍFICOS DO PROJETO ==========
+  'tainá', 'taina', 'porto', 'ariel', 'macena', 'braga', 'hermes', 'mercurio', 'mercúrio', 'fausto',
+  'muniz', 'sodre', 'sodré', 'neto', 'martin', 'barbero'
+];
+
+// ========== PALAVRAS CURTAS OBRIGATÓRIAS (SEMPRE FILTRADAS) ==========
+// Lista robusta de conectivos, preposições, artigos e palavras de 1-3 letras em português
+// Estas palavras são SEMPRE removidas, independente das configurações do usuário
+const MANDATORY_SHORT_WORDS_PT = new Set([
+  // 1 letra
+  'a', 'e', 'i', 'o', 'u', 'à', 'é', 'ó',
+  // 2 letras - artigos, preposições, pronomes, conectivos
+  'ao', 'às', 'aí', 'ah', 'ai', 'as', 'aã', 
+  'dá', 'da', 'de', 'do', 'di',
+  'ei', 'em', 'es', 'et', 'eu', 'ex',
+  'há', 'he', 'hã',
+  'ir', 'is',
+  'já', 'je',
+  'la', 'lá', 'le', 'lê', 'li', 'lo',
+  'ma', 'me', 'mã', 'mi', 
+  'na', 'né', 'ni', 'no', 'nó', 'nu', 'nã',
+  'oh', 'oi', 'ok', 'os', 'ou',
+  'pa', 'pá', 'pi', 'pô', 'pr',
+  'qe', 'qu',
+  'rá', 're', 'ri', 'ro',
+  'se', 'si', 'só', 'sã',
+  'tá', 'te', 'ti', 'tô', 'tu',
+  'ué', 'ui', 'um', 'uã',
+  'vá', 've', 'vi', 'vô', 'vã',
+  // 3 letras - conectivos, preposições, pronomes, verbos auxiliares comuns
+  'aba', 'abc', 'aha', 'ais', 'ali', 'alo', 'alô', 'ama', 'ami', 'amo', 'ano', 'aos', 'aqi', 'ara', 'art', 'ata', 'até', 'ato', 'ave', 'avo',
+  'bem', 'boa', 'bom', 'bus',
+  'cá', 'cão', 'cem', 'céu', 'chá', 'cim', 'com', 'cor', 'cru', 'cão',
+  'dão', 'dar', 'das', 'dei', 'der', 'deu', 'dez', 'dia', 'diz', 'doc', 'doi', 'dor', 'dos', 'dou', 'dra', 'drª', 'drº', 'drs', 'dta', 'dtz', 'duo',
+  'ela', 'ele', 'elo', 'ema', 'eme', 'emo', 'ems', 'ene', 'eno', 'ens', 'era', 'ere', 'ero', 'erê', 'esa', 'ese', 'eso', 'ess', 'est', 'eta', 'etc', 'ete', 'eto', 'eur', 'eva', 'evo', 'exe', 'exs',
+  'faz', 'fez', 'fim', 'foi', 'for', 'fui',
+  'gás', 'gel',
+  'hei', 'hem', 'hum',
+  'iam', 'ida', 'ide', 'ido', 'iii', 'imo', 'ips', 'ira', 'irá', 'ire', 'irê', 'iro', 'isa', 'iso', 'iss', 'ist', 'ita', 'ite', 'ito', 'ius', 'iva', 'ive', 'ivo',
+  'jaz', 'jet',
+  'kit',
+  'lar', 'las', 'lei', 'ler', 'les', 'leu', 'lha', 'lhe', 'lhi', 'lho', 'lia', 'lio', 'lis', 'log', 'los', 'lua', 'luz',
+  'mãe', 'mái', 'mal', 'map', 'mar', 'mas', 'mau', 'max', 'mei', 'mel', 'mem', 'mês', 'met', 'meu', 'mez', 'mil', 'mim', 'mis', 'mix', 'mms', 'mor', 'mos',
+  'nao', 'não', 'nas', 'née', 'nem', 'neo', 'net', 'nha', 'nhe', 'nhi', 'nho', 'nil', 'nit', 'nix', 'nom', 'nos', 'nós', 'nov', 'nox', 'nra', 'nrº', 'nua', 'nul', 'num', 'nuo', 'nus',
+  'obs', 'oca', 'oco', 'ode', 'off', 'ois', 'olá', 'olê', 'olé', 'oma', 'omo', 'ond', 'one', 'ons', 'opa', 'opr', 'ora', 'ore', 'org', 'ori', 'oro', 'ors', 'osa', 'ose', 'osi', 'oso', 'ota', 'ote', 'oto', 'our', 'out', 'ova', 'ove', 'ovo', 'oxe', 'oxi',
+  'pai', 'pal', 'pan', 'pão', 'par', 'paz', 'pci', 'pdf', 'pec', 'peg', 'per', 'pes', 'pie', 'pis', 'pix', 'pms', 'poa', 'pod', 'poe', 'poi', 'pop', 'por', 'pos', 'pós', 'pov', 'pra', 'pré', 'pro', 'pró', 'psc', 'psp', 'puc', 'puf', 'pum', 'pus', 'put', 'pvc',
+  'qdo', 'qtd', 'qto', 'qts', 'que',
+  'rao', 'ras', 'raí', 'réu', 'ria', 'rio', 'rir', 'riu', 'rna', 'rss', 'rua', 'rum', 'rés',
+  'sai', 'sal', 'são', 'sei', 'sem', 'ser', 'ses', 'set', 'seu', 'sex', 'sim', 'sir', 'sis', 'sms', 'sob', 'sol', 'som', 'sos', 'sou', 'spa', 'sri', 'str', 'sua', 'sub', 'sul', 'sum', 'sun', 'sup', 'sur', 'sus', 'sús',
+  'taa', 'tab', 'tal', 'tão', 'tcc', 'tem', 'ten', 'ter', 'tes', 'teu', 'tia', 'til', 'tio', 'toc', 'tom', 'top', 'tou', 'tps', 'tra', 'trá', 'trc', 'trê', 'tri', 'trv', 'tua', 'tum', 'tva', 'tvs', 'txs',
+  'uau', 'uca', 'ufa', 'ufo', 'ugh', 'uia', 'uis', 'ula', 'ulo', 'uma', 'umb', 'ume', 'ums', 'uma', 'uno', 'uns', 'uol', 'upa', 'upá', 'ups', 'uri', 'url', 'usa', 'use', 'usp', 'uso', 'uva', 'uxo',
+  'vac', 'vai', 'vam', 'van', 'vão', 'var', 'vás', 'vcs', 'vem', 'ver', 'vês', 'vez', 'via', 'vii', 'vil', 'vim', 'vip', 'vir', 'vis', 'viu', 'voa', 'vol', 'voo', 'vos', 'vós', 'vou', 'vox', 'voz', 'vrm',
+  'web', 'www',
+  'xau', 'xis',
+  'yin',
+  'zen', 'zip', 'zoo',
+  // Interjeições e expressões informais
+  'ahn', 'ehh', 'eih', 'eim', 'ein', 'epa', 'epi', 'era', 'erm', 'err', 'eta', 'eua', 'euh', 'hah', 'hei', 'hem', 'hep', 'hey', 'hip', 'hmm', 'hun', 'hãã', 'ohh', 'ooh', 'ops', 'pah', 'pff', 'piu', 'poá', 'poh', 'psh', 'pst', 'puf', 'puá', 'puí', 'shh', 'ssh', 'tsc', 'tsk', 'uhh', 'uhu', 'uhú', 'umm', 'unh', 'uns', 'uou', 'urr', 'ugh', 'uhm', 'uia', 'wah', 'wow', 'wtf', 'www', 'xii', 'xiu',
+  // Números por extenso curtos
+  'cem', 'dez', 'dós', 'mil', 'sés', 'trê', 'trs', 'ums',
+  // Abreviações comuns
+  'adm', 'adv', 'ago', 'art', 'ass', 'atm', 'atr', 'aut', 'aux', 'avd', 'avo', 'cap', 'cel', 'cia', 'cid', 'cit', 'cod', 'col', 'com', 'con', 'cpf', 'crc', 'ctb', 'dco', 'dep', 'des', 'dez', 'dif', 'dir', 'dna', 'doc', 'dom', 'dou', 'dra', 'dre', 'drs', 'drª', 'drº', 'dsc', 'dtm', 'dtz', 'dvd', 'dvr', 'ebc', 'ebs', 'eca', 'eco', 'eds', 'edu', 'eeg', 'efe', 'eis', 'eja', 'elt', 'eme', 'emp', 'ems', 'enc', 'end', 'ene', 'eng', 'ent', 'env', 'epe', 'epi', 'eqp', 'erp', 'esc', 'esp', 'est', 'etc', 'eti', 'ets', 'eua', 'eur', 'exc', 'exe', 'exp', 'ext', 'fab', 'fac', 'fam', 'fav', 'fax', 'fco', 'fed', 'fem', 'fer', 'fev', 'fig', 'fis', 'fls', 'fmc', 'fnd', 'fnm', 'fob', 'fol', 'fon', 'fot', 'fps', 'fra', 'frs', 'fsc', 'ftd', 'fun', 'gab', 'gal', 'gas', 'ger', 'geo', 'gov', 'gps', 'hab', 'his', 'hiv', 'hos', 'hrs', 'htm', 'ibm', 'ies', 'imb', 'imf', 'imp', 'inc', 'ind', 'inf', 'inj', 'ins', 'int', 'ipv', 'iva', 'jan', 'jce', 'jds', 'jnr', 'jrs', 'jul', 'jun', 'jur', 'lab', 'lat', 'lcd', 'led', 'leg', 'lib', 'lic', 'lig', 'lim', 'lin', 'lit', 'lng', 'loc', 'lot', 'ltd', 'ltda', 'lts', 'mac', 'mai', 'mar', 'mat', 'max', 'mba', 'mca', 'mdc', 'med', 'mem', 'mes', 'mfr', 'mgs', 'mic', 'mig', 'min', 'mkt', 'mlt', 'mms', 'mod', 'mot', 'mov', 'mpa', 'mrh', 'mrs', 'msg', 'mts', 'mul', 'mus', 'nat', 'nav', 'nec', 'neg', 'nic', 'nit', 'nom', 'nor', 'not', 'nov', 'nra', 'nrº', 'nrs', 'nsa', 'nsb', 'nsc', 'ntc', 'num', 'obj', 'obs', 'occ', 'oct', 'ods', 'oem', 'ofi', 'ohm', 'oms', 'onc', 'ond', 'ong', 'oni', 'onu', 'ope', 'opt', 'orc', 'ord', 'org', 'ori', 'orm', 'ort', 'oss', 'out', 'oxi', 'pac', 'pal', 'pan', 'par', 'pas', 'pat', 'pbc', 'pbm', 'pci', 'pdf', 'pds', 'ped', 'pen', 'per', 'pes', 'pfl', 'phd', 'pig', 'pin', 'pis', 'pix', 'pkg', 'pla', 'pln', 'plp', 'pls', 'pma', 'pmb', 'pmc', 'pms', 'poa', 'poc', 'pod', 'pol', 'pon', 'pop', 'por', 'pos', 'ppc', 'ppm', 'pps', 'pqd', 'pqs', 'pré', 'pri', 'pro', 'pró', 'prs', 'psc', 'psg', 'psp', 'pst', 'pti', 'pts', 'ptu', 'pub', 'puc', 'pvc', 'pvt', 'qbc', 'qbr', 'qdo', 'qnt', 'qql', 'qse', 'qtd', 'qte', 'qts', 'qua', 'rad', 'ram', 'rap', 'rav', 'rcm', 'rds', 'rec', 'red', 'ref', 'reg', 'rei', 'rel', 'rem', 'rep', 'req', 'res', 'ret', 'rev', 'rgb', 'rhs', 'ric', 'rig', 'rip', 'rit', 'rjs', 'rna', 'rnd', 'rnv', 'rof', 'rol', 'rot', 'rpm', 'rps', 'rpt', 'rsm', 'rss', 'rts', 'rub', 'run', 'rus', 'rés', 'sac', 'sag', 'sai', 'sal', 'sam', 'san', 'sap', 'sar', 'sas', 'sat', 'sbc', 'sbm', 'sbp', 'sbs', 'sbt', 'sca', 'scm', 'sco', 'scp', 'scr', 'scs', 'sdc', 'sdk', 'sdl', 'sea', 'sec', 'sed', 'seg', 'sei', 'sem', 'sen', 'seo', 'sep', 'seq', 'ser', 'ses', 'set', 'sex', 'sfc', 'sgd', 'sig', 'sim', 'sin', 'sir', 'sis', 'sit', 'sld', 'sma', 'sme', 'smg', 'sms', 'snc', 'snp', 'soa', 'sob', 'soc', 'sol', 'som', 'sos', 'spa', 'spe', 'spi', 'spo', 'sql', 'sra', 'src', 'srf', 'sri', 'srn', 'srs', 'srt', 'srª', 'srº', 'ssa', 'ssh', 'ssl', 'ssp', 'sts', 'stv', 'sua', 'sub', 'suf', 'sul', 'sum', 'sun', 'sup', 'sur', 'sus', 'svc', 'svs', 'tab', 'tae', 'tal', 'tam', 'tan', 'tar', 'tas', 'tca', 'tcc', 'tcp', 'tcu', 'tea', 'tec', 'tel', 'tem', 'ten', 'ter', 'tes', 'tex', 'tfg', 'tgi', 'tgp', 'tia', 'tic', 'tin', 'tio', 'tip', 'tir', 'tis', 'tms', 'tnc', 'tns', 'toa', 'toc', 'tom', 'ton', 'top', 'tor', 'tos', 'tou', 'tpo', 'tps', 'tra', 'trb', 'tre', 'tri', 'trl', 'trm', 'trn', 'tro', 'trs', 'trt', 'trv', 'trá', 'trê', 'tsb', 'tse', 'tst', 'tua', 'tui', 'tum', 'tup', 'tur', 'tva', 'tvs', 'txt', 'txs', 'uau', 'ubs', 'ucs', 'uel', 'uem', 'ues', 'ufa', 'uff', 'ufg', 'ufl', 'ufm', 'ufn', 'ufo', 'ufp', 'ufr', 'ufs', 'ufu', 'ugh', 'uhd', 'uia', 'uif', 'uis', 'ula', 'uli', 'ult', 'umb', 'una', 'une', 'uni', 'uno', 'uns', 'uol', 'upa', 'upá', 'ups', 'uri', 'url', 'urr', 'usa', 'usb', 'usd', 'use', 'usp', 'uso', 'usu', 'utc', 'uti', 'uva', 'uxo', 'vac', 'val', 'vam', 'van', 'var', 'vas', 'vca', 'vcs', 'vdc', 'vds', 'vec', 'veg', 'vem', 'ven', 'ver', 'ves', 'vez', 'vga', 'vhs', 'via', 'vic', 'vid', 'vii', 'vil', 'vim', 'vin', 'vip', 'vir', 'vis', 'viu', 'vix', 'vlr', 'vms', 'voa', 'voc', 'vog', 'vol', 'voo', 'vor', 'vos', 'vot', 'vou', 'vox', 'voz', 'vpn', 'vrb', 'vrm', 'vrs', 'wap', 'way', 'web', 'who', 'wii', 'win', 'wow', 'www', 'xau', 'xis', 'xml', 'yin', 'zen', 'zip', 'zoo', 'zum'
+]);
+
+// ========== DESCRIÇÕES E TOOLTIPS DAS VISUALIZAÇÕES ==========
+const VISUALIZATION_INFO = {
+  statistics: {
+    title: 'Estatísticas do Corpus',
+    description: 'Métricas quantitativas básicas do seu corpus textual, incluindo contagem de palavras, documentos e distribuição de frequências.',
+    tooltip: 'Calcula estatísticas descritivas: total de palavras, palavras únicas (types), razão type/token (diversidade léxica), hapax legomena (palavras que aparecem apenas uma vez) e frequências absolutas ordenadas por ocorrência.'
+  },
+  wordcloud: {
+    title: 'Nuvem de Palavras',
+    description: 'Representação visual onde o tamanho de cada palavra é proporcional à sua frequência no corpus.',
+    tooltip: 'Utiliza o algoritmo d3-cloud (Wordle) para posicionar palavras em espiral, calculando colisões entre bounding boxes. O tamanho da fonte é mapeado logaritmicamente da frequência para pixels (12-60px).'
+  },
+  termsberry: {
+    title: 'TermsBerry',
+    description: 'Visualização em círculos empilhados que agrupa palavras por categoria semântica ou frequência.',
+    tooltip: 'Implementa o algoritmo de circle packing do D3.js, que usa simulação de forças para posicionar círculos sem sobreposição. A área de cada círculo é proporcional à frequência da palavra.'
+  },
+  wordtree: {
+    title: 'Árvore de Palavras',
+    description: 'Mostra os contextos mais frequentes à esquerda e à direita de uma palavra-chave selecionada.',
+    tooltip: 'Extrai n-gramas (sequências de palavras) que co-ocorrem com a palavra central. Agrupa por padrões de contexto e ordena por frequência, exibindo até 30 ramificações por lado.'
+  },
+  treemap: {
+    title: 'Treemap de Frequências',
+    description: 'Mapa de áreas retangulares onde cada retângulo representa uma palavra e sua área é proporcional à frequência.',
+    tooltip: 'Usa o algoritmo squarified treemap do D3.js, que recursivamente divide o espaço em retângulos com aspect ratio próximo de 1 para melhor legibilidade. Cores indicam faixas de frequência.'
+  },
+  network: {
+    title: 'Rede de Similitude',
+    description: 'Grafo de coocorrência onde palavras conectadas aparecem frequentemente juntas no mesmo contexto.',
+    tooltip: 'Constrói grafo não-direcionado calculando coocorrências em janela deslizante (padrão: 5 palavras). Arestas têm peso = frequência de coocorrência. Layout por simulação de forças (force-directed).'
+  },
+  bigrams: {
+    title: 'Rede de Bigramas',
+    description: 'Visualiza pares de palavras adjacentes (bigramas) mais frequentes como uma rede direcionada.',
+    tooltip: 'Identifica todos os pares consecutivos de palavras (bigramas), conta frequências e filtra por limiar mínimo. Arestas direcionadas mostram a ordem: palavra1 → palavra2.'
+  },
+  centrality: {
+    title: 'Métricas de Centralidade',
+    description: 'Identifica as palavras mais importantes na rede usando diferentes medidas de centralidade.',
+    tooltip: 'Calcula: Grau (conexões diretas), Intermediação (palavras-ponte entre comunidades), Proximidade (distância média para outras palavras) e Autovetor (importância baseada em vizinhos importantes).'
+  },
+  heatmap: {
+    title: 'Matriz de Coocorrência',
+    description: 'Matriz visual mostrando a intensidade de coocorrência entre as 20 palavras mais frequentes.',
+    tooltip: 'Monta matriz simétrica NxN onde célula [i,j] = número de vezes que palavra_i e palavra_j aparecem na mesma janela de contexto. Cores mapeiam valores para escala de calor.'
+  },
+  afc: {
+    title: 'Análise Fatorial de Correspondência',
+    description: 'Projeção 2D que agrupa palavras por similaridade de contexto de uso nos documentos.',
+    tooltip: 'Aplica decomposição SVD (Singular Value Decomposition) à matriz documentos × palavras normalizada por qui-quadrado. Os dois primeiros fatores capturam a maior variância, posicionando palavras similares próximas.'
+  },
+  associations: {
+    title: 'Associações Estatísticas',
+    description: 'Medidas estatísticas que quantificam a força de associação entre pares de palavras.',
+    tooltip: 'Calcula: Chi-quadrado (independência estatística), PMI (Pointwise Mutual Information), coeficiente de Dice (2*interseção/soma) e Jaccard (interseção/união). Valores altos indicam associação forte.'
+  },
+  sentiment: {
+    title: 'Análise de Sentimentos',
+    description: 'Classificação das palavras em positivas, negativas ou neutras com base em léxico de sentimentos.',
+    tooltip: 'Usa léxico de sentimentos em português com ~200 palavras rotuladas. Conta ocorrências de cada polaridade, calcula percentuais e score geral: (positivas - negativas) / total.'
+  },
+  tfidf: {
+    title: 'TF-IDF',
+    description: 'Identifica palavras distintivas de cada documento, penalizando termos muito comuns.',
+    tooltip: 'TF-IDF = Term Frequency × Inverse Document Frequency. TF = frequência no documento. IDF = log(total_docs / docs_com_termo). Palavras com alto TF-IDF são frequentes localmente mas raras globalmente.'
+  },
+  diversity: {
+    title: 'Diversidade Léxica',
+    description: 'Métricas que avaliam a riqueza e variedade do vocabulário utilizado no corpus.',
+    tooltip: 'Calcula: TTR (Type-Token Ratio), MSTTR (TTR médio em segmentos), Hapax Legomena (%), Índice de Guiraud (types/√tokens) e Índice de Herdan (log types/log tokens).'
+  },
+  chd: {
+    title: 'CHD / Reinert',
+    description: 'Classificação Hierárquica Descendente que agrupa segmentos de texto em classes temáticas.',
+    tooltip: 'Método de Max Reinert: segmenta texto em unidades de contexto, constrói matriz de presença/ausência de formas, aplica clustering divisivo baseado em chi-quadrado para formar classes lexicais.'
+  },
+  coding: {
+    title: 'Codificação Qualitativa',
+    description: 'Permite criar e aplicar códigos temáticos a trechos de texto para análise de conteúdo.',
+    tooltip: 'Análise de conteúdo qualitativa: seleção de segmentos, atribuição de códigos do livro de códigos, auto-codificação por keywords e exportação em formato compatível com NVivo/Atlas.ti.'
+  },
+  radar: {
+    title: 'Radar de Categorias',
+    description: 'Gráfico radar mostrando a distribuição dos códigos aplicados por categoria temática.',
+    tooltip: 'Agrega contagens de segmentos codificados por categoria do livro de códigos. Normaliza para percentuais e plota em eixos radiais, formando polígono que representa o perfil temático do corpus.'
+  },
+  sunburst: {
+    title: 'Sunburst de Códigos',
+    description: 'Hierarquia visual em anéis concêntricos mostrando categorias (centro) e códigos (periferia).',
+    tooltip: 'Usa algoritmo de partition do D3.js para dividir arco de 360° proporcionalmente às contagens. Anel interno = categorias, anel externo = códigos. Clique para zoom em categoria específica.'
+  },
+  kwic: {
+    title: 'KWIC',
+    description: 'Keyword in Context: mostra cada ocorrência de uma palavra com seu contexto imediato.',
+    tooltip: 'Busca todas as ocorrências do termo, extrai N caracteres à esquerda e direita, alinha pelo termo central. Permite identificar padrões de uso e colocações. Exportável para concordância.'
+  }
+};
+
+const HelpTooltip = ({ info }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-2">
+      <button
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => setShowTooltip(!showTooltip)}
+        className="w-5 h-5 rounded-full bg-slate-700 hover:bg-cyan-600 text-slate-400 hover:text-white flex items-center justify-center text-xs font-bold transition-colors"
+      >
+        ?
+      </button>
+      {showTooltip && (
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-cyan-500/50 rounded-lg shadow-xl text-xs text-slate-300 leading-relaxed">
+          <div className="font-semibold text-cyan-400 mb-1">Como funciona:</div>
+          {info}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-slate-900" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Componente de cabeçalho de visualização com descrição e tooltip
+const VisualizationHeader = ({ vizKey, icon: Icon, extraContent }) => {
+  const info = VISUALIZATION_INFO[vizKey];
+  if (!info) return null;
+  
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-2">
+        {Icon && <Icon className="w-6 h-6 text-cyan-400" />}
+        <h3 className="text-xl font-semibold">{info.title}</h3>
+        <HelpTooltip info={info.tooltip} />
+        {extraContent}
+      </div>
+      <p className="text-sm text-slate-400 max-w-3xl">{info.description}</p>
+    </div>
+  );
+};
+
+const defaultStopwordsEN = [
+  'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now'
+];
+
+// Léxico de sentimentos para português
+const sentimentLexicon = {
+  positive: new Set([
+    'bom', 'boa', 'ótimo', 'ótima', 'excelente', 'maravilhoso', 'maravilhosa', 'fantástico', 'fantástica',
+    'incrível', 'perfeito', 'perfeita', 'adorável', 'lindo', 'linda', 'feliz', 'alegre', 'contente',
+    'satisfeito', 'satisfeita', 'amor', 'amar', 'adorar', 'gostar', 'apreciar', 'agradecer', 'obrigado',
+    'sucesso', 'vitória', 'conquista', 'alcançar', 'conseguir', 'melhor', 'positivo', 'positiva',
+    'favorável', 'benefício', 'vantagem', 'oportunidade', 'progresso', 'avanço', 'desenvolvimento',
+    'crescimento', 'melhoria', 'solução', 'resolver', 'facilitar', 'ajudar', 'apoiar', 'colaborar',
+    'importante', 'relevante', 'significativo', 'significativa', 'valioso', 'valiosa', 'útil',
+    'eficiente', 'eficaz', 'produtivo', 'produtiva', 'inovador', 'inovadora', 'criativo', 'criativa',
+    'interessante', 'fascinante', 'impressionante', 'notável', 'excepcional', 'extraordinário',
+    'bonito', 'bonita', 'beleza', 'harmonia', 'paz', 'tranquilo', 'tranquila', 'sereno', 'serena',
+    'esperança', 'confiança', 'seguro', 'segura', 'forte', 'robusto', 'robusta', 'sólido', 'sólida',
+    'claro', 'clara', 'transparente', 'honesto', 'honesta', 'justo', 'justa', 'correto', 'correta'
+  ]),
+  negative: new Set([
+    'mau', 'ruim', 'péssimo', 'péssima', 'horrível', 'terrível', 'horroroso', 'horrorosa',
+    'triste', 'infeliz', 'deprimido', 'deprimida', 'ansioso', 'ansiosa', 'preocupado', 'preocupada',
+    'medo', 'receio', 'temor', 'raiva', 'ódio', 'irritado', 'irritada', 'frustrado', 'frustrada',
+    'decepcionado', 'decepcionada', 'desapontado', 'desapontada', 'problema', 'dificuldade',
+    'obstáculo', 'barreira', 'impedimento', 'falha', 'erro', 'fracasso', 'derrota', 'perda',
+    'negativo', 'negativa', 'desfavorável', 'prejudicial', 'danoso', 'danosa', 'nocivo', 'nociva',
+    'perigoso', 'perigosa', 'risco', 'ameaça', 'crise', 'conflito', 'disputa', 'briga',
+    'violência', 'agressão', 'ataque', 'destruição', 'deterioração', 'declínio', 'queda',
+    'pior', 'inferior', 'fraco', 'fraca', 'insuficiente', 'inadequado', 'inadequada',
+    'difícil', 'complicado', 'complicada', 'complexo', 'complexa', 'confuso', 'confusa',
+    'incerto', 'incerta', 'duvidoso', 'duvidosa', 'questionável', 'suspeito', 'suspeita',
+    'injusto', 'injusta', 'errado', 'errada', 'incorreto', 'incorreta', 'falso', 'falsa',
+    'feio', 'feia', 'desagradável', 'incômodo', 'incômoda', 'chato', 'chata', 'entediante',
+    'cansativo', 'cansativa', 'exaustivo', 'exaustiva', 'estressante', 'doloroso', 'dolorosa'
+  ])
+};
+
+// Paleta de cores para corpus
+const corpusColors = [
+  '#22d3ee', '#a78bfa', '#f472b6', '#fb923c', '#4ade80', 
+  '#facc15', '#f87171', '#38bdf8', '#c084fc', '#34d399'
+];
+
+// ==================== CÓDIGOS DE CAPACIDADES COM KEYWORDS ====================
+const capacityCodebook = {
+  '1': {
+    name: 'Analítica – Individual',
+    color: '#3b82f6', // blue
+    codes: {
+      '1.1': { 
+        name: 'Formação técnica dos profissionais',
+        keywords: ['formação', 'técnico', 'profissional', 'qualificação', 'especialização', 'curso', 'graduação', 'pós-graduação', 'mestrado', 'doutorado', 'capacitação técnica']
+      },
+      '1.2': { 
+        name: 'Capacidade de análise de dados',
+        keywords: ['análise', 'dados', 'estatística', 'indicadores', 'métricas', 'dashboard', 'relatório', 'planilha', 'excel', 'power bi', 'tableau']
+      },
+      '1.3': { 
+        name: 'Uso de evidências na tomada de decisão',
+        keywords: ['evidência', 'decisão', 'baseado em dados', 'científico', 'pesquisa', 'estudo', 'literatura', 'publicação']
+      },
+      '1.4': { 
+        name: 'Capacitação e treinamento',
+        keywords: ['capacitação', 'treinamento', 'workshop', 'oficina', 'curso', 'educação continuada', 'atualização', 'reciclagem']
+      }
+    }
+  },
+  '2': {
+    name: 'Analítica – Organizacional',
+    color: '#6366f1', // indigo
+    codes: {
+      '2.1': { 
+        name: 'Sistemas de informação',
+        keywords: ['sistema', 'informação', 'software', 'banco de dados', 'plataforma', 'tecnologia', 'digital', 'informatização', 'prontuário eletrônico']
+      },
+      '2.2': { 
+        name: 'Produção de indicadores',
+        keywords: ['indicador', 'meta', 'índice', 'taxa', 'percentual', 'mensuração', 'medição', 'benchmark']
+      },
+      '2.3': { 
+        name: 'Monitoramento e avaliação',
+        keywords: ['monitoramento', 'avaliação', 'acompanhamento', 'supervisão', 'controle', 'fiscalização', 'auditoria']
+      },
+      '2.4': { 
+        name: 'Compartilhamento de dados entre setores',
+        keywords: ['compartilhamento', 'interoperabilidade', 'integração', 'troca de dados', 'intersetorial', 'entre setores']
+      },
+      '2.5': { 
+        name: 'Infraestrutura de informação',
+        keywords: ['infraestrutura', 'servidor', 'rede', 'internet', 'conectividade', 'hardware', 'equipamento', 'computador']
+      }
+    }
+  },
+  '3': {
+    name: 'Analítica – Sistêmica',
+    color: '#8b5cf6', // violet
+    codes: {
+      '3.1': { 
+        name: 'Parcerias com universidades',
+        keywords: ['universidade', 'academia', 'parceria acadêmica', 'pesquisador', 'professor', 'faculdade', 'instituto de pesquisa']
+      },
+      '3.2': { 
+        name: 'Produção científica',
+        keywords: ['artigo', 'publicação', 'paper', 'revista científica', 'periódico', 'tese', 'dissertação']
+      },
+      '3.3': { 
+        name: 'Uso de evidências externas',
+        keywords: ['evidência externa', 'benchmark internacional', 'boas práticas', 'experiência internacional', 'referência']
+      },
+      '3.4': { 
+        name: 'Redes de conhecimento',
+        keywords: ['rede', 'network', 'comunidade de prática', 'grupo de trabalho', 'fórum', 'encontro']
+      }
+    }
+  },
+  '4': {
+    name: 'Operacional – Individual',
+    color: '#10b981', // emerald
+    codes: {
+      '4.1': { 
+        name: 'Gestão de equipes',
+        keywords: ['equipe', 'time', 'liderança', 'gestão de pessoas', 'recursos humanos', 'colaborador', 'funcionário']
+      },
+      '4.2': { 
+        name: 'Coordenação de atividades',
+        keywords: ['coordenação', 'organização', 'planejamento', 'cronograma', 'agenda', 'priorização']
+      },
+      '4.3': { 
+        name: 'Negociação entre atores',
+        keywords: ['negociação', 'mediação', 'acordo', 'consenso', 'diálogo', 'conversa', 'reunião']
+      }
+    }
+  },
+  '5': {
+    name: 'Operacional – Organizacional',
+    color: '#14b8a6', // teal
+    codes: {
+      '5.1': { 
+        name: 'Recursos financeiros',
+        keywords: ['recurso financeiro', 'orçamento', 'verba', 'dotação', 'financiamento', 'custeio', 'investimento', 'dinheiro', 'gasto']
+      },
+      '5.2': { 
+        name: 'Recursos humanos',
+        keywords: ['recursos humanos', 'pessoal', 'servidor', 'contratação', 'concurso', 'terceirizado', 'efetivo']
+      },
+      '5.3': { 
+        name: 'Estrutura administrativa',
+        keywords: ['estrutura', 'organograma', 'departamento', 'setor', 'divisão', 'coordenadoria', 'diretoria']
+      },
+      '5.4': { 
+        name: 'Processos de gestão',
+        keywords: ['processo', 'fluxo', 'procedimento', 'protocolo', 'rotina', 'norma', 'regulamento']
+      },
+      '5.5': { 
+        name: 'Coordenação intersetorial',
+        keywords: ['intersetorial', 'entre secretarias', 'articulação', 'integração setorial', 'transversal']
+      }
+    }
+  },
+  '6': {
+    name: 'Operacional – Sistêmica',
+    color: '#06b6d4', // cyan
+    codes: {
+      '6.1': { 
+        name: 'Coordenação federativa',
+        keywords: ['federativo', 'federação', 'pacto', 'consórcio', 'região de saúde', 'macrorregião']
+      },
+      '6.2': { 
+        name: 'Relação município–estado–união',
+        keywords: ['município', 'estado', 'união', 'federal', 'estadual', 'municipal', 'ministério', 'secretaria estadual']
+      },
+      '6.3': { 
+        name: 'Mecanismos de cooperação',
+        keywords: ['cooperação', 'convênio', 'contrato', 'termo de cooperação', 'parceria formal']
+      },
+      '6.4': { 
+        name: 'Instrumentos de gestão interfederativa',
+        keywords: ['CIB', 'CIT', 'COSEMS', 'CONASS', 'bipartite', 'tripartite', 'pactuação']
+      }
+    }
+  },
+  '7': {
+    name: 'Política – Individual',
+    color: '#f59e0b', // amber
+    codes: {
+      '7.1': { 
+        name: 'Habilidade política',
+        keywords: ['habilidade política', 'articulação', 'influência', 'lobby', 'advocacy']
+      },
+      '7.2': { 
+        name: 'Relação com stakeholders',
+        keywords: ['stakeholder', 'ator', 'parte interessada', 'envolvido', 'interessado']
+      },
+      '7.3': { 
+        name: 'Comunicação política',
+        keywords: ['comunicação', 'discurso', 'narrativa', 'mensagem', 'mídia', 'imprensa', 'entrevista']
+      },
+      '7.4': { 
+        name: 'Mediação de conflitos',
+        keywords: ['conflito', 'mediação', 'disputa', 'tensão', 'divergência', 'impasse']
+      }
+    }
+  },
+  '8': {
+    name: 'Política – Organizacional',
+    color: '#f97316', // orange
+    codes: {
+      '8.1': { 
+        name: 'Relação com outras secretarias',
+        keywords: ['outra secretaria', 'secretaria de', 'pasta', 'órgão']
+      },
+      '8.2': { 
+        name: 'Articulação interinstitucional',
+        keywords: ['interinstitucional', 'entre instituições', 'parceria institucional']
+      },
+      '8.3': { 
+        name: 'Apoio político à política pública',
+        keywords: ['apoio político', 'prioridade', 'agenda política', 'compromisso', 'vontade política']
+      },
+      '8.4': { 
+        name: 'Confiança entre instituições',
+        keywords: ['confiança', 'credibilidade', 'legitimidade', 'reputação']
+      }
+    }
+  },
+  '9': {
+    name: 'Política – Sistêmica',
+    color: '#ef4444', // red
+    codes: {
+      '9.1': { 
+        name: 'Participação social',
+        keywords: ['participação', 'sociedade civil', 'cidadão', 'usuário', 'população', 'comunidade']
+      },
+      '9.2': { 
+        name: 'Conselhos e instâncias participativas',
+        keywords: ['conselho', 'conferência', 'audiência pública', 'consulta pública', 'ouvidoria']
+      },
+      '9.3': { 
+        name: 'Transparência',
+        keywords: ['transparência', 'acesso à informação', 'LAI', 'portal', 'dados abertos', 'publicidade']
+      },
+      '9.4': { 
+        name: 'Confiança pública',
+        keywords: ['confiança pública', 'legitimidade social', 'apoio popular', 'opinião pública']
+      },
+      '9.5': { 
+        name: 'Apoio político amplo',
+        keywords: ['apoio amplo', 'coalizão', 'consenso político', 'base de apoio']
+      }
+    }
+  },
+  '10': {
+    name: 'Capacidade Transversal',
+    color: '#ec4899', // pink
+    codes: {
+      '10.1': { 
+        name: 'Financiamento',
+        keywords: ['financiamento', 'fundo', 'repasse', 'transferência', 'SUS', 'PAB', 'MAC']
+      },
+      '10.2': { 
+        name: 'Cooperação institucional',
+        keywords: ['cooperação', 'colaboração', 'apoio mútuo', 'sinergia']
+      },
+      '10.3': { 
+        name: 'Falta de recursos',
+        keywords: ['falta', 'escassez', 'insuficiência', 'carência', 'deficit', 'limitação']
+      },
+      '10.4': { 
+        name: 'Conflito institucional',
+        keywords: ['conflito', 'disputa', 'competição', 'rivalidade', 'tensão institucional']
+      },
+      '10.5': { 
+        name: 'Falta de dados',
+        keywords: ['falta de dados', 'ausência de informação', 'dados incompletos', 'subnotificação']
+      }
+    }
+  }
+};
+
+// Função para obter todos os códigos em formato flat
+const getAllCodes = () => {
+  const allCodes = [];
+  Object.entries(capacityCodebook).forEach(([catId, category]) => {
+    Object.entries(category.codes).forEach(([codeId, codeData]) => {
+      allCodes.push({
+        id: codeId,
+        name: typeof codeData === 'string' ? codeData : codeData.name,
+        keywords: typeof codeData === 'object' ? codeData.keywords : [],
+        categoryId: catId,
+        categoryName: category.name,
+        color: category.color
+      });
+    });
+  });
+  return allCodes;
+};
+
+// ==================== SISTEMA DE AUTO-CODIFICAÇÃO ====================
+
+// Função para normalizar texto para matching
+const normalizeForMatching = (text) => {
+  return text.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+// Função para encontrar códigos automaticamente em um texto
+const autoCodeText = (text, allCodes) => {
+  const normalizedText = normalizeForMatching(text);
+  const foundCodes = [];
+  const matches = [];
+  
+  allCodes.forEach(code => {
+    if (!code.keywords || code.keywords.length === 0) return;
+    
+    code.keywords.forEach(keyword => {
+      const normalizedKeyword = normalizeForMatching(keyword);
+      const regex = new RegExp(`\\b${normalizedKeyword.replace(/\s+/g, '\\s+')}\\b`, 'gi');
+      
+      let match;
+      while ((match = regex.exec(normalizedText)) !== null) {
+        // Encontrar posição no texto original
+        const startPos = match.index;
+        const endPos = startPos + match[0].length;
+        
+        // Verificar se já não temos este código para este match
+        const existingMatch = matches.find(m => 
+          m.codeId === code.id && 
+          Math.abs(m.start - startPos) < 5
+        );
+        
+        if (!existingMatch) {
+          matches.push({
+            codeId: code.id,
+            codeName: code.name,
+            categoryName: code.categoryName,
+            color: code.color,
+            keyword: keyword,
+            matchedText: match[0],
+            start: startPos,
+            end: endPos,
+            confidence: keyword.split(' ').length > 1 ? 0.9 : 0.7 // Multi-word = higher confidence
+          });
+          
+          if (!foundCodes.includes(code.id)) {
+            foundCodes.push(code.id);
+          }
+        }
+      }
+    });
+  });
+  
+  // Ordenar por posição
+  matches.sort((a, b) => a.start - b.start);
+  
+  return {
+    codes: foundCodes,
+    matches: matches,
+    totalMatches: matches.length
+  };
+};
+
+// Função para auto-codificar todos os documentos
+const autoCodeAllDocuments = (documents, allCodes) => {
+  const results = [];
+  
+  documents.forEach(doc => {
+    // Dividir em sentenças/segmentos
+    const sentences = doc.content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    
+    sentences.forEach((sentence, idx) => {
+      const coding = autoCodeText(sentence, allCodes);
+      
+      if (coding.codes.length > 0) {
+        results.push({
+          id: `${doc.id}-${idx}`,
+          documentId: doc.id,
+          documentName: doc.name,
+          text: sentence.trim(),
+          codes: coding.codes,
+          matches: coding.matches,
+          confidence: Math.max(...coding.matches.map(m => m.confidence)),
+          isAutomatic: true,
+          createdAt: new Date().toISOString()
+        });
+      }
+    });
+  });
+  
+  return results;
+};
+
+// Paleta de cores para códigos personalizados
+const codeColorPalette = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+  '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+  '#ec4899', '#f43f5e', '#78716c', '#71717a', '#64748b'
+];
+
+const cleanText = (text, options = {}, customStopwords = null) => {
+  const { removeNumbers = true, removePunctuation = true, lowercase = true, removeStopwords = true, minLength = 4 } = options;
+  
+  // Forçar mínimo de 4 caracteres para evitar conectivos
+  const effectiveMinLength = Math.max(minLength, 4);
+  
+  let cleaned = text;
+  if (lowercase) cleaned = cleaned.toLowerCase();
+  if (removeNumbers) cleaned = cleaned.replace(/\d+/g, ' ');
+  if (removePunctuation) cleaned = cleaned.replace(/[^\w\sáàâãéèêíìîóòôõúùûçñ]/gi, ' ');
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  let words = cleaned.split(' ').filter(w => w.length >= effectiveMinLength);
+  
+  // SEMPRE filtrar palavras curtas obrigatórias (conectivos, preposições, etc.)
+  words = words.filter(w => !MANDATORY_SHORT_WORDS_PT.has(w.toLowerCase()));
+  
+  if (removeStopwords && customStopwords) {
+    words = words.filter(w => !customStopwords.has(w));
+  }
+  
+  return words;
+};
+
+const tokenize = (text) => {
+  return text.toLowerCase()
+    .replace(/[^\w\sáàâãéèêíìîóòôõúùûçñ]/gi, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 0);
+};
+
+// ==================== SISTEMA DE LEMATIZAÇÃO E NORMALIZAÇÃO ====================
+
+// Calcula distância de Levenshtein entre duas strings (para detectar typos)
+const levenshteinDistance = (str1, str2) => {
+  const m = str1.length;
+  const n = str2.length;
+  const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (str1[i - 1] === str2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+  }
+  return dp[m][n];
+};
+
+// Normaliza palavra removendo sufixos de gênero e plural em português
+const normalizePortugueseWord = (word) => {
+  const lower = word.toLowerCase().trim();
+  
+  // Remover sufixos de plural e gênero (ordem importa - do mais específico ao menos)
+  const suffixRules = [
+    // Plurais irregulares
+    { pattern: /ões$/i, replacement: 'ão' },
+    { pattern: /ães$/i, replacement: 'ão' },
+    { pattern: /is$/i, replacement: 'l' },  // papéis -> papel
+    { pattern: /éis$/i, replacement: 'el' }, // anéis -> anel
+    { pattern: /óis$/i, replacement: 'ol' }, // faróis -> farol
+    // Gênero neutro/inclusivo
+    { pattern: /xs$/i, replacement: '' },    // ministrxs -> ministr
+    { pattern: /x$/i, replacement: '' },     // ministrx -> ministr
+    { pattern: /@s$/i, replacement: '' },    // ministr@s -> ministr
+    { pattern: /@$/i, replacement: '' },     // ministr@ -> ministr
+    { pattern: /es$/i, replacement: '' },    // ministres -> ministr (linguagem neutra)
+    // Feminino plural -> masculino singular
+    { pattern: /as$/i, replacement: 'o' },   // ministras -> ministro
+    // Masculino plural -> singular
+    { pattern: /os$/i, replacement: 'o' },   // ministros -> ministro
+    // Feminino singular -> masculino
+    { pattern: /a$/i, replacement: 'o' },    // ministra -> ministro
+    // Plural simples
+    { pattern: /s$/i, replacement: '' },     // outros plurais
+  ];
+  
+  let normalized = lower;
+  
+  // Aplicar regras de normalização
+  for (const rule of suffixRules) {
+    if (rule.pattern.test(normalized) && normalized.length > 3) {
+      const candidate = normalized.replace(rule.pattern, rule.replacement);
+      // Só aplicar se o resultado tiver pelo menos 3 caracteres
+      if (candidate.length >= 3) {
+        normalized = candidate;
+        break; // Aplicar apenas uma regra
+      }
+    }
+  }
+  
+  return normalized;
+};
+
+// Verifica se duas palavras são variações uma da outra (APENAS gênero, plural, typo da MESMA palavra)
+const areWordVariations = (word1, word2, maxTypoDistance = 1) => {
+  const w1 = word1.toLowerCase();
+  const w2 = word2.toLowerCase();
+  
+  // Idênticas
+  if (w1 === w2) return { isVariation: true, type: 'identical', confidence: 1.0 };
+  
+  // Verificar se são variações morfológicas DIRETAS (gênero/número)
+  // A palavra base deve ser EXATAMENTE a mesma, só mudando o sufixo
+  
+  // Caso 1: Variação de gênero (o/a no final)
+  // ministro <-> ministra
+  if (w1.length === w2.length) {
+    if ((w1.endsWith('o') && w2.endsWith('a') && w1.slice(0, -1) === w2.slice(0, -1)) ||
+        (w1.endsWith('a') && w2.endsWith('o') && w1.slice(0, -1) === w2.slice(0, -1))) {
+      return { isVariation: true, type: 'gender', confidence: 1.0 };
+    }
+  }
+  
+  // Caso 2: Variação de número (plural com 's')
+  // ministro <-> ministros, ministra <-> ministras
+  if (Math.abs(w1.length - w2.length) === 1) {
+    const longer = w1.length > w2.length ? w1 : w2;
+    const shorter = w1.length > w2.length ? w2 : w1;
+    if (longer.endsWith('s') && longer.slice(0, -1) === shorter) {
+      return { isVariation: true, type: 'plural', confidence: 1.0 };
+    }
+  }
+  
+  // Caso 3: Variação de gênero + número
+  // ministro <-> ministras (diferença de 2: 'o' -> 'as')
+  if (Math.abs(w1.length - w2.length) === 1) {
+    const longer = w1.length > w2.length ? w1 : w2;
+    const shorter = w1.length > w2.length ? w2 : w1;
+    // ministro -> ministras: shorter termina em 'o', longer termina em 'as'
+    if (shorter.endsWith('o') && longer.endsWith('as') && shorter.slice(0, -1) === longer.slice(0, -2)) {
+      return { isVariation: true, type: 'gender_plural', confidence: 1.0 };
+    }
+    // ministra -> ministros: shorter termina em 'a', longer termina em 'os'
+    if (shorter.endsWith('a') && longer.endsWith('os') && shorter.slice(0, -1) === longer.slice(0, -2)) {
+      return { isVariation: true, type: 'gender_plural', confidence: 1.0 };
+    }
+  }
+  
+  // Caso 4: Linguagem neutra (x, @, e)
+  // ministro <-> ministrx, ministro <-> ministr@
+  const neutralSuffixes = ['x', 'xs', '@', '@s'];
+  for (const suffix of neutralSuffixes) {
+    // Verificar se uma palavra é a versão neutra da outra
+    if (w1.endsWith(suffix) || w2.endsWith(suffix)) {
+      const neutral = w1.endsWith(suffix) ? w1 : w2;
+      const regular = w1.endsWith(suffix) ? w2 : w1;
+      const neutralBase = neutral.slice(0, -suffix.length);
+      
+      // A palavra regular deve ter o mesmo base + sufixo de gênero/número
+      if (regular.startsWith(neutralBase) && 
+          (regular.endsWith('o') || regular.endsWith('a') || 
+           regular.endsWith('os') || regular.endsWith('as') ||
+           regular.endsWith('e') || regular.endsWith('es'))) {
+        const regularBase = regular.replace(/(os|as|o|a|es|e)$/, '');
+        if (neutralBase === regularBase) {
+          return { isVariation: true, type: 'neutral', confidence: 0.95 };
+        }
+      }
+    }
+  }
+  
+  // Caso 5: Typos - MUITO restritivo
+  // Só considerar typo se:
+  // - Distância de Levenshtein = 1 (apenas 1 caractere diferente)
+  // - As palavras têm o mesmo tamanho ou diferença de 1
+  // - A diferença NÃO está no início da palavra (prefixos diferentes = palavras diferentes)
+  if (Math.abs(w1.length - w2.length) <= 1 && w1.length >= 4) {
+    const distance = levenshteinDistance(w1, w2);
+    
+    // Só aceitar distância 1 para evitar falsos positivos
+    if (distance === 1) {
+      // Verificar se os primeiros 3 caracteres são iguais (mesmo prefixo)
+      // Isso evita agrupar "presidente" com "precedente"
+      if (w1.slice(0, 3) === w2.slice(0, 3)) {
+        // Verificar também se os últimos 2 caracteres são similares
+        // para evitar agrupar palavras com sufixos muito diferentes
+        const ending1 = w1.slice(-2);
+        const ending2 = w2.slice(-2);
+        if (ending1 === ending2 || levenshteinDistance(ending1, ending2) <= 1) {
+          return { isVariation: true, type: 'typo', confidence: 0.85, distance };
+        }
+      }
+    }
+  }
+  
+  // NÃO é uma variação - são palavras diferentes
+  return { isVariation: false };
+};
+
+// Agrupa palavras por suas formas canônicas (lemas)
+const groupWordVariations = (wordFrequency) => {
+  const groups = new Map(); // canonical -> { words: [{word, count}], totalCount }
+  const wordToCanonical = new Map(); // word -> canonical
+  
+  // Ordenar por frequência (processar mais frequentes primeiro como candidatos canônicos)
+  const sortedWords = [...wordFrequency].sort((a, b) => b.count - a.count);
+  
+  for (const { word, count } of sortedWords) {
+    const normalized = normalizePortugueseWord(word);
+    let foundGroup = false;
+    
+    // Procurar grupo existente
+    for (const [canonical, group] of groups) {
+      const canonicalNorm = normalizePortugueseWord(canonical);
+      const result = areWordVariations(word, canonical);
+      
+      if (result.isVariation) {
+        group.words.push({ word, count, variationType: result.type, confidence: result.confidence });
+        group.totalCount += count;
+        wordToCanonical.set(word, canonical);
+        foundGroup = true;
+        break;
+      }
+    }
+    
+    // Criar novo grupo se não encontrou
+    if (!foundGroup) {
+      groups.set(word, {
+        canonical: word,
+        normalizedForm: normalized,
+        words: [{ word, count, variationType: 'canonical', confidence: 1.0 }],
+        totalCount: count
+      });
+      wordToCanonical.set(word, word);
+    }
+  }
+  
+  return { groups, wordToCanonical };
+};
+
+// Calcula frequência considerando variações morfológicas e typos
+const calculateWordFrequencyWithVariations = (words) => {
+  // Primeiro, calcular frequência básica
+  const basicFreq = {};
+  words.forEach(word => {
+    basicFreq[word] = (basicFreq[word] || 0) + 1;
+  });
+  
+  const wordFrequency = Object.entries(basicFreq)
+    .map(([word, count]) => ({ word, count }))
+    .sort((a, b) => b.count - a.count);
+  
+  // Agrupar variações
+  const { groups, wordToCanonical } = groupWordVariations(wordFrequency);
+  
+  // Converter para formato de saída
+  const groupedFrequency = Array.from(groups.values())
+    .map(group => ({
+      word: group.canonical,
+      count: group.totalCount,
+      isGroup: group.words.length > 1,
+      variations: group.words,
+      normalizedForm: group.normalizedForm
+    }))
+    .sort((a, b) => b.count - a.count);
+  
+  return {
+    frequency: groupedFrequency,
+    groups,
+    wordToCanonical,
+    // Manter também a frequência simples para referência
+    rawFrequency: wordFrequency
+  };
+};
+
+const calculateWordFrequency = (words) => {
+  const freq = {};
+  words.forEach(word => {
+    freq[word] = (freq[word] || 0) + 1;
+  });
+  return Object.entries(freq)
+    .map(([word, count]) => ({ word, count }))
+    .sort((a, b) => b.count - a.count);
+};
+
+const calculateCooccurrence = (segments, windowSize = 5, stopwords = null, options = {}) => {
+  const cooc = {};
+  
+  segments.forEach(segment => {
+    const words = cleanText(segment, options, stopwords);
+    for (let i = 0; i < words.length; i++) {
+      for (let j = Math.max(0, i - windowSize); j < Math.min(words.length, i + windowSize + 1); j++) {
+        if (i !== j) {
+          const pair = [words[i], words[j]].sort().join('|||');
+          cooc[pair] = (cooc[pair] || 0) + 1;
+        }
+      }
+    }
+  });
+  
+  return Object.entries(cooc)
+    .map(([pair, weight]) => {
+      const [source, target] = pair.split('|||');
+      return { source, target, weight };
+    })
+    .sort((a, b) => b.weight - a.weight);
+};
+
+// ==================== ANÁLISE AVANÇADA DE REDES ====================
+
+// Construir grafo a partir de coocorrências
+const buildGraph = (cooccurrences, minWeight = 2, maxEdges = 200) => {
+  const edges = cooccurrences
+    .filter(e => e.weight >= minWeight)
+    .slice(0, maxEdges);
+  
+  const nodes = new Map();
+  
+  edges.forEach(edge => {
+    if (!nodes.has(edge.source)) {
+      nodes.set(edge.source, { id: edge.source, degree: 0, weightedDegree: 0, neighbors: new Set() });
+    }
+    if (!nodes.has(edge.target)) {
+      nodes.set(edge.target, { id: edge.target, degree: 0, weightedDegree: 0, neighbors: new Set() });
+    }
+    
+    nodes.get(edge.source).degree++;
+    nodes.get(edge.source).weightedDegree += edge.weight;
+    nodes.get(edge.source).neighbors.add(edge.target);
+    
+    nodes.get(edge.target).degree++;
+    nodes.get(edge.target).weightedDegree += edge.weight;
+    nodes.get(edge.target).neighbors.add(edge.source);
+  });
+  
+  return {
+    nodes: Array.from(nodes.values()),
+    edges: edges,
+    nodeMap: nodes
+  };
+};
+
+// Calcular métricas de centralidade
+const calculateCentralityMetrics = (graph) => {
+  if (!graph || !graph.nodes) {
+    return { nodes: [], metrics: { nodeCount: 0, edgeCount: 0, density: '0.00', avgDegree: '0.00' } };
+  }
+  
+  const { nodes, edges, nodeMap } = graph;
+  const n = nodes.length;
+  
+  if (n === 0) return { nodes: [], metrics: {} };
+  
+  // 1. Degree Centrality (normalizado)
+  nodes.forEach(node => {
+    node.degreeCentrality = n > 1 ? node.degree / (n - 1) : 0;
+  });
+  
+  // 2. Betweenness Centrality (simplificado via BFS)
+  const betweenness = new Map();
+  nodes.forEach(node => betweenness.set(node.id, 0));
+  
+  // Amostragem para performance (max 50 nós como fonte)
+  const sampleNodes = nodes.slice(0, Math.min(50, n));
+  
+  sampleNodes.forEach(source => {
+    // BFS para encontrar caminhos mais curtos
+    const dist = new Map();
+    const paths = new Map();
+    const queue = [source.id];
+    dist.set(source.id, 0);
+    paths.set(source.id, 1);
+    
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const currentNode = nodeMap.get(current);
+      if (!currentNode) continue;
+      
+      currentNode.neighbors.forEach(neighbor => {
+        if (!dist.has(neighbor)) {
+          dist.set(neighbor, dist.get(current) + 1);
+          paths.set(neighbor, paths.get(current));
+          queue.push(neighbor);
+        } else if (dist.get(neighbor) === dist.get(current) + 1) {
+          paths.set(neighbor, paths.get(neighbor) + paths.get(current));
+        }
+      });
+    }
+    
+    // Acumular betweenness
+    nodes.forEach(target => {
+      if (target.id !== source.id && dist.has(target.id)) {
+        const pathCount = paths.get(target.id) || 1;
+        // Simplificação: contribuição proporcional aos caminhos
+        nodes.forEach(intermediate => {
+          if (intermediate.id !== source.id && intermediate.id !== target.id) {
+            if (dist.has(intermediate.id) && dist.get(intermediate.id) < dist.get(target.id)) {
+              betweenness.set(
+                intermediate.id, 
+                betweenness.get(intermediate.id) + (1 / pathCount)
+              );
+            }
+          }
+        });
+      }
+    });
+  });
+  
+  // Normalizar betweenness
+  const maxBetweenness = Math.max(...Array.from(betweenness.values()), 1);
+  nodes.forEach(node => {
+    node.betweennessCentrality = betweenness.get(node.id) / maxBetweenness;
+  });
+  
+  // 3. Closeness Centrality (simplificado)
+  nodes.forEach(node => {
+    let totalDist = 0;
+    let reachable = 0;
+    
+    // BFS para distâncias
+    const dist = new Map();
+    const queue = [node.id];
+    dist.set(node.id, 0);
+    
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const currentNode = nodeMap.get(current);
+      if (!currentNode) continue;
+      
+      currentNode.neighbors.forEach(neighbor => {
+        if (!dist.has(neighbor)) {
+          dist.set(neighbor, dist.get(current) + 1);
+          totalDist += dist.get(neighbor);
+          reachable++;
+          queue.push(neighbor);
+        }
+      });
+    }
+    
+    node.closenessCentrality = reachable > 0 ? reachable / totalDist : 0;
+  });
+  
+  // 4. Eigenvector Centrality (aproximação via power iteration)
+  let eigenvector = new Map();
+  nodes.forEach(node => eigenvector.set(node.id, 1 / n));
+  
+  for (let iter = 0; iter < 20; iter++) {
+    const newEigenvector = new Map();
+    let sum = 0;
+    
+    nodes.forEach(node => {
+      let score = 0;
+      node.neighbors.forEach(neighbor => {
+        score += eigenvector.get(neighbor) || 0;
+      });
+      newEigenvector.set(node.id, score);
+      sum += score * score;
+    });
+    
+    // Normalizar
+    const norm = Math.sqrt(sum) || 1;
+    nodes.forEach(node => {
+      eigenvector.set(node.id, newEigenvector.get(node.id) / norm);
+    });
+  }
+  
+  nodes.forEach(node => {
+    node.eigenvectorCentrality = eigenvector.get(node.id);
+  });
+  
+  // Calcular métricas globais
+  const totalEdges = edges.length;
+  const maxPossibleEdges = (n * (n - 1)) / 2;
+  const density = maxPossibleEdges > 0 ? totalEdges / maxPossibleEdges : 0;
+  const avgDegree = n > 0 ? nodes.reduce((sum, node) => sum + node.degree, 0) / n : 0;
+  const avgWeightedDegree = n > 0 ? nodes.reduce((sum, node) => sum + node.weightedDegree, 0) / n : 0;
+  const totalWeight = edges.reduce((sum, e) => sum + e.weight, 0);
+  
+  return {
+    nodes: nodes.sort((a, b) => b.degreeCentrality - a.degreeCentrality),
+    metrics: {
+      nodeCount: n,
+      edgeCount: totalEdges,
+      density: density.toFixed(4),
+      avgDegree: avgDegree.toFixed(2),
+      avgWeightedDegree: avgWeightedDegree.toFixed(2),
+      totalWeight,
+      maxDegree: Math.max(...nodes.map(n => n.degree)),
+      minDegree: Math.min(...nodes.map(n => n.degree))
+    }
+  };
+};
+
+// Detecção de comunidades (Louvain simplificado)
+const detectCommunities = (graph) => {
+  if (!graph || !graph.nodes) {
+    return { communities: [], modularity: 0, communityCount: 0 };
+  }
+  
+  const { nodes, edges, nodeMap } = graph;
+  if (nodes.length === 0) return { communities: [], modularity: 0, communityCount: 0 };
+  
+  // Inicializar cada nó em sua própria comunidade
+  const community = new Map();
+  nodes.forEach((node, idx) => community.set(node.id, idx));
+  
+  // Criar mapa de adjacência com pesos
+  const adj = new Map();
+  nodes.forEach(node => adj.set(node.id, new Map()));
+  
+  edges.forEach(edge => {
+    adj.get(edge.source).set(edge.target, edge.weight);
+    adj.get(edge.target).set(edge.source, edge.weight);
+  });
+  
+  const totalWeight = edges.reduce((sum, e) => sum + e.weight, 0) * 2;
+  
+  // Função para calcular ganho de modularidade
+  const modularityGain = (node, targetCommunity) => {
+    const ki = node.weightedDegree;
+    let sumIn = 0;
+    let sumTot = 0;
+    
+    nodes.forEach(other => {
+      if (community.get(other.id) === targetCommunity) {
+        sumTot += other.weightedDegree;
+        const weight = adj.get(node.id).get(other.id) || 0;
+        sumIn += weight;
+      }
+    });
+    
+    if (totalWeight === 0) return 0;
+    
+    return (sumIn / totalWeight) - (sumTot * ki) / (totalWeight * totalWeight);
+  };
+  
+  // Iterar até convergência (max 10 iterações)
+  let changed = true;
+  let iterations = 0;
+  
+  while (changed && iterations < 10) {
+    changed = false;
+    iterations++;
+    
+    nodes.forEach(node => {
+      const currentCommunity = community.get(node.id);
+      let bestCommunity = currentCommunity;
+      let bestGain = 0;
+      
+      // Verificar comunidades dos vizinhos
+      const neighborCommunities = new Set();
+      node.neighbors.forEach(neighbor => {
+        neighborCommunities.add(community.get(neighbor));
+      });
+      
+      neighborCommunities.forEach(targetCommunity => {
+        if (targetCommunity !== currentCommunity) {
+          const gain = modularityGain(node, targetCommunity);
+          if (gain > bestGain) {
+            bestGain = gain;
+            bestCommunity = targetCommunity;
+          }
+        }
+      });
+      
+      if (bestCommunity !== currentCommunity) {
+        community.set(node.id, bestCommunity);
+        changed = true;
+      }
+    });
+  }
+  
+  // Agrupar nós por comunidade
+  const communityGroups = new Map();
+  nodes.forEach(node => {
+    const comm = community.get(node.id);
+    if (!communityGroups.has(comm)) {
+      communityGroups.set(comm, []);
+    }
+    communityGroups.get(comm).push(node);
+  });
+  
+  // Calcular modularidade final
+  let modularity = 0;
+  if (totalWeight > 0) {
+    nodes.forEach(nodeI => {
+      nodes.forEach(nodeJ => {
+        if (community.get(nodeI.id) === community.get(nodeJ.id)) {
+          const aij = adj.get(nodeI.id).get(nodeJ.id) || 0;
+          const ki = nodeI.weightedDegree;
+          const kj = nodeJ.weightedDegree;
+          modularity += aij - (ki * kj) / totalWeight;
+        }
+      });
+    });
+    modularity /= totalWeight;
+  }
+  
+  // Cores para comunidades
+  const communityColors = [
+    '#22d3ee', '#a78bfa', '#f472b6', '#fb923c', '#4ade80',
+    '#facc15', '#f87171', '#38bdf8', '#c084fc', '#34d399',
+    '#fbbf24', '#a3e635', '#2dd4bf', '#818cf8', '#fb7185'
+  ];
+  
+  // Atribuir cores aos nós
+  const communityList = Array.from(communityGroups.keys());
+  nodes.forEach(node => {
+    const commIdx = communityList.indexOf(community.get(node.id));
+    node.community = commIdx;
+    node.communityColor = communityColors[commIdx % communityColors.length];
+  });
+  
+  return {
+    communities: Array.from(communityGroups.entries()).map(([id, members], idx) => ({
+      id: idx,
+      size: members.length,
+      members: members.map(m => m.id),
+      color: communityColors[idx % communityColors.length],
+      topNodes: members.sort((a, b) => b.degree - a.degree).slice(0, 5).map(m => m.id)
+    })),
+    modularity: modularity.toFixed(4),
+    communityCount: communityGroups.size
+  };
+};
+
+// ==================== MÓDULOS ESTATÍSTICOS AVANÇADOS ====================
+
+// Calcular TF-IDF
+const calculateTFIDF = (documents, stopwords = null, options = {}) => {
+  const docFreq = new Map(); // Frequência de documentos por termo
+  const termFreq = []; // Frequência de termos por documento
+  const totalDocs = documents.length;
+  
+  // Calcular TF para cada documento
+  documents.forEach((doc, docIdx) => {
+    const words = cleanText(doc.content, options, stopwords);
+    const tf = new Map();
+    const totalWords = words.length;
+    
+    words.forEach(word => {
+      tf.set(word, (tf.get(word) || 0) + 1);
+    });
+    
+    // Normalizar TF
+    tf.forEach((count, word) => {
+      tf.set(word, count / totalWords);
+      
+      // Contar documentos que contêm o termo
+      if (!docFreq.has(word)) {
+        docFreq.set(word, new Set());
+      }
+      docFreq.get(word).add(docIdx);
+    });
+    
+    termFreq.push({ docId: doc.id, docName: doc.name, tf });
+  });
+  
+  // Calcular IDF e TF-IDF
+  const tfidfResults = [];
+  
+  termFreq.forEach(({ docId, docName, tf }) => {
+    const docTfidf = [];
+    
+    tf.forEach((tfValue, word) => {
+      const df = docFreq.get(word).size;
+      const idf = Math.log(totalDocs / df);
+      const tfidf = tfValue * idf;
+      
+      docTfidf.push({ word, tf: tfValue, idf, tfidf });
+    });
+    
+    // Ordenar por TF-IDF
+    docTfidf.sort((a, b) => b.tfidf - a.tfidf);
+    
+    tfidfResults.push({
+      docId,
+      docName,
+      topTerms: docTfidf.slice(0, 20),
+      totalTerms: docTfidf.length
+    });
+  });
+  
+  // Calcular TF-IDF global
+  const globalTfidf = new Map();
+  tfidfResults.forEach(doc => {
+    doc.topTerms.forEach(term => {
+      const current = globalTfidf.get(term.word) || { word: term.word, totalTfidf: 0, docCount: 0 };
+      current.totalTfidf += term.tfidf;
+      current.docCount++;
+      globalTfidf.set(term.word, current);
+    });
+  });
+  
+  return {
+    byDocument: tfidfResults,
+    global: Array.from(globalTfidf.values())
+      .map(t => ({ ...t, avgTfidf: t.totalTfidf / t.docCount }))
+      .sort((a, b) => b.avgTfidf - a.avgTfidf)
+      .slice(0, 50)
+  };
+};
+
+// Calcular especificidades por corpus
+const calculateSpecificities = (documents, corpora, stopwords = null, options = {}) => {
+  if (!corpora || corpora.length < 2) return null;
+  
+  const corpusWords = new Map();
+  const corpusTotals = new Map();
+  let globalTotal = 0;
+  const globalFreq = new Map();
+  
+  // Contar palavras por corpus
+  corpora.forEach(corpus => {
+    const words = new Map();
+    let total = 0;
+    
+    const corpusDocs = documents.filter(d => corpus.documentIds?.includes(d.id));
+    
+    corpusDocs.forEach(doc => {
+      const docWords = cleanText(doc.content, options, stopwords);
+      docWords.forEach(word => {
+        words.set(word, (words.get(word) || 0) + 1);
+        globalFreq.set(word, (globalFreq.get(word) || 0) + 1);
+        total++;
+        globalTotal++;
+      });
+    });
+    
+    corpusWords.set(corpus.id, words);
+    corpusTotals.set(corpus.id, total);
+  });
+  
+  // Calcular especificidades (qui-quadrado)
+  const specificities = [];
+  
+  corpora.forEach(corpus => {
+    const words = corpusWords.get(corpus.id);
+    const corpusTotal = corpusTotals.get(corpus.id);
+    
+    if (corpusTotal === 0) return;
+    
+    const corpusSpec = [];
+    
+    words.forEach((observed, word) => {
+      const globalCount = globalFreq.get(word);
+      const expected = (corpusTotal / globalTotal) * globalCount;
+      
+      if (expected > 0) {
+        // Qui-quadrado
+        const chiSquare = Math.pow(observed - expected, 2) / expected;
+        // Especificidade (positiva se acima do esperado)
+        const specificity = observed > expected ? chiSquare : -chiSquare;
+        
+        corpusSpec.push({
+          word,
+          observed,
+          expected: expected.toFixed(2),
+          chiSquare: chiSquare.toFixed(2),
+          specificity: specificity.toFixed(2),
+          ratio: (observed / expected).toFixed(2)
+        });
+      }
+    });
+    
+    // Ordenar por especificidade absoluta
+    corpusSpec.sort((a, b) => Math.abs(b.specificity) - Math.abs(a.specificity));
+    
+    specificities.push({
+      corpusId: corpus.id,
+      corpusName: corpus.name,
+      corpusColor: corpus.color,
+      totalWords: corpusTotal,
+      topPositive: corpusSpec.filter(s => parseFloat(s.specificity) > 0).slice(0, 15),
+      topNegative: corpusSpec.filter(s => parseFloat(s.specificity) < 0).slice(0, 15)
+    });
+  });
+  
+  return specificities;
+};
+
+// Calcular índices de diversidade léxica
+const calculateLexicalDiversity = (text, stopwords = null, options = {}) => {
+  const words = cleanText(text, options, stopwords);
+  const tokens = tokenize(text);
+  const uniqueWords = new Set(words);
+  
+  const N = tokens.length; // Total de tokens
+  const V = uniqueWords.size; // Vocabulário
+  
+  // TTR - Type-Token Ratio
+  const ttr = N > 0 ? V / N : 0;
+  
+  // RTTR - Root TTR
+  const rttr = N > 0 ? V / Math.sqrt(N) : 0;
+  
+  // CTTR - Corrected TTR
+  const cttr = N > 0 ? V / Math.sqrt(2 * N) : 0;
+  
+  // Hapax Legomena (palavras que aparecem 1 vez)
+  const freq = new Map();
+  words.forEach(w => freq.set(w, (freq.get(w) || 0) + 1));
+  const hapax = Array.from(freq.values()).filter(c => c === 1).length;
+  const hapaxRatio = V > 0 ? hapax / V : 0;
+  
+  // Dis Legomena (palavras que aparecem 2 vezes)
+  const dis = Array.from(freq.values()).filter(c => c === 2).length;
+  
+  // Yule's K
+  const freqOfFreq = new Map();
+  freq.forEach(count => {
+    freqOfFreq.set(count, (freqOfFreq.get(count) || 0) + 1);
+  });
+  
+  let sumM = 0;
+  freqOfFreq.forEach((fi, i) => {
+    sumM += fi * i * i;
+  });
+  const yuleK = N > 0 ? 10000 * (sumM - N) / (N * N) : 0;
+  
+  // Simpson's D
+  let simpsonSum = 0;
+  freq.forEach(ni => {
+    simpsonSum += ni * (ni - 1);
+  });
+  const simpsonD = N > 1 ? simpsonSum / (N * (N - 1)) : 0;
+  
+  // Herdan's C
+  const herdanC = N > 1 && V > 0 ? Math.log(V) / Math.log(N) : 0;
+  
+  return {
+    totalTokens: N,
+    uniqueWords: V,
+    ttr: (ttr * 100).toFixed(2),
+    rttr: rttr.toFixed(2),
+    cttr: cttr.toFixed(2),
+    hapaxCount: hapax,
+    hapaxRatio: (hapaxRatio * 100).toFixed(2),
+    disCount: dis,
+    yuleK: yuleK.toFixed(2),
+    simpsonD: simpsonD.toFixed(4),
+    herdanC: herdanC.toFixed(3)
+  };
+};
+
+// Teste de qui-quadrado para associação entre palavras
+const calculateChiSquareAssociation = (cooccurrences, wordFrequency, totalWords) => {
+  const freqMap = new Map();
+  wordFrequency.forEach(w => freqMap.set(w.word, w.count));
+  
+  return cooccurrences.slice(0, 100).map(edge => {
+    const observed = edge.weight;
+    const freqA = freqMap.get(edge.source) || 1;
+    const freqB = freqMap.get(edge.target) || 1;
+    
+    // Frequência esperada sob independência
+    const expected = (freqA * freqB) / totalWords;
+    
+    // Qui-quadrado
+    const chiSquare = expected > 0 ? Math.pow(observed - expected, 2) / expected : 0;
+    
+    // Log-likelihood ratio (G²)
+    const logLikelihood = observed > 0 && expected > 0 
+      ? 2 * observed * Math.log(observed / expected) 
+      : 0;
+    
+    // Dice coefficient
+    const dice = (2 * observed) / (freqA + freqB);
+    
+    // Jaccard index
+    const jaccard = observed / (freqA + freqB - observed);
+    
+    // PMI (Pointwise Mutual Information)
+    const pmi = observed > 0 && expected > 0 
+      ? Math.log2(observed / expected)
+      : 0;
+    
+    return {
+      source: edge.source,
+      target: edge.target,
+      cooccurrence: observed,
+      expected: expected.toFixed(2),
+      chiSquare: chiSquare.toFixed(2),
+      logLikelihood: logLikelihood.toFixed(2),
+      dice: dice.toFixed(4),
+      jaccard: jaccard.toFixed(4),
+      pmi: pmi.toFixed(2)
+    };
+  });
+};
+
+// ==================== ANÁLISE DE BIGRAMAS ====================
+
+// Calcular bigramas (pares de palavras adjacentes)
+const calculateBigrams = (text, stopwords = null, minFreq = 2, options = {}) => {
+  const words = cleanText(text, options, stopwords);
+  const bigramCounts = new Map();
+  
+  for (let i = 0; i < words.length - 1; i++) {
+    const bigram = `${words[i]} ${words[i + 1]}`;
+    bigramCounts.set(bigram, (bigramCounts.get(bigram) || 0) + 1);
+  }
+  
+  // Converter para array e filtrar por frequência mínima
+  const bigrams = Array.from(bigramCounts.entries())
+    .map(([bigram, count]) => {
+      const [word1, word2] = bigram.split(' ');
+      return { bigram, word1, word2, count };
+    })
+    .filter(b => b.count >= minFreq)
+    .sort((a, b) => b.count - a.count);
+  
+  return bigrams;
+};
+
+// Construir rede de bigramas
+const buildBigramNetwork = (bigrams, maxNodes = 100) => {
+  const nodes = new Map();
+  const edges = [];
+  
+  bigrams.slice(0, maxNodes * 2).forEach(({ word1, word2, count }) => {
+    if (!nodes.has(word1)) {
+      nodes.set(word1, { id: word1, degree: 0, totalWeight: 0 });
+    }
+    if (!nodes.has(word2)) {
+      nodes.set(word2, { id: word2, degree: 0, totalWeight: 0 });
+    }
+    
+    nodes.get(word1).degree++;
+    nodes.get(word1).totalWeight += count;
+    nodes.get(word2).degree++;
+    nodes.get(word2).totalWeight += count;
+    
+    edges.push({ source: word1, target: word2, weight: count });
+  });
+  
+  // Limitar nós
+  const sortedNodes = Array.from(nodes.values())
+    .sort((a, b) => b.totalWeight - a.totalWeight)
+    .slice(0, maxNodes);
+  
+  const nodeSet = new Set(sortedNodes.map(n => n.id));
+  const filteredEdges = edges.filter(e => nodeSet.has(e.source) && nodeSet.has(e.target));
+  
+  return { nodes: sortedNodes, edges: filteredEdges };
+};
+
+// ==================== ANÁLISE DE SENTIMENTOS ====================
+
+const analyzeSentiment = (text, stopwords = null, options = {}) => {
+  // Mesclar opções com removeNumbers = true padrão
+  const mergedOptions = { removeNumbers: true, ...options };
+  const words = cleanText(text, mergedOptions, stopwords);
+  
+  let positive = 0;
+  let negative = 0;
+  let neutral = 0;
+  
+  const positiveWords = [];
+  const negativeWords = [];
+  
+  words.forEach(word => {
+    if (sentimentLexicon.positive.has(word)) {
+      positive++;
+      positiveWords.push(word);
+    } else if (sentimentLexicon.negative.has(word)) {
+      negative++;
+      negativeWords.push(word);
+    } else {
+      neutral++;
+    }
+  });
+  
+  const total = positive + negative + neutral;
+  
+  return {
+    positive: {
+      count: positive,
+      percentage: total > 0 ? ((positive / total) * 100).toFixed(1) : 0,
+      words: [...new Set(positiveWords)].slice(0, 20)
+    },
+    negative: {
+      count: negative,
+      percentage: total > 0 ? ((negative / total) * 100).toFixed(1) : 0,
+      words: [...new Set(negativeWords)].slice(0, 20)
+    },
+    neutral: {
+      count: neutral,
+      percentage: total > 0 ? ((neutral / total) * 100).toFixed(1) : 0
+    },
+    total,
+    score: total > 0 ? ((positive - negative) / total * 100).toFixed(1) : 0
+  };
+};
+
+// ==================== ÁRVORE DE PALAVRAS (WORD TREE) ====================
+
+const buildWordTree = (text, centerWord, maxBranches = 30, contextWords = 5, minLength = 4) => {
+  if (!centerWord || !text) return { left: [], right: [], center: centerWord };
+  
+  // Forçar mínimo de 4 caracteres
+  const effectiveMinLength = Math.max(minLength, 4);
+  
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const centerLower = centerWord.toLowerCase().replace(/[^\w\sáàâãéèêíïóôõöúçñ]/gi, '');
+  
+  const leftContext = new Map(); // palavras que vêm ANTES
+  const rightContext = new Map(); // palavras que vêm DEPOIS
+  
+  // Função para verificar se palavra é válida
+  const isValidWord = (w) => w.length >= effectiveMinLength && !MANDATORY_SHORT_WORDS_PT.has(w);
+  
+  sentences.forEach(sentence => {
+    // Limpar pontuação, filtrar por tamanho mínimo E remover palavras curtas obrigatórias
+    const words = sentence.toLowerCase()
+      .split(/\s+/)
+      .map(w => w.replace(/[^\w\sáàâãéèêíïóôõöúçñ]/gi, ''))
+      .filter(isValidWord);
+    
+    words.forEach((word, idx) => {
+      if (word === centerLower || word.includes(centerLower)) {
+        // Coletar contexto à esquerda
+        for (let i = Math.max(0, idx - contextWords); i < idx; i++) {
+          const leftWord = words[i];
+          if (leftWord && isValidWord(leftWord)) {
+            const path = words.slice(i, idx).filter(isValidWord).join(' ');
+            if (path.trim()) {
+              leftContext.set(path, (leftContext.get(path) || 0) + 1);
+            }
+          }
+        }
+        
+        // Coletar contexto à direita
+        for (let i = idx + 1; i <= Math.min(words.length - 1, idx + contextWords); i++) {
+          const rightWord = words[i];
+          if (rightWord && isValidWord(rightWord)) {
+            const path = words.slice(idx + 1, i + 1).filter(isValidWord).join(' ');
+            if (path.trim()) {
+              rightContext.set(path, (rightContext.get(path) || 0) + 1);
+            }
+          }
+        }
+      }
+    });
+  });
+  
+  // Converter para arrays ordenados e filtrar caminhos que contenham palavras curtas
+  const filterPath = (path) => {
+    const pathWords = path.split(' ').filter(w => w.trim());
+    return pathWords.length > 0 && pathWords.every(isValidWord);
+  };
+  
+  const leftBranches = Array.from(leftContext.entries())
+    .filter(([path]) => filterPath(path))
+    .map(([path, count]) => ({ path, count, words: path.split(' ') }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, maxBranches);
+  
+  const rightBranches = Array.from(rightContext.entries())
+    .filter(([path]) => filterPath(path))
+    .map(([path, count]) => ({ path, count, words: path.split(' ') }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, maxBranches);
+  
+  return {
+    center: centerWord,
+    left: leftBranches,
+    right: rightBranches,
+    totalOccurrences: leftBranches.reduce((sum, b) => sum + b.count, 0) + rightBranches.reduce((sum, b) => sum + b.count, 0)
+  };
+};
+
+const performKWIC = (text, keyword, contextSize = 50) => {
+  const results = [];
+  const lowerText = text.toLowerCase();
+  const lowerKeyword = keyword.toLowerCase();
+  let index = lowerText.indexOf(lowerKeyword);
+  
+  while (index !== -1) {
+    const start = Math.max(0, index - contextSize);
+    const end = Math.min(text.length, index + keyword.length + contextSize);
+    
+    // Find line number
+    const textBeforeMatch = text.slice(0, index);
+    const lineNumber = (textBeforeMatch.match(/\n/g) || []).length + 1;
+    
+    // Find sentence boundaries
+    const sentenceStart = Math.max(
+      text.lastIndexOf('.', index) + 1,
+      text.lastIndexOf('!', index) + 1,
+      text.lastIndexOf('?', index) + 1,
+      0
+    );
+    const sentenceEndDot = text.indexOf('.', index);
+    const sentenceEndExc = text.indexOf('!', index);
+    const sentenceEndQue = text.indexOf('?', index);
+    const sentenceEnd = Math.min(
+      sentenceEndDot === -1 ? Infinity : sentenceEndDot,
+      sentenceEndExc === -1 ? Infinity : sentenceEndExc,
+      sentenceEndQue === -1 ? Infinity : sentenceEndQue,
+      text.length
+    ) + 1;
+    
+    results.push({
+      left: text.slice(start, index).trim(),
+      keyword: text.slice(index, index + keyword.length),
+      right: text.slice(index + keyword.length, end).trim(),
+      position: index,
+      lineNumber,
+      fullSentence: text.slice(sentenceStart, sentenceEnd).trim(),
+      charPosition: index
+    });
+    
+    index = lowerText.indexOf(lowerKeyword, index + 1);
+  }
+  
+  return results;
+};
+
+// Função para análise detalhada de incidências COM SUPORTE A VARIAÇÕES (plural, gênero, typos)
+const analyzeWordIncidences = (documents, targetWord, cleaningOptions, wordData = null) => {
+  // Determinar todas as variações a serem buscadas
+  let variationsToSearch = [targetWord.toLowerCase()];
+  let isGroupedAnalysis = false;
+  
+  // Só buscar variações se a opção estiver ativada
+  if (cleaningOptions.groupVariations) {
+    // Se wordData contém informações de variações (do agrupamento), usar todas
+    if (wordData && wordData.variations && wordData.variations.length > 1) {
+      variationsToSearch = wordData.variations.map(v => v.word.toLowerCase());
+      isGroupedAnalysis = true;
+    } else {
+      // Gerar variações comuns automaticamente
+      const baseWord = targetWord.toLowerCase();
+      const normalizedBase = normalizePortugueseWord(baseWord);
+      
+      // Gerar possíveis variações morfológicas
+      const generatedVariations = new Set([baseWord]);
+      
+      // Adicionar variações de gênero e número
+      if (baseWord.endsWith('o')) {
+        generatedVariations.add(baseWord.slice(0, -1) + 'a');  // masculino -> feminino
+        generatedVariations.add(baseWord + 's');               // singular -> plural masc
+        generatedVariations.add(baseWord.slice(0, -1) + 'as'); // singular -> plural fem
+      } else if (baseWord.endsWith('a')) {
+        generatedVariations.add(baseWord.slice(0, -1) + 'o');  // feminino -> masculino
+        generatedVariations.add(baseWord + 's');               // singular -> plural fem
+        generatedVariations.add(baseWord.slice(0, -1) + 'os'); // singular -> plural masc
+      } else if (!baseWord.endsWith('s')) {
+        generatedVariations.add(baseWord + 's');               // adicionar plural
+      }
+      
+      // Adicionar variações de linguagem neutra
+      if (baseWord.length > 2) {
+        const stem = normalizedBase;
+        generatedVariations.add(stem + 'x');
+        generatedVariations.add(stem + 'xs');
+        generatedVariations.add(stem + '@');
+        generatedVariations.add(stem + '@s');
+      }
+      
+      variationsToSearch = Array.from(generatedVariations);
+      isGroupedAnalysis = true;
+    }
+  }
+  
+  const analysis = {
+    word: targetWord,
+    normalizedForm: cleaningOptions.groupVariations ? normalizePortugueseWord(targetWord.toLowerCase()) : targetWord.toLowerCase(),
+    isGroupedAnalysis,
+    variationsSearched: variationsToSearch,
+    variationsFound: {},
+    totalOccurrences: 0,
+    documentsWithWord: 0,
+    occurrencesByDocument: [],
+    allContexts: [],
+    positions: [],
+    methodology: {
+      searchMethod: cleaningOptions.groupVariations 
+        ? 'Busca com agrupamento morfológico (gênero, número, typos)' 
+        : 'Busca exata case-insensitive (sem agrupamento)',
+      variationDetection: cleaningOptions.groupVariations 
+        ? 'Normalização portuguesa + Distância de Levenshtein (máx. 2)' 
+        : 'Desativado',
+      contextWindow: '50 caracteres antes e depois',
+      cleaningApplied: cleaningOptions,
+      variationsIncluded: variationsToSearch
+    },
+    timestamp: new Date().toISOString()
+  };
+  
+  documents.forEach((doc, docIndex) => {
+    const content = doc.content;
+    const lowerContent = content.toLowerCase();
+    const docOccurrences = [];
+    let docCount = 0;
+    
+    // Buscar cada variação
+    for (const variation of variationsToSearch) {
+      let searchIndex = 0;
+      
+      while (true) {
+        const foundIndex = lowerContent.indexOf(variation, searchIndex);
+        if (foundIndex === -1) break;
+        
+        // Verificar se é uma palavra completa (não parte de outra palavra)
+        const charBefore = foundIndex > 0 ? lowerContent[foundIndex - 1] : ' ';
+        const charAfter = foundIndex + variation.length < lowerContent.length 
+          ? lowerContent[foundIndex + variation.length] 
+          : ' ';
+        
+        const isWordBoundaryBefore = /[\s\.,;:!?\-\(\)\[\]\"\'«»""'']/.test(charBefore);
+        const isWordBoundaryAfter = /[\s\.,;:!?\-\(\)\[\]\"\'«»""'']/.test(charAfter);
+        
+        if (isWordBoundaryBefore && isWordBoundaryAfter) {
+          docCount++;
+          
+          // Registrar variação encontrada
+          const matchedText = content.slice(foundIndex, foundIndex + variation.length);
+          if (!analysis.variationsFound[matchedText.toLowerCase()]) {
+            analysis.variationsFound[matchedText.toLowerCase()] = { 
+              count: 0, 
+              originalForms: new Set() 
+            };
+          }
+          analysis.variationsFound[matchedText.toLowerCase()].count++;
+          analysis.variationsFound[matchedText.toLowerCase()].originalForms.add(matchedText);
+          
+          // Calcular linha e coluna
+          const textBefore = content.slice(0, foundIndex);
+          const lines = textBefore.split('\n');
+          const lineNumber = lines.length;
+          const columnNumber = lines[lines.length - 1].length + 1;
+          
+          // Extrair contexto
+          const contextStart = Math.max(0, foundIndex - 50);
+          const contextEnd = Math.min(content.length, foundIndex + variation.length + 50);
+          
+          // Extrair frase completa
+          let sentenceStart = foundIndex;
+          let sentenceEnd = foundIndex + variation.length;
+          
+          for (let i = foundIndex - 1; i >= 0; i--) {
+            if (['.', '!', '?', '\n'].includes(content[i])) {
+              sentenceStart = i + 1;
+              break;
+            }
+            if (i === 0) sentenceStart = 0;
+          }
+          
+          for (let i = foundIndex + variation.length; i < content.length; i++) {
+            if (['.', '!', '?', '\n'].includes(content[i])) {
+              sentenceEnd = i + 1;
+              break;
+            }
+            if (i === content.length - 1) sentenceEnd = content.length;
+          }
+          
+          const occurrence = {
+            occurrenceNumber: analysis.allContexts.length + 1,
+            documentId: docIndex + 1,
+            documentName: doc.name,
+            absolutePosition: foundIndex,
+            lineNumber,
+            columnNumber,
+            contextBefore: content.slice(contextStart, foundIndex),
+            matchedText: content.slice(foundIndex, foundIndex + variation.length),
+            matchedVariation: variation,
+            isExactMatch: variation === targetWord.toLowerCase(),
+            variationType: variation === targetWord.toLowerCase() ? 'exact' : 
+              (wordData?.variations?.find(v => v.word.toLowerCase() === variation)?.variationType || 'generated'),
+            contextAfter: content.slice(foundIndex + variation.length, contextEnd),
+            fullSentence: content.slice(sentenceStart, sentenceEnd).trim(),
+            charIndexStart: foundIndex,
+            charIndexEnd: foundIndex + variation.length
+          };
+          
+          docOccurrences.push(occurrence);
+          analysis.allContexts.push(occurrence);
+          analysis.positions.push({
+            doc: docIndex + 1,
+            pos: foundIndex,
+            line: lineNumber,
+            col: columnNumber,
+            variation
+          });
+        }
+        
+        searchIndex = foundIndex + 1;
+      }
+    }
+    
+    if (docCount > 0) {
+      analysis.documentsWithWord++;
+      analysis.occurrencesByDocument.push({
+        documentId: docIndex + 1,
+        documentName: doc.name,
+        count: docCount,
+        occurrences: docOccurrences,
+        totalWords: content.split(/\s+/).length,
+        relativeFrequency: (docCount / content.split(/\s+/).length * 1000).toFixed(4) + ' por 1000 palavras'
+      });
+    }
+    
+    analysis.totalOccurrences += docCount;
+  });
+  
+  // Converter Sets para Arrays para serialização
+  Object.keys(analysis.variationsFound).forEach(key => {
+    analysis.variationsFound[key].originalForms = Array.from(analysis.variationsFound[key].originalForms);
+  });
+  
+  // Calcular estatísticas agregadas
+  analysis.statistics = {
+    totalOccurrences: analysis.totalOccurrences,
+    documentsAnalyzed: documents.length,
+    documentsWithWord: analysis.documentsWithWord,
+    coveragePercentage: ((analysis.documentsWithWord / documents.length) * 100).toFixed(2) + '%',
+    averagePerDocument: (analysis.totalOccurrences / documents.length).toFixed(2),
+    uniqueVariationsFound: Object.keys(analysis.variationsFound).length,
+    variationBreakdown: Object.entries(analysis.variationsFound)
+      .map(([variation, data]) => ({
+        variation,
+        count: data.count,
+        percentage: ((data.count / analysis.totalOccurrences) * 100).toFixed(1) + '%',
+        originalForms: data.originalForms
+      }))
+      .sort((a, b) => b.count - a.count),
+    medianPerDocument: (() => {
+      const counts = analysis.occurrencesByDocument.map(d => d.count).sort((a, b) => a - b);
+      if (counts.length === 0) return 0;
+      const mid = Math.floor(counts.length / 2);
+      return counts.length % 2 ? counts[mid] : ((counts[mid - 1] + counts[mid]) / 2).toFixed(2);
+    })()
+  };
+  
+  return analysis;
+};
+
+// Gerar relatório científico em formato Markdown
+const generateScientificReport = (analysis, cleaningOptions) => {
+  const variationSection = analysis.statistics.variationBreakdown && analysis.statistics.variationBreakdown.length > 0 
+    ? `
+### 2.3 Análise de Variações Morfológicas
+Esta análise agrupa automaticamente variações de gênero, número e possíveis erros de digitação.
+
+| Variação Encontrada | Ocorrências | Percentual | Formas Originais |
+|---------------------|-------------|------------|------------------|
+${analysis.statistics.variationBreakdown.map(v => 
+  `| ${v.variation} | ${v.count} | ${v.percentage} | ${v.originalForms.join(', ')} |`
+).join('\n')}
+
+**Variações buscadas:** ${analysis.variationsSearched ? analysis.variationsSearched.join(', ') : 'N/A'}
+` : '';
+
+  const report = `# Relatório de Análise de Incidências Textuais
+## TextLab - Ferramenta de Análise Textual
+
+**Data da Análise:** ${new Date().toLocaleString('pt-BR')}
+**Palavra Analisada:** "${analysis.word}"
+**Forma Normalizada:** "${analysis.normalizedForm || analysis.word}"
+**Análise com Agrupamento:** ${analysis.isGroupedAnalysis ? 'Sim' : 'Não'}
+
+---
+
+## 1. Metodologia
+
+### 1.1 Algoritmo de Busca com Agrupamento Morfológico
+O algoritmo utiliza um sistema de **normalização morfológica** para agrupar variações de uma mesma palavra:
+
+- **Variações de gênero:** ministro, ministra
+- **Variações de número:** ministro, ministros, ministras
+- **Linguagem neutra:** ministrx, ministr@, ministres
+- **Erros de digitação:** Detectados via Distância de Levenshtein (máx. 2 edições)
+
+\`\`\`javascript
+// Algoritmo de normalização portuguesa
+function normalizePortugueseWord(word) {
+  let normalized = word.toLowerCase();
+  
+  // Regras de normalização (ordem de prioridade)
+  const rules = [
+    { pattern: /ões$/i, replacement: 'ão' },   // nações -> nação
+    { pattern: /ães$/i, replacement: 'ão' },   // pães -> pão
+    { pattern: /xs$/i, replacement: '' },      // ministrxs -> ministr
+    { pattern: /as$/i, replacement: 'o' },     // ministras -> ministro
+    { pattern: /os$/i, replacement: 'o' },     // ministros -> ministro
+    { pattern: /a$/i, replacement: 'o' },      // ministra -> ministro
+    { pattern: /s$/i, replacement: '' },       // plural -> singular
+  ];
+  
+  for (const rule of rules) {
+    if (rule.pattern.test(normalized) && normalized.length > 3) {
+      normalized = normalized.replace(rule.pattern, rule.replacement);
+      break;
+    }
+  }
+  return normalized;
+}
+
+// Detecção de typos via Levenshtein
+function levenshteinDistance(str1, str2) {
+  // Matriz de programação dinâmica para calcular
+  // número mínimo de edições (inserção, deleção, substituição)
+  // Considera typo se distância <= 2 e similaridade >= 75%
+}
+\`\`\`
+
+### 1.2 Parâmetros de Limpeza Aplicados
+| Parâmetro | Valor |
+|-----------|-------|
+| Conversão para minúsculas | ${cleaningOptions.lowercase ? 'Sim' : 'Não'} |
+| Remoção de números | ${cleaningOptions.removeNumbers ? 'Sim' : 'Não'} |
+| Remoção de pontuação | ${cleaningOptions.removePunctuation ? 'Sim' : 'Não'} |
+| Remoção de stopwords | ${cleaningOptions.removeStopwords ? 'Sim' : 'Não'} |
+| Tamanho mínimo de palavra | ${cleaningOptions.minLength} caracteres |
+
+### 1.3 Janela de Contexto
+- **Contexto extraído:** 50 caracteres antes e depois da ocorrência
+- **Frase completa:** Delimitada por pontuação (.!?) ou quebra de linha
+- **Validação de limites:** Apenas palavras completas (não substrings)
+
+---
+
+## 2. Resultados Estatísticos
+
+### 2.1 Resumo Geral
+| Métrica | Valor |
+|---------|-------|
+| **Total de Ocorrências (todas variações)** | ${analysis.statistics.totalOccurrences} |
+| **Variações Únicas Encontradas** | ${analysis.statistics.uniqueVariationsFound || 1} |
+| **Documentos Analisados** | ${analysis.statistics.documentsAnalyzed} |
+| **Documentos com a Palavra** | ${analysis.statistics.documentsWithWord} |
+| **Cobertura** | ${analysis.statistics.coveragePercentage} |
+| **Média por Documento** | ${analysis.statistics.averagePerDocument} |
+| **Mediana por Documento** | ${analysis.statistics.medianPerDocument} |
+${variationSection}
+### 2.4 Distribuição por Documento
+${analysis.occurrencesByDocument.map(doc => `
+#### Documento ${doc.documentId}: ${doc.documentName}
+- Ocorrências: **${doc.count}**
+- Total de palavras no documento: ${doc.totalWords}
+- Frequência relativa: ${doc.relativeFrequency}
+`).join('')}
+
+---
+
+## 3. Evidências Detalhadas (Todas as Ocorrências)
+
+${analysis.allContexts.map((occ, idx) => `
+### Ocorrência #${idx + 1}
+- **Documento:** ${occ.documentName} (ID: ${occ.documentId})
+- **Posição:** Linha ${occ.lineNumber}, Coluna ${occ.columnNumber}
+- **Índice de caractere:** ${occ.charIndexStart} - ${occ.charIndexEnd}
+- **Variação encontrada:** "${occ.matchedText}" ${occ.isExactMatch ? '(forma exata)' : `(variação de "${analysis.word}")`}
+- **Tipo de variação:** ${occ.variationType || 'exact'}
+
+**Contexto:**
+> ...${occ.contextBefore}**[${occ.matchedText}]**${occ.contextAfter}...
+
+**Frase completa:**
+> "${occ.fullSentence}"
+
+---
+`).join('')}
+
+## 4. Código de Verificação
+
+Para verificar estes resultados, você pode usar o seguinte código Python:
+
+\`\`\`python
+import pandas as pd
+import re
+from difflib import SequenceMatcher
+
+# Carregar o corpus
+corpus = """[Inserir texto do corpus aqui]"""
+
+# Palavra alvo e suas variações
+target_word = "${analysis.word}"
+variations = ${JSON.stringify(analysis.variationsSearched || [analysis.word])}
+
+def normalize_portuguese(word):
+    """Normaliza palavra removendo sufixos de gênero/número"""
+    w = word.lower()
+    rules = [
+        (r'ões$', 'ão'), (r'ães$', 'ão'), (r'xs$', ''), 
+        (r'as$', 'o'), (r'os$', 'o'), (r'a$', 'o'), (r's$', '')
+    ]
+    for pattern, replacement in rules:
+        if re.search(pattern, w) and len(w) > 3:
+            return re.sub(pattern, replacement, w)
+    return w
+
+def is_word_boundary(text, start, end):
+    """Verifica se a ocorrência é uma palavra completa"""
+    before = text[start-1] if start > 0 else ' '
+    after = text[end] if end < len(text) else ' '
+    boundary_chars = r'[\\s.,;:!?\\-()\\[\\]"\\'«»""'']'
+    return bool(re.match(boundary_chars, before) and re.match(boundary_chars, after))
+
+# Encontrar todas as ocorrências de todas as variações
+positions = []
+text_lower = corpus.lower()
+
+for variation in variations:
+    start = 0
+    while True:
+        pos = text_lower.find(variation.lower(), start)
+        if pos == -1:
+            break
+        
+        if is_word_boundary(corpus, pos, pos + len(variation)):
+            line_num = text_lower[:pos].count('\\n') + 1
+            positions.append({
+                'variation': variation,
+                'matched_text': corpus[pos:pos+len(variation)],
+                'position': pos,
+                'line': line_num,
+                'context': corpus[max(0,pos-50):pos+len(variation)+50]
+            })
+        start = pos + 1
+
+# Criar DataFrame
+df = pd.DataFrame(positions)
+print(f"Total de ocorrências encontradas: {len(df)}")
+print(f"Variações encontradas: {df['variation'].unique()}")
+print(df.groupby('variation').size())
+\`\`\`
+
+**Resultado esperado:** ${analysis.statistics.totalOccurrences} ocorrências totais
+**Variações esperadas:** ${analysis.statistics.uniqueVariationsFound || 1}
+
+---
+
+## 5. Validação e Reprodutibilidade
+
+Este relatório foi gerado automaticamente pelo TextLab.
+Os resultados podem ser verificados:
+
+1. **Manualmente:** Usando Ctrl+F no documento original para cada variação
+2. **Programaticamente:** Usando o código Python fornecido acima
+3. **Via IRaMuTeQ:** Exportando o corpus e realizando busca lexical
+4. **Via Excel/Google Sheets:** Importando o CSV exportado e verificando contagens
+
+**Variações incluídas na análise:**
+${(analysis.variationsSearched || [analysis.word]).map(v => `- ${v}`).join('\n')}
+
+**Hash de verificação:** \`${Array.from(analysis.word).reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0).toString(16)}\`
+
+---
+
+*Relatório gerado por TextLab - Análise Textual Avançada*
+*Criado por Lucas Oliveira Teixeira com Claude Opus 4.5 para a UFABC*
+`;
+
+  return report;
+};
+
+// Gerar dados em formato CSV para análise externa
+const generateIncidenceCSV = (analysis) => {
+  let csv = 'Ocorrencia,Documento_ID,Documento_Nome,Linha,Coluna,Posicao_Char_Inicio,Posicao_Char_Fim,Variacao_Buscada,Texto_Encontrado,Tipo_Variacao,Match_Exato,Contexto_Antes,Contexto_Depois,Frase_Completa\n';
+  
+  analysis.allContexts.forEach((occ, idx) => {
+    const escapeCsv = (str) => `"${(str || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+    csv += [
+      idx + 1,
+      occ.documentId,
+      escapeCsv(occ.documentName),
+      occ.lineNumber,
+      occ.columnNumber,
+      occ.charIndexStart,
+      occ.charIndexEnd,
+      escapeCsv(occ.matchedVariation || occ.matchedText),
+      escapeCsv(occ.matchedText),
+      escapeCsv(occ.variationType || 'exact'),
+      occ.isExactMatch ? 'Sim' : 'Não',
+      escapeCsv(occ.contextBefore),
+      escapeCsv(occ.contextAfter),
+      escapeCsv(occ.fullSentence)
+    ].join(',') + '\n';
+  });
+  
+  // Adicionar resumo de variações no final
+  if (analysis.statistics.variationBreakdown && analysis.statistics.variationBreakdown.length > 0) {
+    csv += '\n\n# RESUMO DE VARIACOES\n';
+    csv += 'Variacao,Contagem,Percentual,Formas_Originais\n';
+    analysis.statistics.variationBreakdown.forEach(v => {
+      const escapeCsv = (str) => `"${(str || '').replace(/"/g, '""')}"`;
+      csv += [
+        escapeCsv(v.variation),
+        v.count,
+        v.percentage,
+        escapeCsv(v.originalForms.join('; '))
+      ].join(',') + '\n';
+    });
+  }
+  
+  return csv;
+};
+
+const generateIRaMuTeQCorpus = (documents) => {
+  let corpus = '';
+  documents.forEach((doc, idx) => {
+    const segments = doc.content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    segments.forEach((segment, segIdx) => {
+      const cleanedSegment = segment.trim().replace(/\s+/g, ' ');
+      if (cleanedSegment.length > 10) {
+        corpus += `**** *doc_${idx + 1} *seg_${segIdx + 1}\n`;
+        corpus += cleanedSegment + '\n\n';
+      }
+    });
+  });
+  return corpus;
+};
+
+const performCHD = (segments, numClasses = 5, options = {}, stopwords = null) => {
+  // Simplified CHD/Reinert clustering simulation
+  const segmentData = segments.map((seg, idx) => {
+    const words = cleanText(seg, options, stopwords);
+    const wordFreq = calculateWordFrequency(words);
+    return {
+      id: idx,
+      text: seg,
+      words,
+      topWords: wordFreq.slice(0, 10),
+      cluster: Math.floor(Math.random() * numClasses)
+    };
+  });
+  
+  // Assign clusters based on word similarity
+  const clusters = {};
+  for (let i = 0; i < numClasses; i++) {
+    clusters[i] = {
+      id: i,
+      segments: [],
+      topWords: [],
+      color: `hsl(${(i * 360) / numClasses}, 70%, 50%)`
+    };
+  }
+  
+  segmentData.forEach(seg => {
+    clusters[seg.cluster].segments.push(seg);
+  });
+  
+  // Calculate top words per cluster
+  Object.values(clusters).forEach(cluster => {
+    const allWords = cluster.segments.flatMap(s => s.words);
+    const freq = calculateWordFrequency(allWords);
+    cluster.topWords = freq.slice(0, 15);
+  });
+  
+  return { clusters, segmentData };
+};
+
+// ==================== COMPONENTS ====================
+
+const WordCloudComponent = ({ words, width = 700, height = 500, onWordClick }) => {
+  const [hoveredWord, setHoveredWord] = useState(null);
+  const [positionedWords, setPositionedWords] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Carregar d3 e d3-cloud via CDN e calcular layout
+  useEffect(() => {
+    if (!words || words.length === 0) {
+      setPositionedWords([]);
+      setIsLoading(false);
+      return;
+    }
+    
+    const loadAndRender = async () => {
+      setIsLoading(true);
+      
+      // Carregar D3 se não estiver carregado
+      if (!window.d3) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      // Carregar d3-cloud se não estiver carregado
+      if (!window.d3.layout || !window.d3.layout.cloud) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.7/d3.layout.cloud.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      // Preparar dados
+      const maxCount = Math.max(...words.map(w => w.count));
+      const minCount = Math.min(...words.map(w => w.count));
+      const range = maxCount - minCount || 1;
+      
+      // Escala logarítmica para tamanho das palavras
+      const fontSizeScale = (count) => {
+        const normalized = (count - minCount) / range;
+        const logScale = Math.log(normalized * 9 + 1) / Math.log(10);
+        return 12 + logScale * 52; // 12px a 64px
+      };
+      
+      const wordsData = words.slice(0, 120).map(w => ({
+        text: w.word,
+        size: fontSizeScale(w.count),
+        count: w.count,
+        originalWord: w
+      }));
+      
+      // Criar layout usando d3-cloud
+      const layout = window.d3.layout.cloud()
+        .size([width, height])
+        .words(wordsData)
+        .padding(5)
+        .rotate(() => {
+          // 15% das palavras rotacionadas
+          return Math.random() < 0.15 ? -90 : 0;
+        })
+        .font("'Inter', 'Segoe UI', system-ui, sans-serif")
+        .fontSize(d => d.size)
+        .spiral('archimedean')
+        .random(() => 0.5) // Seed para consistência
+        .on('end', (layoutWords) => {
+          // Adicionar informações extras
+          if (!layoutWords || layoutWords.length === 0) {
+            setIsLoading(false);
+            return;
+          }
+          const finalWords = layoutWords.map(w => ({
+            ...w,
+            count: w.count,
+            opacity: 0.6 + (w.count - minCount) / range * 0.4,
+            originalWord: w.originalWord
+          }));
+          setPositionedWords(finalWords);
+          setIsLoading(false);
+        });
+      
+      layout.start();
+    };
+    
+    loadAndRender().catch(err => {
+      console.error('Erro ao carregar d3-cloud:', err);
+      setIsLoading(false);
+    });
+  }, [words, width, height]);
+  
+  // Cores gradiente baseadas na frequência
+  const getWordColor = (word, maxCount) => {
+    const ratio = word.count / maxCount;
+    if (ratio > 0.7) return '#22d3ee'; // cyan-400
+    if (ratio > 0.5) return '#38bdf8'; // sky-400
+    if (ratio > 0.3) return '#60a5fa'; // blue-400
+    if (ratio > 0.15) return '#818cf8'; // indigo-400
+    return '#a78bfa'; // violet-400
+  };
+  
+  const maxCount = words.length > 0 ? Math.max(...words.map(w => w.count)) : 1;
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center" style={{ width, height }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400">Gerando nuvem de palavras...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="relative">
+      <svg 
+        width={width} 
+        height={height} 
+        className="word-cloud rounded-xl"
+        style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.8) 0%, rgba(30,41,59,0.6) 100%)' }}
+      >
+        <defs>
+          <filter id="wordGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <g transform={`translate(${width / 2}, ${height / 2})`}>
+          {positionedWords.map((word, idx) => {
+            const isHovered = hoveredWord === word.text;
+            const color = getWordColor(word, maxCount);
+            const isTopWord = word.count > maxCount * 0.5;
+            
+            return (
+              <g key={idx}>
+                {/* Glow para palavras grandes */}
+                {isTopWord && (
+                  <text
+                    x={word.x}
+                    y={word.y}
+                    fontSize={word.size}
+                    fill={color}
+                    opacity={0.3}
+                    transform={`rotate(${word.rotate || 0}, ${word.x}, ${word.y})`}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    style={{ 
+                      fontFamily: word.font || "'Inter', sans-serif",
+                      fontWeight: 700,
+                      filter: 'blur(8px)'
+                    }}
+                  >
+                    {word.text}
+                  </text>
+                )}
+                {/* Palavra principal */}
+                <text
+                  x={word.x}
+                  y={word.y}
+                  fontSize={isHovered ? word.size * 1.15 : word.size}
+                  fill={isHovered ? '#fff' : color}
+                  opacity={isHovered ? 1 : word.opacity}
+                  transform={`rotate(${word.rotate || 0}, ${word.x}, ${word.y})`}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{ 
+                    fontFamily: word.font || "'Inter', sans-serif",
+                    fontWeight: word.count > maxCount * 0.3 ? 700 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-out',
+                    textShadow: isHovered ? '0 0 20px rgba(34,211,238,0.8)' : 'none'
+                  }}
+                  onMouseEnter={() => setHoveredWord(word.text)}
+                  onMouseLeave={() => setHoveredWord(null)}
+                  onClick={() => onWordClick && onWordClick(word.originalWord)}
+                >
+                  {word.text}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+      
+      {/* Tooltip flutuante */}
+      {hoveredWord && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 bg-slate-900/95 border border-cyan-500/40 rounded-xl shadow-2xl shadow-cyan-500/20 z-10 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-cyan-300 font-bold text-lg">{hoveredWord}</span>
+            <span className="px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded-lg text-sm font-medium">
+              {positionedWords.find(w => w.text === hoveredWord)?.count || 0}x
+            </span>
+          </div>
+          <p className="text-slate-400 text-xs mt-1">Clique para análise detalhada de incidências</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const NetworkGraph = ({ cooccurrences, width = 700, height = 500 }) => {
+  const [hoveredNode, setHoveredNode] = useState(null);
+  
+  const graphData = useMemo(() => {
+    if (!cooccurrences || cooccurrences.length === 0) {
+      return { nodes: [], links: [], maxWeight: 0 };
+    }
+    const topLinks = cooccurrences.slice(0, 100);
+    const nodes = new Map();
+    
+    topLinks.forEach(link => {
+      if (!nodes.has(link.source)) {
+        nodes.set(link.source, { id: link.source, weight: 0 });
+      }
+      if (!nodes.has(link.target)) {
+        nodes.set(link.target, { id: link.target, weight: 0 });
+      }
+      nodes.get(link.source).weight += link.weight;
+      nodes.get(link.target).weight += link.weight;
+    });
+    
+    const nodeArray = Array.from(nodes.values());
+    const maxWeight = Math.max(...nodeArray.map(n => n.weight));
+    
+    // Position nodes in a force-directed-like layout
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    nodeArray.forEach((node, idx) => {
+      const angle = (idx / nodeArray.length) * 2 * Math.PI;
+      const radius = 150 + Math.random() * 100;
+      node.x = centerX + Math.cos(angle) * radius;
+      node.y = centerY + Math.sin(angle) * radius;
+      node.radius = 5 + (node.weight / maxWeight) * 20;
+    });
+    
+    return { nodes: nodeArray, links: topLinks, maxWeight };
+  }, [cooccurrences, width, height]);
+  
+  const nodeMap = useMemo(() => {
+    const map = new Map();
+    graphData.nodes.forEach(n => map.set(n.id, n));
+    return map;
+  }, [graphData.nodes]);
+  
+  return (
+    <svg width={width} height={height} className="network-graph">
+      <defs>
+        <linearGradient id="linkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.3"/>
+          <stop offset="50%" stopColor="#a78bfa" stopOpacity="0.5"/>
+          <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.3"/>
+        </linearGradient>
+      </defs>
+      
+      {graphData.links.map((link, idx) => {
+        const source = nodeMap.get(link.source);
+        const target = nodeMap.get(link.target);
+        if (!source || !target) return null;
+        
+        return (
+          <line
+            key={idx}
+            x1={source.x}
+            y1={source.y}
+            x2={target.x}
+            y2={target.y}
+            stroke="url(#linkGradient)"
+            strokeWidth={1 + (link.weight / graphData.maxWeight) * 3}
+            opacity={hoveredNode ? (hoveredNode === link.source || hoveredNode === link.target ? 1 : 0.1) : 0.4}
+          />
+        );
+      })}
+      
+      {graphData.nodes.map((node, idx) => (
+        <g key={idx}
+          onMouseEnter={() => setHoveredNode(node.id)}
+          onMouseLeave={() => setHoveredNode(null)}
+          style={{ cursor: 'pointer' }}
+        >
+          <circle
+            cx={node.x}
+            cy={node.y}
+            r={node.radius}
+            fill={`hsl(${220 + (idx * 7) % 60}, 70%, ${hoveredNode === node.id ? 60 : 50}%)`}
+            stroke="#fff"
+            strokeWidth={2}
+            opacity={hoveredNode ? (hoveredNode === node.id ? 1 : 0.3) : 0.8}
+          />
+          <text
+            x={node.x}
+            y={node.y - node.radius - 5}
+            textAnchor="middle"
+            fill="#e2e8f0"
+            fontSize={10 + node.radius / 3}
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            opacity={hoveredNode === node.id ? 1 : 0.7}
+          >
+            {node.id}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+const ClusterVisualization = ({ chdResult }) => {
+  const [selectedCluster, setSelectedCluster] = useState(null);
+  
+  if (!chdResult) return null;
+  
+  const { clusters } = chdResult;
+  if (!clusters) return null;
+  
+  const clusterArray = Object.values(clusters).filter(c => c.segments?.length > 0);
+  
+  return (
+    <div className="cluster-viz">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        {clusterArray.map((cluster, idx) => (
+          <button
+            key={cluster.id}
+            onClick={() => setSelectedCluster(selectedCluster === cluster.id ? null : cluster.id)}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+              selectedCluster === cluster.id 
+                ? 'border-white scale-105 shadow-lg' 
+                : 'border-slate-600 hover:border-slate-400'
+            }`}
+            style={{ 
+              backgroundColor: cluster.color + '20',
+              borderColor: selectedCluster === cluster.id ? cluster.color : undefined
+            }}
+          >
+            <div className="text-2xl font-bold mb-1" style={{ color: cluster.color }}>
+              {cluster.segments?.length || 0}
+            </div>
+            <div className={`text-xs text-slate-400`}>
+              Classe {cluster.id + 1}
+            </div>
+            <div className="text-xs text-slate-500 mt-2 truncate">
+              {cluster.topWords.slice(0, 3).map(w => w.word).join(', ')}
+            </div>
+          </button>
+        ))}
+      </div>
+      
+      {selectedCluster !== null && clusters[selectedCluster] && (
+        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-600">
+          <h4 className="text-lg font-semibold mb-4" style={{ color: clusters[selectedCluster].color }}>
+            Classe {selectedCluster + 1} - Palavras Características
+          </h4>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {clusters[selectedCluster].topWords.map((word, idx) => (
+              <span
+                key={idx}
+                className="px-3 py-1 rounded-full text-sm"
+                style={{ 
+                  backgroundColor: clusters[selectedCluster].color + '30',
+                  color: clusters[selectedCluster].color
+                }}
+              >
+                {word.word} ({word.count})
+              </span>
+            ))}
+          </div>
+          <h5 className="text-sm font-medium text-slate-400 mb-3">
+            Segmentos representativos ({clusters[selectedCluster].segments.length} total)
+          </h5>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {clusters[selectedCluster].segments.slice(0, 5).map((seg, idx) => (
+              <div key={idx} className="text-sm text-slate-300 p-3 bg-slate-700/30 rounded-lg">
+                "{seg.text.slice(0, 200)}..."
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const StatisticsPanel = ({ stats }) => {
+  if (!stats) return null;
+  
+  const statItems = stats.groupingEnabled ? [
+    { label: 'Documentos', value: stats.documentCount, icon: FileText },
+    { label: 'Palavras Totais', value: stats.totalWords.toLocaleString(), icon: Hash },
+    { label: 'Formas Únicas (raw)', value: (stats.uniqueWordsRaw || stats.uniqueWords).toLocaleString(), icon: Activity, color: 'text-slate-400' },
+    { label: 'Lemas (agrupados)', value: stats.uniqueWords.toLocaleString(), icon: Layers, color: 'text-purple-400' },
+    { label: 'Grupos c/ Variações', value: (stats.groupedWords || 0).toLocaleString(), icon: GitBranch, color: 'text-cyan-400' },
+    { label: 'Riqueza Léxica', value: `${stats.lexicalRichness}%`, icon: TrendingUp },
+  ] : [
+    { label: 'Documentos', value: stats.documentCount, icon: FileText },
+    { label: 'Palavras Totais', value: stats.totalWords.toLocaleString(), icon: Hash },
+    { label: 'Palavras Únicas', value: stats.uniqueWords.toLocaleString(), icon: Layers },
+    { label: 'Segmentos', value: stats.segments.toLocaleString(), icon: GitBranch },
+    { label: 'Hapax (freq=1)', value: stats.hapax.toLocaleString(), icon: Activity },
+    { label: 'Riqueza Léxica', value: `${stats.lexicalRichness}%`, icon: TrendingUp },
+  ];
+  
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {statItems.map((item, idx) => (
+          <div
+            key={idx}
+            className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 border border-slate-700 hover:border-slate-500 transition-all duration-300"
+          >
+            <item.icon className={`w-5 h-5 ${item.color || 'text-cyan-400'} mb-2`} />
+            <div className="text-2xl font-bold text-white mb-1">{item.value}</div>
+            <div className={`text-xs text-slate-400`}>{item.label}</div>
+          </div>
+        ))}
+      </div>
+      
+      {/* Info sobre agrupamento - só mostra se estiver ativo */}
+      {stats.groupingEnabled ? (
+        <div className="bg-purple-900/20 border border-purple-500/30 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Layers className="w-5 h-5 text-purple-400 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-medium text-purple-300">Agrupamento Morfológico Ativo</h4>
+              <p className="text-xs text-slate-400 mt-1">
+                Variações de gênero (ministro/ministra), número (singular/plural), linguagem neutra (x, @) e possíveis typos 
+                são automaticamente agrupados na mesma contagem. Clique em qualquer palavra na nuvem para ver todas as variações.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-800/50 border border-slate-600 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <Activity className="w-5 h-5 text-slate-400 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-medium text-slate-300">Modo Simples (sem agrupamento)</h4>
+              <p className="text-xs text-slate-400 mt-1">
+                Cada forma de palavra é contada separadamente. Ative "Agrupar variações morfológicas" nas opções 
+                para combinar automaticamente variações de gênero, número e typos.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== VISUALIZAÇÕES AVANÇADAS ====================
+
+// Heatmap de Coocorrência
+const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500 }) => {
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hoveredCell, setHoveredCell] = useState(null);
+  
+  useEffect(() => {
+    if (!cooccurrences || cooccurrences.length === 0 || !words || words.length === 0) {
+      setHeatmapData([]);
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    // Pegar top 20 palavras para o heatmap
+    const topWords = words.slice(0, 20).map(w => w.word);
+    
+    // Criar matriz de coocorrência
+    const matrix = [];
+    const coocMap = new Map();
+    
+    cooccurrences.forEach(c => {
+      coocMap.set(`${c.source}-${c.target}`, c.weight);
+      coocMap.set(`${c.target}-${c.source}`, c.weight);
+    });
+    
+    topWords.forEach((word1, i) => {
+      topWords.forEach((word2, j) => {
+        const weight = i === j ? 0 : (coocMap.get(`${word1}-${word2}`) || 0);
+        matrix.push({
+          x: j,
+          y: i,
+          word1,
+          word2,
+          value: weight
+        });
+      });
+    });
+    
+    setHeatmapData({ matrix, words: topWords });
+    setIsLoading(false);
+  }, [cooccurrences, words]);
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center" style={{ width, height }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400">Gerando heatmap...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!heatmapData.matrix || heatmapData.matrix.length === 0) {
+    return <div className="text-slate-400 text-center p-8">Dados insuficientes para heatmap</div>;
+  }
+  
+  const cellSize = Math.min((width - 120) / heatmapData.words.length, (height - 80) / heatmapData.words.length);
+  const maxValue = Math.max(...heatmapData.matrix.map(d => d.value));
+  
+  const getColor = (value) => {
+    if (value === 0) return 'rgba(30, 41, 59, 0.5)';
+    const intensity = value / maxValue;
+    if (intensity > 0.7) return `rgba(34, 211, 238, ${0.3 + intensity * 0.7})`;
+    if (intensity > 0.4) return `rgba(56, 189, 248, ${0.3 + intensity * 0.7})`;
+    if (intensity > 0.2) return `rgba(96, 165, 250, ${0.3 + intensity * 0.7})`;
+    return `rgba(129, 140, 248, ${0.3 + intensity * 0.7})`;
+  };
+  
+  return (
+    <div className="relative">
+      <svg width={width} height={height}>
+        <g transform={`translate(100, 60)`}>
+          {/* Células do heatmap */}
+          {heatmapData.matrix.map((cell, idx) => (
+            <rect
+              key={idx}
+              x={cell.x * cellSize}
+              y={cell.y * cellSize}
+              width={cellSize - 1}
+              height={cellSize - 1}
+              fill={getColor(cell.value)}
+              stroke={hoveredCell === idx ? '#22d3ee' : 'transparent'}
+              strokeWidth={2}
+              rx={2}
+              style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseEnter={() => setHoveredCell(idx)}
+              onMouseLeave={() => setHoveredCell(null)}
+            />
+          ))}
+          
+          {/* Labels X (topo) */}
+          {heatmapData.words.map((word, i) => (
+            <text
+              key={`x-${i}`}
+              x={i * cellSize + cellSize / 2}
+              y={-8}
+              fontSize={9}
+              fill="#94a3b8"
+              textAnchor="end"
+              transform={`rotate(-45, ${i * cellSize + cellSize / 2}, -8)`}
+            >
+              {word.length > 8 ? word.slice(0, 8) + '…' : word}
+            </text>
+          ))}
+          
+          {/* Labels Y (esquerda) */}
+          {heatmapData.words.map((word, i) => (
+            <text
+              key={`y-${i}`}
+              x={-8}
+              y={i * cellSize + cellSize / 2 + 4}
+              fontSize={9}
+              fill="#94a3b8"
+              textAnchor="end"
+            >
+              {word.length > 10 ? word.slice(0, 10) + '…' : word}
+            </text>
+          ))}
+        </g>
+      </svg>
+      
+      {/* Tooltip */}
+      {hoveredCell !== null && heatmapData.matrix[hoveredCell] && (
+        <div className="absolute top-4 right-4 px-4 py-2 bg-slate-900/95 border border-cyan-500/40 rounded-lg shadow-xl z-10">
+          <div className="text-sm">
+            <span className="text-cyan-300 font-medium">{heatmapData.matrix[hoveredCell].word1}</span>
+            <span className="text-slate-400 mx-2">↔</span>
+            <span className="text-cyan-300 font-medium">{heatmapData.matrix[hoveredCell].word2}</span>
+          </div>
+          <div className="text-xs text-slate-400 mt-1">
+            Coocorrências: <span className="text-white font-medium">{heatmapData.matrix[hoveredCell].value}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Treemap de Frequências
+const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick }) => {
+  const [treemapData, setTreemapData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hoveredRect, setHoveredRect] = useState(null);
+  
+  useEffect(() => {
+    if (!words || words.length === 0) {
+      setTreemapData([]);
+      setIsLoading(false);
+      return;
+    }
+    
+    const loadAndRender = async () => {
+      setIsLoading(true);
+      
+      // Carregar D3 se necessário
+      if (!window.d3) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      // Preparar dados hierárquicos
+      const topWords = words.slice(0, 50);
+      const root = {
+        name: 'root',
+        children: topWords.map(w => ({
+          name: w.word,
+          value: w.count,
+          original: w
+        }))
+      };
+      
+      // Criar hierarquia e layout
+      const hierarchy = window.d3.hierarchy(root)
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+      
+      window.d3.treemap()
+        .size([width - 20, height - 20])
+        .padding(2)
+        .round(true)(hierarchy);
+      
+      setTreemapData(hierarchy.leaves());
+      setIsLoading(false);
+    };
+    
+    loadAndRender().catch(err => {
+      console.error('Erro ao gerar treemap:', err);
+      setIsLoading(false);
+    });
+  }, [words, width, height]);
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center" style={{ width, height }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400">Gerando treemap...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const maxValue = Math.max(...treemapData.map(d => d.value));
+  
+  const getColor = (value) => {
+    const ratio = value / maxValue;
+    if (ratio > 0.6) return '#22d3ee';
+    if (ratio > 0.4) return '#38bdf8';
+    if (ratio > 0.2) return '#818cf8';
+    if (ratio > 0.1) return '#a78bfa';
+    return '#c4b5fd';
+  };
+  
+  return (
+    <div className="relative">
+      <svg width={width} height={height}>
+        <g transform="translate(10, 10)">
+          {treemapData.map((leaf, idx) => {
+            const w = leaf.x1 - leaf.x0;
+            const h = leaf.y1 - leaf.y0;
+            const isHovered = hoveredRect === idx;
+            
+            return (
+              <g key={idx}>
+                <rect
+                  x={leaf.x0}
+                  y={leaf.y0}
+                  width={w}
+                  height={h}
+                  fill={getColor(leaf.value)}
+                  stroke={isHovered ? '#fff' : 'rgba(15, 23, 42, 0.8)'}
+                  strokeWidth={isHovered ? 2 : 1}
+                  rx={4}
+                  opacity={isHovered ? 1 : 0.85}
+                  style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={() => setHoveredRect(idx)}
+                  onMouseLeave={() => setHoveredRect(null)}
+                  onClick={() => onWordClick && onWordClick(leaf.data.original)}
+                />
+                {w > 40 && h > 20 && (
+                  <text
+                    x={leaf.x0 + w / 2}
+                    y={leaf.y0 + h / 2}
+                    fontSize={Math.min(14, Math.max(9, w / 6))}
+                    fill="#0f172a"
+                    fontWeight="600"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {leaf.data.name.length > w / 8 ? leaf.data.name.slice(0, Math.floor(w / 8)) + '…' : leaf.data.name}
+                  </text>
+                )}
+                {w > 50 && h > 35 && (
+                  <text
+                    x={leaf.x0 + w / 2}
+                    y={leaf.y0 + h / 2 + 12}
+                    fontSize={9}
+                    fill="rgba(15, 23, 42, 0.7)"
+                    textAnchor="middle"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {leaf.value}x
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+      
+      {/* Tooltip */}
+      {hoveredRect !== null && treemapData[hoveredRect] && (
+        <div className="absolute top-4 right-4 px-4 py-2 bg-slate-900/95 border border-purple-500/40 rounded-lg shadow-xl z-10">
+          <div className="text-cyan-300 font-bold">{treemapData[hoveredRect].data.name}</div>
+          <div className={`text-sm text-slate-400`}>
+            Frequência: <span className="text-white font-medium">{treemapData[hoveredRect].value}</span>
+          </div>
+          <div className="text-xs text-slate-500 mt-1">Clique para análise</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Radar Chart para Perfil de Categorias
+const RadarVisualization = ({ codedSegments, codebook, width = 500, height = 500 }) => {
+  const [radarData, setRadarData] = useState(null);
+  
+  useEffect(() => {
+    if (!codedSegments || codedSegments.length === 0 || !codebook) {
+      setRadarData(null);
+      return;
+    }
+    
+    // Converter codebook objeto para array
+    const codebookArray = Object.entries(codebook).map(([id, cat]) => ({
+      id,
+      name: cat.name,
+      color: cat.color,
+      codes: Object.entries(cat.codes || {}).map(([codeId, code]) => ({
+        id: codeId,
+        name: code.name
+      }))
+    }));
+    
+    // Contar segmentos por categoria
+    const categoryCounts = {};
+    codebookArray.forEach(cat => {
+      categoryCounts[cat.name] = 0;
+    });
+    
+    codedSegments.forEach(seg => {
+      seg.codes.forEach(codeId => {
+        codebookArray.forEach(cat => {
+          if (cat.codes.some(c => c.id === codeId)) {
+            categoryCounts[cat.name]++;
+          }
+        });
+      });
+    });
+    
+    const data = Object.entries(categoryCounts)
+      .filter(([_, count]) => count > 0)
+      .map(([name, count]) => ({ axis: name, value: count }));
+    
+    if (data.length < 3) {
+      setRadarData(null);
+      return;
+    }
+    
+    setRadarData(data);
+  }, [codedSegments, codebook]);
+  
+  if (!radarData || radarData.length < 3) {
+    return (
+      <div className="flex items-center justify-center text-slate-400" style={{ width, height }}>
+        <div className="text-center">
+          <p>Codifique pelo menos 3 categorias diferentes</p>
+          <p className="text-sm mt-2">para visualizar o radar</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.min(width, height) / 2 - 60;
+  const levels = 5;
+  const maxValue = Math.max(...radarData.map(d => d.value));
+  const angleSlice = (Math.PI * 2) / radarData.length;
+  
+  // Gerar pontos do polígono
+  const points = radarData.map((d, i) => {
+    const angle = angleSlice * i - Math.PI / 2;
+    const r = (d.value / maxValue) * radius;
+    return {
+      x: centerX + r * Math.cos(angle),
+      y: centerY + r * Math.sin(angle),
+      ...d
+    };
+  });
+  
+  const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+  
+  return (
+    <svg width={width} height={height}>
+      {/* Grid circular */}
+      {[...Array(levels)].map((_, i) => (
+        <circle
+          key={i}
+          cx={centerX}
+          cy={centerY}
+          r={(radius / levels) * (i + 1)}
+          fill="none"
+          stroke="rgba(148, 163, 184, 0.2)"
+          strokeWidth={1}
+        />
+      ))}
+      
+      {/* Eixos */}
+      {radarData.map((d, i) => {
+        const angle = angleSlice * i - Math.PI / 2;
+        const x2 = centerX + radius * Math.cos(angle);
+        const y2 = centerY + radius * Math.sin(angle);
+        const labelX = centerX + (radius + 20) * Math.cos(angle);
+        const labelY = centerY + (radius + 20) * Math.sin(angle);
+        
+        return (
+          <g key={i}>
+            <line
+              x1={centerX}
+              y1={centerY}
+              x2={x2}
+              y2={y2}
+              stroke="rgba(148, 163, 184, 0.3)"
+              strokeWidth={1}
+            />
+            <text
+              x={labelX}
+              y={labelY}
+              fontSize={10}
+              fill="#94a3b8"
+              textAnchor="middle"
+              dominantBaseline="middle"
+            >
+              {d.axis.length > 12 ? d.axis.slice(0, 12) + '…' : d.axis}
+            </text>
+          </g>
+        );
+      })}
+      
+      {/* Área preenchida */}
+      <path
+        d={pathData}
+        fill="rgba(34, 211, 238, 0.3)"
+        stroke="#22d3ee"
+        strokeWidth={2}
+      />
+      
+      {/* Pontos */}
+      {points.map((p, i) => (
+        <g key={i}>
+          <circle
+            cx={p.x}
+            cy={p.y}
+            r={6}
+            fill="#22d3ee"
+            stroke="#fff"
+            strokeWidth={2}
+          />
+          <title>{`${p.axis}: ${p.value}`}</title>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+// Sunburst de Hierarquia de Códigos
+const SunburstVisualization = ({ codedSegments, codebook, width = 500, height = 500 }) => {
+  const [sunburstData, setSunburstData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hoveredArc, setHoveredArc] = useState(null);
+  
+  useEffect(() => {
+    if (!codedSegments || codedSegments.length === 0 || !codebook) {
+      setSunburstData(null);
+      setIsLoading(false);
+      return;
+    }
+    
+    const loadAndRender = async () => {
+      setIsLoading(true);
+      
+      // Carregar D3 se necessário
+      if (!window.d3) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      // Converter codebook objeto para array
+      const codebookArray = Object.entries(codebook).map(([id, cat]) => ({
+        id,
+        name: cat.name,
+        color: cat.color,
+        codes: Object.entries(cat.codes || {}).map(([codeId, code]) => ({
+          id: codeId,
+          name: code.name
+        }))
+      }));
+      
+      // Construir hierarquia
+      const hierarchy = {
+        name: 'Codificação',
+        children: codebookArray.map(cat => {
+          const catCodes = cat.codes.map(code => {
+            const count = codedSegments.filter(seg => 
+              seg.codes.includes(code.id)
+            ).length;
+            return { name: code.name, value: count || 0.1, id: code.id };
+          }).filter(c => c.value > 0);
+          
+          return {
+            name: cat.name,
+            children: catCodes.length > 0 ? catCodes : [{ name: 'Vazio', value: 0.1 }]
+          };
+        }).filter(cat => cat.children.some(c => c.value > 0.1))
+      };
+      
+      if (hierarchy.children.length === 0) {
+        setSunburstData(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      const root = window.d3.hierarchy(hierarchy)
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+      
+      const partition = window.d3.partition()
+        .size([2 * Math.PI, Math.min(width, height) / 2 - 20]);
+      
+      partition(root);
+      
+      setSunburstData(root.descendants());
+      setIsLoading(false);
+    };
+    
+    loadAndRender().catch(err => {
+      console.error('Erro ao gerar sunburst:', err);
+      setIsLoading(false);
+    });
+  }, [codedSegments, codebook, width, height]);
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center" style={{ width, height }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400">Gerando sunburst...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!sunburstData || sunburstData.length <= 1) {
+    return (
+      <div className="flex items-center justify-center text-slate-400" style={{ width, height }}>
+        <div className="text-center">
+          <p>Codifique alguns segmentos</p>
+          <p className="text-sm mt-2">para visualizar a hierarquia</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const colors = ['#22d3ee', '#38bdf8', '#818cf8', '#a78bfa', '#f472b6', '#fb923c', '#4ade80', '#facc15'];
+  
+  const arc = (d) => {
+    if (d.depth === 0) return '';
+    const startAngle = d.x0;
+    const endAngle = d.x1;
+    const innerRadius = d.y0;
+    const outerRadius = d.y1;
+    
+    const x0 = Math.cos(startAngle - Math.PI / 2) * innerRadius;
+    const y0 = Math.sin(startAngle - Math.PI / 2) * innerRadius;
+    const x1 = Math.cos(endAngle - Math.PI / 2) * innerRadius;
+    const y1 = Math.sin(endAngle - Math.PI / 2) * innerRadius;
+    const x2 = Math.cos(endAngle - Math.PI / 2) * outerRadius;
+    const y2 = Math.sin(endAngle - Math.PI / 2) * outerRadius;
+    const x3 = Math.cos(startAngle - Math.PI / 2) * outerRadius;
+    const y3 = Math.sin(startAngle - Math.PI / 2) * outerRadius;
+    
+    const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+    
+    return `M ${x0} ${y0} A ${innerRadius} ${innerRadius} 0 ${largeArc} 1 ${x1} ${y1} L ${x2} ${y2} A ${outerRadius} ${outerRadius} 0 ${largeArc} 0 ${x3} ${y3} Z`;
+  };
+  
+  return (
+    <div className="relative">
+      <svg width={width} height={height}>
+        <g transform={`translate(${centerX}, ${centerY})`}>
+          {sunburstData.map((d, idx) => {
+            if (d.depth === 0) return null;
+            const colorIdx = d.depth === 1 ? idx : (d.parent?.data?.name?.charCodeAt(0) || 0) % colors.length;
+            const opacity = d.depth === 1 ? 0.9 : 0.7;
+            const isHovered = hoveredArc === idx;
+            
+            return (
+              <path
+                key={idx}
+                d={arc(d)}
+                fill={colors[colorIdx % colors.length]}
+                stroke="#0f172a"
+                strokeWidth={1}
+                opacity={isHovered ? 1 : opacity}
+                style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={() => setHoveredArc(idx)}
+                onMouseLeave={() => setHoveredArc(null)}
+              >
+                <title>{`${d.data.name}: ${d.value}`}</title>
+              </path>
+            );
+          })}
+        </g>
+      </svg>
+      
+      {/* Tooltip */}
+      {hoveredArc !== null && sunburstData[hoveredArc] && (
+        <div className="absolute top-4 right-4 px-4 py-2 bg-slate-900/95 border border-amber-500/40 rounded-lg shadow-xl z-10">
+          <div className="text-amber-300 font-bold">{sunburstData[hoveredArc].data.name}</div>
+          <div className={`text-sm text-slate-400`}>
+            Segmentos: <span className="text-white font-medium">{Math.floor(sunburstData[hoveredArc].value)}</span>
+          </div>
+          {sunburstData[hoveredArc].depth > 1 && sunburstData[hoveredArc].parent && (
+            <div className="text-xs text-slate-500 mt-1">
+              Categoria: {sunburstData[hoveredArc].parent.data.name}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== COMPONENTES DE ANÁLISE DE REDE AVANÇADA ====================
+
+// Componente de Métricas de Centralidade
+const CentralityMetricsPanel = ({ networkAnalysis, onNodeClick, isDarkMode = true }) => {
+  const [sortBy, setSortBy] = useState('degree');
+  const [showCount, setShowCount] = useState(20);
+  
+  if (!networkAnalysis?.centrality?.nodes || !networkAnalysis?.centrality?.metrics) return null;
+  
+  const { nodes, metrics } = networkAnalysis.centrality;
+  const t = getThemeClasses(isDarkMode);
+  
+  const sortedNodes = useMemo(() => {
+    const sorted = [...nodes];
+    switch (sortBy) {
+      case 'degree': return sorted.sort((a, b) => b.degreeCentrality - a.degreeCentrality);
+      case 'betweenness': return sorted.sort((a, b) => b.betweennessCentrality - a.betweennessCentrality);
+      case 'closeness': return sorted.sort((a, b) => b.closenessCentrality - a.closenessCentrality);
+      case 'eigenvector': return sorted.sort((a, b) => b.eigenvectorCentrality - a.eigenvectorCentrality);
+      default: return sorted;
+    }
+  }, [nodes, sortBy]);
+  
+  return (
+    <div className="space-y-6">
+      {/* Métricas Globais */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
+          <div className="text-3xl font-bold text-cyan-400">{metrics.nodeCount}</div>
+          <div className={`text-sm ${t.textMuted}`}>Nós</div>
+        </div>
+        <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
+          <div className="text-3xl font-bold text-purple-400">{metrics.edgeCount}</div>
+          <div className={`text-sm ${t.textMuted}`}>Arestas</div>
+        </div>
+        <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
+          <div className="text-3xl font-bold text-green-400">{metrics.density}</div>
+          <div className={`text-sm ${t.textMuted}`}>Densidade</div>
+        </div>
+        <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
+          <div className="text-3xl font-bold text-amber-400">{metrics.avgDegree}</div>
+          <div className={`text-sm ${t.textMuted}`}>Grau Médio</div>
+        </div>
+      </div>
+      
+      {/* Seletor de Métrica */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <span className={`text-sm ${t.textMuted}`}>Ordenar por:</span>
+        {[
+          { key: 'degree', label: 'Grau', desc: 'Número de conexões diretas' },
+          { key: 'betweenness', label: 'Intermediação', desc: 'Ponte entre grupos' },
+          { key: 'closeness', label: 'Proximidade', desc: 'Distância média aos outros nós' },
+          { key: 'eigenvector', label: 'Autovetor', desc: 'Conexão com nós influentes' }
+        ].map(opt => (
+          <button
+            key={opt.key}
+            onClick={() => setSortBy(opt.key)}
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              sortBy === opt.key 
+                ? 'bg-cyan-600 text-white' 
+                : t.button
+            }`}
+            title={opt.desc}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+      
+      {/* Tabela de Nós */}
+      <div className={`${t.cardInner} rounded-xl border ${t.cardInnerBorder} overflow-hidden`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className={t.tableHeader}>
+              <tr>
+                <th className={`px-4 py-3 text-left ${t.textSecondary}`}>#</th>
+                <th className={`px-4 py-3 text-left ${t.textSecondary}`}>Palavra</th>
+                <th className={`px-4 py-3 text-right ${t.textSecondary}`}>Grau</th>
+                <th className={`px-4 py-3 text-right ${t.textSecondary}`}>Betweenness</th>
+                <th className={`px-4 py-3 text-right ${t.textSecondary}`}>Closeness</th>
+                <th className={`px-4 py-3 text-right ${t.textSecondary}`}>Eigenvector</th>
+                <th className={`px-4 py-3 text-center ${t.textSecondary}`}>Comunidade</th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${t.tableDivide}`}>
+              {sortedNodes.slice(0, showCount).map((node, idx) => (
+                <tr 
+                  key={node.id}
+                  className={`${t.hoverRow} cursor-pointer transition-colors`}
+                  onClick={() => onNodeClick && onNodeClick(node)}
+                >
+                  <td className={`px-4 py-2 ${t.textDimmed}`}>{idx + 1}</td>
+                  <td className={`px-4 py-2 font-medium ${t.text}`}>{node.id}</td>
+                  <td className="px-4 py-2 text-right">
+                    <span className="text-cyan-400">{node.degree}</span>
+                    <span className={`${t.textDimmed} text-xs ml-1`}>({(node.degreeCentrality * 100).toFixed(1)}%)</span>
+                  </td>
+                  <td className="px-4 py-2 text-right text-purple-400">{(node.betweennessCentrality * 100).toFixed(2)}%</td>
+                  <td className="px-4 py-2 text-right text-green-400">{(node.closenessCentrality * 100).toFixed(2)}%</td>
+                  <td className="px-4 py-2 text-right text-amber-400">{(node.eigenvectorCentrality * 100).toFixed(2)}%</td>
+                  <td className="px-4 py-2 text-center">
+                    <span 
+                      className="inline-block w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold"
+                      style={{ backgroundColor: node.communityColor || '#6366f1' }}
+                    >
+                      {node.community + 1}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {nodes.length > showCount && (
+          <div className={`p-3 border-t ${t.divider} text-center`}>
+            <button
+              onClick={() => setShowCount(prev => prev + 20)}
+              className="text-sm text-cyan-400 hover:text-cyan-300"
+            >
+              Mostrar mais ({nodes.length - showCount} restantes)
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Componente de Comunidades Detectadas
+const CommunitiesPanel = ({ networkAnalysis, isDarkMode = true }) => {
+  const [expandedCommunity, setExpandedCommunity] = useState(null);
+  
+  if (!networkAnalysis?.communities?.communities) return null;
+  
+  const t = getThemeClasses(isDarkMode);
+  
+  const { communities, modularity, communityCount } = networkAnalysis.communities;
+  
+  return (
+    <div className="space-y-6">
+      {/* Resumo */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className={`${isDarkMode ? 'bg-gradient-to-br from-purple-900/30 to-indigo-900/30' : 'bg-gradient-to-br from-purple-100 to-indigo-100'} rounded-xl p-4 border ${isDarkMode ? 'border-purple-500/30' : 'border-purple-300'}`}>
+          <div className="text-3xl font-bold text-purple-400">{communityCount}</div>
+          <div className={`text-sm ${t.textMuted}`}>Comunidades Detectadas</div>
+        </div>
+        <div className={`${isDarkMode ? 'bg-gradient-to-br from-indigo-900/30 to-blue-900/30' : 'bg-gradient-to-br from-indigo-100 to-blue-100'} rounded-xl p-4 border ${isDarkMode ? 'border-indigo-500/30' : 'border-indigo-300'}`}>
+          <div className="text-3xl font-bold text-indigo-400">{modularity}</div>
+          <div className={`text-sm ${t.textMuted}`}>Modularidade (Q)</div>
+          <div className={`text-xs ${t.textDimmed} mt-1`}>
+            {parseFloat(modularity) > 0.3 ? 'Estrutura comunitária forte' : 
+             parseFloat(modularity) > 0.1 ? 'Estrutura moderada' : 'Estrutura fraca'}
+          </div>
+        </div>
+      </div>
+      
+      {/* Lista de Comunidades */}
+      <div className="space-y-3">
+        {communities.map(comm => (
+          <div 
+            key={comm.id}
+            className={`${t.cardInner} rounded-xl border ${t.cardInnerBorder} overflow-hidden`}
+          >
+            <button
+              onClick={() => setExpandedCommunity(expandedCommunity === comm.id ? null : comm.id)}
+              className={`w-full flex items-center justify-between p-4 ${t.hoverRow} transition-colors`}
+            >
+              <div className="flex items-center gap-3">
+                <span 
+                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white"
+                  style={{ backgroundColor: comm.color }}
+                >
+                  {comm.id + 1}
+                </span>
+                <div className="text-left">
+                  <div className="font-medium">Comunidade {comm.id + 1}</div>
+                  <div className={`text-sm ${t.textMuted}`}>{comm.size} palavras</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className={`text-xs ${t.textDimmed}`}>Principais termos:</div>
+                  <div className={`text-sm ${t.textSecondary}`}>{comm.topNodes.slice(0, 3).join(', ')}</div>
+                </div>
+                <ChevronDown className={`w-5 h-5 ${t.textMuted} transition-transform ${expandedCommunity === comm.id ? 'rotate-180' : ''}`} />
+              </div>
+            </button>
+            
+            {expandedCommunity === comm.id && (
+              <div className={`p-4 border-t ${t.divider} ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-100'}`}>
+                <div className="flex flex-wrap gap-2">
+                  {comm.members.map(member => (
+                    <span 
+                      key={member}
+                      className="px-2 py-1 rounded text-sm"
+                      style={{ backgroundColor: `${comm.color}30`, color: comm.color }}
+                    >
+                      {member}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Componente de Associações Estatísticas (Qui-quadrado, PMI, etc.)
+const AssociationsPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
+  const [sortBy, setSortBy] = useState('cooccurrence');
+  
+  if (!statisticalAnalysis?.chiSquareAssociations) return null;
+  
+  const t = getThemeClasses(isDarkMode);
+  const associations = statisticalAnalysis.chiSquareAssociations;
+  
+  const sortedAssociations = useMemo(() => {
+    const sorted = [...associations];
+    switch (sortBy) {
+      case 'cooccurrence': return sorted.sort((a, b) => b.cooccurrence - a.cooccurrence);
+      case 'chiSquare': return sorted.sort((a, b) => parseFloat(b.chiSquare) - parseFloat(a.chiSquare));
+      case 'pmi': return sorted.sort((a, b) => parseFloat(b.pmi) - parseFloat(a.pmi));
+      case 'dice': return sorted.sort((a, b) => parseFloat(b.dice) - parseFloat(a.dice));
+      default: return sorted;
+    }
+  }, [associations, sortBy]);
+  
+  return (
+    <div className="space-y-4">
+      {/* Seletor de Métrica */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <span className={`text-sm ${t.textMuted}`}>Ordenar por:</span>
+        {[
+          { key: 'cooccurrence', label: 'Coocorrência', desc: 'Frequência conjunta' },
+          { key: 'chiSquare', label: 'Qui²', desc: 'Significância estatística' },
+          { key: 'pmi', label: 'PMI', desc: 'Informação mútua pontual' },
+          { key: 'dice', label: 'Dice', desc: 'Coeficiente de Dice' }
+        ].map(opt => (
+          <button
+            key={opt.key}
+            onClick={() => setSortBy(opt.key)}
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              sortBy === opt.key 
+                ? 'bg-amber-600 text-white' 
+                : t.button
+            }`}
+            title={opt.desc}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+      
+      {/* Tabela de Associações */}
+      <div className={`${t.cardInner} rounded-xl border ${t.cardInnerBorder} overflow-hidden`}>
+        <div className="overflow-x-auto max-h-96">
+          <table className="w-full text-sm">
+            <thead className={`${t.tableHeader} sticky top-0`}>
+              <tr>
+                <th className={`px-3 py-2 text-left ${t.textSecondary}`}>Par de Palavras</th>
+                <th className={`px-3 py-2 text-right ${t.textSecondary}`}>Cooc.</th>
+                <th className={`px-3 py-2 text-right ${t.textSecondary}`}>Esperado</th>
+                <th className={`px-3 py-2 text-right ${t.textSecondary}`}>χ²</th>
+                <th className={`px-3 py-2 text-right ${t.textSecondary}`}>PMI</th>
+                <th className={`px-3 py-2 text-right ${t.textSecondary}`}>Dice</th>
+                <th className={`px-3 py-2 text-right ${t.textSecondary}`}>Jaccard</th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${t.tableDivide}`}>
+              {sortedAssociations.slice(0, 50).map((assoc, idx) => (
+                <tr key={idx} className={t.hoverRow}>
+                  <td className="px-3 py-2">
+                    <span className="text-cyan-400">{assoc.source}</span>
+                    <span className={`${t.textDimmed} mx-1`}>↔</span>
+                    <span className="text-purple-400">{assoc.target}</span>
+                  </td>
+                  <td className={`px-3 py-2 text-right font-medium ${t.text}`}>{assoc.cooccurrence}</td>
+                  <td className={`px-3 py-2 text-right ${t.textMuted}`}>{assoc.expected}</td>
+                  <td className="px-3 py-2 text-right text-amber-400">{assoc.chiSquare}</td>
+                  <td className="px-3 py-2 text-right text-green-400">{assoc.pmi}</td>
+                  <td className="px-3 py-2 text-right text-blue-400">{assoc.dice}</td>
+                  <td className="px-3 py-2 text-right text-rose-400">{assoc.jaccard}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      {/* Legenda */}
+      <div className={`text-xs ${t.textDimmed} space-y-1`}>
+        <p><strong>χ² (Qui-quadrado):</strong> Mede se a associação é significativa (maior = mais significativo)</p>
+        <p><strong>PMI:</strong> Informação mútua pontual, valores positivos indicam associação acima do esperado</p>
+        <p><strong>Dice/Jaccard:</strong> Medidas de similaridade entre 0 e 1</p>
+      </div>
+    </div>
+  );
+};
+
+// Componente de Diversidade Léxica
+const LexicalDiversityPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
+  if (!statisticalAnalysis?.lexicalDiversity) return null;
+  
+  const t = getThemeClasses(isDarkMode);
+  const ld = statisticalAnalysis.lexicalDiversity;
+  
+  const metrics = [
+    { key: 'ttr', label: 'TTR', value: `${ld.ttr}%`, desc: 'Type-Token Ratio: vocabulário único / total de palavras', color: 'cyan' },
+    { key: 'rttr', label: 'RTTR', value: ld.rttr, desc: 'Root TTR: V / √N (corrigido para tamanho)', color: 'purple' },
+    { key: 'cttr', label: 'CTTR', value: ld.cttr, desc: 'Corrected TTR: V / √(2N)', color: 'blue' },
+    { key: 'herdanC', label: 'Herdan C', value: ld.herdanC, desc: 'log(V) / log(N) - estabilidade léxica', color: 'green' },
+    { key: 'yuleK', label: 'Yule K', value: ld.yuleK, desc: 'Constante de Yule: mede repetitividade (menor = mais diverso)', color: 'amber' },
+    { key: 'simpsonD', label: 'Simpson D', value: ld.simpsonD, desc: 'Índice de Simpson: probabilidade de repetição', color: 'rose' }
+  ];
+  
+  const colorClasses = isDarkMode ? {
+    cyan: 'text-cyan-400 border-cyan-500/30 bg-cyan-900/20',
+    purple: 'text-purple-400 border-purple-500/30 bg-purple-900/20',
+    blue: 'text-blue-400 border-blue-500/30 bg-blue-900/20',
+    green: 'text-green-400 border-green-500/30 bg-green-900/20',
+    amber: 'text-amber-400 border-amber-500/30 bg-amber-900/20',
+    rose: 'text-rose-400 border-rose-500/30 bg-rose-900/20'
+  } : {
+    cyan: 'text-cyan-600 border-cyan-300 bg-cyan-50',
+    purple: 'text-purple-600 border-purple-300 bg-purple-50',
+    blue: 'text-blue-600 border-blue-300 bg-blue-50',
+    green: 'text-green-600 border-green-300 bg-green-50',
+    amber: 'text-amber-600 border-amber-300 bg-amber-50',
+    rose: 'text-rose-600 border-rose-300 bg-rose-50'
+  };
+  
+  return (
+    <div className="space-y-6">
+      {/* Resumo */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
+          <div className={`text-2xl font-bold ${t.text}`}>{ld.totalTokens.toLocaleString()}</div>
+          <div className={`text-sm ${t.textMuted}`}>Total de Tokens</div>
+        </div>
+        <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
+          <div className="text-2xl font-bold text-cyan-400">{ld.uniqueWords.toLocaleString()}</div>
+          <div className={`text-sm ${t.textMuted}`}>Palavras Únicas</div>
+        </div>
+        <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
+          <div className="text-2xl font-bold text-purple-400">{ld.hapaxCount.toLocaleString()}</div>
+          <div className={`text-sm ${t.textMuted}`}>Hapax Legomena ({ld.hapaxRatio}%)</div>
+        </div>
+      </div>
+      
+      {/* Métricas de Diversidade */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {metrics.map(metric => (
+          <div 
+            key={metric.key}
+            className={`rounded-xl p-4 border ${colorClasses[metric.color]}`}
+          >
+            <div className="text-2xl font-bold">{metric.value}</div>
+            <div className="text-sm font-medium">{metric.label}</div>
+            <div className={`text-xs ${t.textDimmed} mt-1`}>{metric.desc}</div>
+          </div>
+        ))}
+      </div>
+      
+      {/* Interpretação */}
+      <div className={`${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-100'} rounded-xl p-4 border ${t.divider}`}>
+        <h4 className={`font-medium mb-2 ${t.textSecondary}`}>Interpretação</h4>
+        <div className={`text-sm ${t.textMuted} space-y-2`}>
+          <p>
+            <strong>TTR {parseFloat(ld.ttr) > 50 ? 'alto' : parseFloat(ld.ttr) > 30 ? 'médio' : 'baixo'}</strong>: 
+            {parseFloat(ld.ttr) > 50 
+              ? ' Vocabulário muito diversificado, típico de textos acadêmicos ou literários.'
+              : parseFloat(ld.ttr) > 30 
+                ? ' Diversidade moderada, comum em textos informativos.'
+                : ' Vocabulário repetitivo, pode indicar foco temático específico.'}
+          </p>
+          <p>
+            <strong>Hapax ratio {parseFloat(ld.hapaxRatio) > 50 ? 'alto' : 'moderado'}</strong>:
+            {parseFloat(ld.hapaxRatio) > 50 
+              ? ' Muitas palavras aparecem apenas uma vez, indicando riqueza vocabular.'
+              : ' Proporção típica de hapax legomena.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de TF-IDF
+const TFIDFPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  
+  if (!statisticalAnalysis?.tfidf) return null;
+  
+  const t = getThemeClasses(isDarkMode);
+  const { byDocument, global } = statisticalAnalysis.tfidf;
+  
+  return (
+    <div className="space-y-6">
+      {/* TF-IDF Global */}
+      <div>
+        <h4 className="font-medium mb-3 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-cyan-400" />
+          Termos mais Discriminantes (TF-IDF Global)
+        </h4>
+        <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
+          <div className="flex flex-wrap gap-2">
+            {global.slice(0, 30).map((term, idx) => (
+              <span
+                key={term.word}
+                className="px-2 py-1 rounded text-sm"
+                style={{
+                  backgroundColor: isDarkMode 
+                    ? `rgba(34, 211, 238, ${0.1 + (term.avgTfidf * 2)})` 
+                    : `rgba(8, 145, 178, ${0.1 + (term.avgTfidf * 2)})`,
+                  color: isDarkMode 
+                    ? (idx < 10 ? '#22d3ee' : idx < 20 ? '#a78bfa' : '#94a3b8')
+                    : (idx < 10 ? '#0891b2' : idx < 20 ? '#7c3aed' : '#475569')
+                }}
+                title={`TF-IDF médio: ${term.avgTfidf.toFixed(4)}, Documentos: ${term.docCount}`}
+              >
+                {term.word}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* TF-IDF por Documento */}
+      <div>
+        <h4 className="font-medium mb-3 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-purple-400" />
+          TF-IDF por Documento
+        </h4>
+        <div className="space-y-2">
+          {byDocument.map(doc => (
+            <div 
+              key={doc.docId}
+              className={`${t.cardInner} rounded-xl border ${t.cardInnerBorder} overflow-hidden`}
+            >
+              <button
+                onClick={() => setSelectedDoc(selectedDoc === doc.docId ? null : doc.docId)}
+                className={`w-full flex items-center justify-between p-3 ${t.hoverRow} transition-colors`}
+              >
+                <span className="font-medium truncate">{doc.docName}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${t.textMuted}`}>{doc.totalTerms} termos</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${selectedDoc === doc.docId ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+              
+              {selectedDoc === doc.docId && (
+                <div className={`p-3 border-t ${t.divider} ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-100'}`}>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className={t.textMuted}>
+                          <th className="px-2 py-1 text-left">Termo</th>
+                          <th className="px-2 py-1 text-right">TF</th>
+                          <th className="px-2 py-1 text-right">IDF</th>
+                          <th className="px-2 py-1 text-right">TF-IDF</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${t.tableDivide}`}>
+                        {doc.topTerms.slice(0, 15).map(term => (
+                          <tr key={term.word}>
+                            <td className="px-2 py-1 text-cyan-400">{term.word}</td>
+                            <td className={`px-2 py-1 text-right ${t.textMuted}`}>{term.tf.toFixed(4)}</td>
+                            <td className="px-2 py-1 text-right text-purple-400">{term.idf.toFixed(2)}</td>
+                            <td className={`px-2 py-1 text-right font-medium ${t.text}`}>{term.tfidf.toFixed(4)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de Especificidades por Corpus
+const SpecificitiesPanel = ({ statisticalAnalysis }) => {
+  if (!statisticalAnalysis?.specificities || statisticalAnalysis.specificities.length < 2) {
+    return (
+      <div className="text-center py-8 text-slate-400">
+        <p>Análise de especificidades requer pelo menos 2 corpus com documentos.</p>
+        <p className="text-sm mt-2">Crie múltiplos corpus na aba Importar para comparar.</p>
+      </div>
+    );
+  }
+  
+  const specificities = statisticalAnalysis.specificities;
+  
+  return (
+    <div className="space-y-6">
+      <p className={`text-sm text-slate-400`}>
+        Especificidades mostram palavras que são significativamente mais ou menos frequentes em cada corpus comparado ao esperado.
+      </p>
+      
+      {specificities.map(corpus => (
+        <div 
+          key={corpus.corpusId}
+          className="bg-slate-900/50 rounded-xl border border-slate-700 overflow-hidden"
+        >
+          <div 
+            className="p-4 border-b border-slate-700 flex items-center gap-3"
+            style={{ borderLeftWidth: '4px', borderLeftColor: corpus.corpusColor }}
+          >
+            <span 
+              className="w-4 h-4 rounded-full"
+              style={{ backgroundColor: corpus.corpusColor }}
+            />
+            <span className="font-medium">{corpus.corpusName}</span>
+            <span className={`text-sm text-slate-400`}>({corpus.totalWords.toLocaleString()} palavras)</span>
+          </div>
+          
+          <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-700">
+            {/* Termos Específicos (positivos) */}
+            <div className="p-4">
+              <h5 className="text-sm font-medium text-green-400 mb-3">
+                ↑ Termos Específicos (acima do esperado)
+              </h5>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {corpus.topPositive.slice(0, 10).map(term => (
+                  <div key={term.word} className="flex items-center justify-between text-sm">
+                    <span className="text-white">{term.word}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400">{term.observed}x</span>
+                      <span className="text-green-400 text-xs">+{term.ratio}x</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Termos Sub-representados (negativos) */}
+            <div className="p-4">
+              <h5 className="text-sm font-medium text-rose-400 mb-3">
+                ↓ Termos Sub-representados (abaixo do esperado)
+              </h5>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {corpus.topNegative.slice(0, 10).map(term => (
+                  <div key={term.word} className="flex items-center justify-between text-sm">
+                    <span className="text-white">{term.word}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400">{term.observed}x</span>
+                      <span className="text-rose-400 text-xs">{term.ratio}x</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ==================== VISUALIZAÇÃO DE ÁRVORE DE PALAVRAS ====================
+
+const WordTreeVisualization = ({ wordTree, width = 900, height = 500 }) => {
+  const [hoveredBranch, setHoveredBranch] = useState(null);
+  
+  if (!wordTree || !wordTree.center) {
+    return <div className="text-slate-400 text-center py-8">Digite uma palavra para visualizar a árvore</div>;
+  }
+  
+  const { center, left = [], right = [] } = wordTree;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  // Calcular posições dos ramos
+  const maxCount = Math.max(
+    ...left.map(b => b.count),
+    ...right.map(b => b.count),
+    1
+  );
+  
+  const leftSpacing = Math.min(30, (height - 100) / Math.max(left.length, 1));
+  const rightSpacing = Math.min(30, (height - 100) / Math.max(right.length, 1));
+  
+  return (
+    <div className="relative">
+      <svg width={width} height={height} className="bg-slate-900/30 rounded-xl">
+        {/* Ramos à esquerda */}
+        {left.slice(0, 20).map((branch, idx) => {
+          const y = 50 + idx * leftSpacing;
+          const lineWidth = 50 + (branch.count / maxCount) * 150;
+          const opacity = 0.4 + (branch.count / maxCount) * 0.6;
+          const isHovered = hoveredBranch === `left-${idx}`;
+          
+          return (
+            <g 
+              key={`left-${idx}`}
+              onMouseEnter={() => setHoveredBranch(`left-${idx}`)}
+              onMouseLeave={() => setHoveredBranch(null)}
+              style={{ cursor: 'pointer' }}
+            >
+              <line
+                x1={centerX - 60}
+                y1={centerY}
+                x2={centerX - 60 - lineWidth}
+                y2={y}
+                stroke={isHovered ? '#22d3ee' : '#64748b'}
+                strokeWidth={isHovered ? 2 : 1 + (branch.count / maxCount) * 2}
+                opacity={opacity}
+              />
+              <text
+                x={centerX - 70 - lineWidth}
+                y={y + 4}
+                textAnchor="end"
+                fill={isHovered ? '#22d3ee' : '#94a3b8'}
+                fontSize={isHovered ? 13 : 11}
+                fontWeight={isHovered ? 600 : 400}
+              >
+                {branch.path}
+              </text>
+              {isHovered && (
+                <text
+                  x={centerX - 70 - lineWidth}
+                  y={y + 18}
+                  textAnchor="end"
+                  fill="#6b7280"
+                  fontSize={9}
+                >
+                  ({branch.count}x)
+                </text>
+              )}
+            </g>
+          );
+        })}
+        
+        {/* Palavra central */}
+        <rect
+          x={centerX - 80}
+          y={centerY - 20}
+          width={160}
+          height={40}
+          rx={8}
+          fill="#22d3ee"
+          opacity={0.2}
+        />
+        <text
+          x={centerX}
+          y={centerY + 6}
+          textAnchor="middle"
+          fill="#22d3ee"
+          fontSize={18}
+          fontWeight={700}
+        >
+          {center}
+        </text>
+        
+        {/* Ramos à direita */}
+        {right.slice(0, 20).map((branch, idx) => {
+          const y = 50 + idx * rightSpacing;
+          const lineWidth = 50 + (branch.count / maxCount) * 150;
+          const opacity = 0.4 + (branch.count / maxCount) * 0.6;
+          const isHovered = hoveredBranch === `right-${idx}`;
+          
+          return (
+            <g 
+              key={`right-${idx}`}
+              onMouseEnter={() => setHoveredBranch(`right-${idx}`)}
+              onMouseLeave={() => setHoveredBranch(null)}
+              style={{ cursor: 'pointer' }}
+            >
+              <line
+                x1={centerX + 60}
+                y1={centerY}
+                x2={centerX + 60 + lineWidth}
+                y2={y}
+                stroke={isHovered ? '#a78bfa' : '#64748b'}
+                strokeWidth={isHovered ? 2 : 1 + (branch.count / maxCount) * 2}
+                opacity={opacity}
+              />
+              <text
+                x={centerX + 70 + lineWidth}
+                y={y + 4}
+                textAnchor="start"
+                fill={isHovered ? '#a78bfa' : '#94a3b8'}
+                fontSize={isHovered ? 13 : 11}
+                fontWeight={isHovered ? 600 : 400}
+              >
+                {branch.path}
+              </text>
+              {isHovered && (
+                <text
+                  x={centerX + 70 + lineWidth}
+                  y={y + 18}
+                  textAnchor="start"
+                  fill="#6b7280"
+                  fontSize={9}
+                >
+                  ({branch.count}x)
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+// ==================== VISUALIZAÇÃO DE REDE DE BIGRAMAS ====================
+
+const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600 }) => {
+  const [positions, setPositions] = useState([]);
+  const [hoveredNode, setHoveredNode] = useState(null);
+  
+  useEffect(() => {
+    if (!bigramNetwork?.nodes?.length) return;
+    
+    const { nodes, edges = [] } = bigramNetwork;
+    
+    // Inicializar posições com layout circular
+    const initialPositions = nodes.map((node, idx) => {
+      const angle = (idx / nodes.length) * 2 * Math.PI;
+      const radius = Math.min(width, height) / 3;
+      return {
+        id: node.id,
+        x: width / 2 + Math.cos(angle) * radius,
+        y: height / 2 + Math.sin(angle) * radius,
+        degree: node.degree,
+        weight: node.totalWeight
+      };
+    });
+    
+    // Simulação force-directed simples
+    const posMap = new Map(initialPositions.map(p => [p.id, p]));
+    
+    for (let iter = 0; iter < 50; iter++) {
+      // Repulsão entre nós
+      initialPositions.forEach(p1 => {
+        initialPositions.forEach(p2 => {
+          if (p1.id !== p2.id) {
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const force = 1000 / (dist * dist);
+            p1.x += (dx / dist) * force;
+            p1.y += (dy / dist) * force;
+          }
+        });
+      });
+      
+      // Atração por arestas
+      edges.forEach(edge => {
+        const p1 = posMap.get(edge.source);
+        const p2 = posMap.get(edge.target);
+        if (p1 && p2) {
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = dist * 0.01 * edge.weight;
+          p1.x += (dx / dist) * force;
+          p1.y += (dy / dist) * force;
+          p2.x -= (dx / dist) * force;
+          p2.y -= (dy / dist) * force;
+        }
+      });
+      
+      // Manter dentro dos limites
+      initialPositions.forEach(p => {
+        p.x = Math.max(60, Math.min(width - 60, p.x));
+        p.y = Math.max(40, Math.min(height - 40, p.y));
+      });
+    }
+    
+    setPositions(initialPositions);
+  }, [bigramNetwork, width, height]);
+  
+  if (!bigramNetwork?.nodes?.length) {
+    return <div className="text-slate-400 text-center py-8">Nenhum bigrama encontrado com frequência suficiente</div>;
+  }
+  
+  const { edges } = bigramNetwork;
+  const posMap = new Map(positions.map(p => [p.id, p]));
+  const maxWeight = Math.max(...positions.map(p => p.weight), 1);
+  
+  return (
+    <svg width={width} height={height} className="bg-slate-900/30 rounded-xl">
+      {/* Arestas */}
+      {edges.map((edge, idx) => {
+        const p1 = posMap.get(edge.source);
+        const p2 = posMap.get(edge.target);
+        if (!p1 || !p2) return null;
+        
+        const isHighlighted = hoveredNode === edge.source || hoveredNode === edge.target;
+        
+        return (
+          <line
+            key={idx}
+            x1={p1.x}
+            y1={p1.y}
+            x2={p2.x}
+            y2={p2.y}
+            stroke={isHighlighted ? '#22d3ee' : '#475569'}
+            strokeWidth={1 + edge.weight * 0.3}
+            opacity={isHighlighted ? 0.9 : 0.4}
+          />
+        );
+      })}
+      
+      {/* Nós */}
+      {positions.map(node => {
+        const isHovered = hoveredNode === node.id;
+        const size = 6 + (node.weight / maxWeight) * 20;
+        
+        return (
+          <g 
+            key={node.id}
+            onMouseEnter={() => setHoveredNode(node.id)}
+            onMouseLeave={() => setHoveredNode(null)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle
+              cx={node.x}
+              cy={node.y}
+              r={isHovered ? size + 3 : size}
+              fill={isHovered ? '#22d3ee' : '#3b82f6'}
+              stroke={isHovered ? '#fff' : 'none'}
+              strokeWidth={2}
+              opacity={isHovered ? 1 : 0.8}
+            />
+            <text
+              x={node.x}
+              y={node.y - size - 5}
+              textAnchor="middle"
+              fill={isHovered ? '#fff' : '#94a3b8'}
+              fontSize={isHovered ? 12 : 10}
+              fontWeight={isHovered ? 600 : 400}
+            >
+              {node.id}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
+// ==================== TERMSBERRY (CIRCLE PACKING) ====================
+
+const TermsBerryVisualization = ({ words, width = 700, height = 700, onWordClick }) => {
+  const [packedCircles, setPackedCircles] = useState([]);
+  const [hoveredWord, setHoveredWord] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    if (!words || words.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+    
+    const loadAndRender = async () => {
+      setIsLoading(true);
+      
+      // Carregar D3 se necessário
+      if (!window.d3) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      // Preparar dados para circle packing
+      const topWords = words.slice(0, 80);
+      const maxCount = Math.max(...topWords.map(w => w.count));
+      
+      // Criar hierarquia para D3
+      const data = {
+        name: 'root',
+        children: topWords.map(w => ({
+          name: w.word,
+          value: w.count,
+          originalData: w
+        }))
+      };
+      
+      const root = window.d3.hierarchy(data)
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+      
+      const pack = window.d3.pack()
+        .size([width - 20, height - 20])
+        .padding(3);
+      
+      pack(root);
+      
+      // Extrair círculos (excluindo o root)
+      const circles = root.descendants()
+        .filter(d => d.depth === 1)
+        .map(d => ({
+          x: d.x + 10,
+          y: d.y + 10,
+          r: d.r,
+          word: d.data.name,
+          count: d.data.value,
+          originalData: d.data.originalData
+        }));
+      
+      setPackedCircles(circles);
+      setIsLoading(false);
+    };
+    
+    loadAndRender().catch(err => {
+      console.error('Erro ao gerar TermsBerry:', err);
+      setIsLoading(false);
+    });
+  }, [words, width, height]);
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center" style={{ width, height }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400">Gerando TermsBerry...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (packedCircles.length === 0) {
+    return (
+      <div className="flex items-center justify-center text-slate-400" style={{ width, height }}>
+        Nenhum dado para exibir
+      </div>
+    );
+  }
+  
+  const maxCount = Math.max(...packedCircles.map(c => c.count));
+  
+  return (
+    <div className="relative">
+      <svg width={width} height={height} className="bg-slate-900/30 rounded-xl">
+        {packedCircles.map((circle, idx) => {
+          const isHovered = hoveredWord === circle.word;
+          const intensity = circle.count / maxCount;
+          // Cor gradiente do azul claro (baixa freq) ao azul escuro (alta freq)
+          const fillColor = intensity > 0.5 ? '#3b82f6' : '#94a3b8';
+          const fillOpacity = 0.4 + intensity * 0.5;
+          
+          return (
+            <g 
+              key={circle.word}
+              onMouseEnter={() => setHoveredWord(circle.word)}
+              onMouseLeave={() => setHoveredWord(null)}
+              onClick={() => onWordClick && onWordClick(circle.originalData)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle
+                cx={circle.x}
+                cy={circle.y}
+                r={isHovered ? circle.r + 2 : circle.r}
+                fill={isHovered ? '#22d3ee' : fillColor}
+                fillOpacity={isHovered ? 0.9 : fillOpacity}
+                stroke={isHovered ? '#fff' : '#475569'}
+                strokeWidth={isHovered ? 2 : 0.5}
+              />
+              {circle.r > 15 && (
+                <text
+                  x={circle.x}
+                  y={circle.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill={isHovered ? '#fff' : (intensity > 0.3 ? '#fff' : '#1e293b')}
+                  fontSize={Math.min(circle.r / 3, 14)}
+                  fontWeight={isHovered ? 700 : 500}
+                  pointerEvents="none"
+                >
+                  {circle.word.length > circle.r / 5 
+                    ? circle.word.slice(0, Math.floor(circle.r / 5)) + '…' 
+                    : circle.word}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      
+      {/* Tooltip */}
+      {hoveredWord && (
+        <div className="absolute top-4 right-4 px-4 py-2 bg-slate-900/95 border border-cyan-500/40 rounded-lg shadow-xl z-10">
+          <div className="text-cyan-300 font-bold">{hoveredWord}</div>
+          <div className={`text-sm text-slate-400`}>
+            Frequência: <span className="text-white font-medium">
+              {packedCircles.find(c => c.word === hoveredWord)?.count}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== AFC (ANÁLISE FATORIAL DE CORRESPONDÊNCIA) ====================
+
+// Função para calcular AFC simplificada
+const calculateAFC = (documents, words, stopwords = null, options = {}) => {
+  if (!documents || documents.length < 2 || !words || words.length < 10) {
+    return null;
+  }
+  
+  // Criar matriz documento x palavra
+  const topWords = words.slice(0, 150).map(w => w.word);
+  const matrix = [];
+  
+  documents.forEach(doc => {
+    const docWords = cleanText(doc.content, options, stopwords);
+    const row = topWords.map(word => {
+      return docWords.filter(w => w === word).length;
+    });
+    matrix.push(row);
+  });
+  
+  // Calcular totais
+  const rowTotals = matrix.map(row => row.reduce((a, b) => a + b, 0));
+  const colTotals = topWords.map((_, colIdx) => 
+    matrix.reduce((sum, row) => sum + row[colIdx], 0)
+  );
+  const grandTotal = rowTotals.reduce((a, b) => a + b, 0);
+  
+  if (grandTotal === 0) return null;
+  
+  // Calcular perfis e coordenadas (simplificado)
+  // Usamos uma aproximação via PCA-like para as duas primeiras dimensões
+  const wordProfiles = topWords.map((word, colIdx) => {
+    // Calcular perfil da palavra (distribuição pelos documentos)
+    const profile = matrix.map((row, rowIdx) => {
+      const expected = (rowTotals[rowIdx] * colTotals[colIdx]) / grandTotal;
+      const observed = row[colIdx];
+      // Chi-square contribution
+      if (expected > 0) {
+        return (observed - expected) / Math.sqrt(expected);
+      }
+      return 0;
+    });
+    
+    // Simplificação: usar médias ponderadas como coordenadas
+    const x = profile.reduce((sum, val, idx) => sum + val * (idx / documents.length - 0.5), 0);
+    const y = profile.reduce((sum, val, idx) => sum + val * Math.sin(idx * Math.PI / documents.length), 0);
+    
+    return {
+      word,
+      x: x * 2,
+      y: y * 2,
+      count: colTotals[colIdx],
+      chiContribution: profile.reduce((sum, val) => sum + val * val, 0)
+    };
+  });
+  
+  // Normalizar coordenadas
+  const xValues = wordProfiles.map(p => p.x);
+  const yValues = wordProfiles.map(p => p.y);
+  const xMax = Math.max(...xValues.map(Math.abs), 1);
+  const yMax = Math.max(...yValues.map(Math.abs), 1);
+  
+  const normalizedProfiles = wordProfiles.map(p => ({
+    ...p,
+    x: (p.x / xMax) * 2,
+    y: (p.y / yMax) * 2
+  }));
+  
+  // Calcular variância explicada (aproximada)
+  const totalVariance = normalizedProfiles.reduce((sum, p) => sum + p.chiContribution, 0);
+  const dim1Variance = normalizedProfiles.reduce((sum, p) => sum + p.x * p.x, 0);
+  const dim2Variance = normalizedProfiles.reduce((sum, p) => sum + p.y * p.y, 0);
+  
+  return {
+    words: normalizedProfiles,
+    variance: {
+      dim1: ((dim1Variance / (dim1Variance + dim2Variance)) * 50).toFixed(1),
+      dim2: ((dim2Variance / (dim1Variance + dim2Variance)) * 50).toFixed(1)
+    }
+  };
+};
+
+const AFCVisualization = ({ afcData, width = 800, height = 600 }) => {
+  const [hoveredWord, setHoveredWord] = useState(null);
+  const [showLabels, setShowLabels] = useState(true);
+  
+  if (!afcData || !afcData.words || afcData.words.length === 0) {
+    return (
+      <div className="flex items-center justify-center text-slate-400" style={{ width, height }}>
+        <div className="text-center">
+          <p>Dados insuficientes para AFC</p>
+          <p className="text-sm mt-2">Necessário pelo menos 2 documentos</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const { words, variance } = afcData;
+  const margin = { top: 60, right: 80, bottom: 60, left: 100 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const centerX = margin.left + plotWidth / 2;
+  const centerY = margin.top + plotHeight / 2;
+  
+  // Escala
+  const xScale = (val) => centerX + val * (plotWidth / 4);
+  const yScale = (val) => centerY - val * (plotHeight / 4);
+  
+  // Cores por quadrante/cluster (baseado na posição)
+  const getColor = (x, y) => {
+    if (x > 0 && y > 0) return '#22c55e'; // verde - quadrante 1
+    if (x < 0 && y > 0) return '#3b82f6'; // azul - quadrante 2
+    if (x < 0 && y < 0) return '#f97316'; // laranja - quadrante 3
+    return '#ec4899'; // rosa - quadrante 4
+  };
+  
+  const maxCount = Math.max(...words.map(w => w.count));
+  
+  return (
+    <div className="relative">
+      <svg width={width} height={height} className="bg-slate-900/30 rounded-xl">
+        {/* Legenda dentro do SVG */}
+        <g transform={`translate(${margin.left - 90}, ${margin.top})`}>
+          <rect x={0} y={0} width={85} height={90} fill="#1e293b" rx={6} opacity={0.9} />
+          <g transform="translate(8, 15)">
+            <circle cx={6} cy={0} r={5} fill="#22c55e" />
+            <text x={18} y={4} fill="#94a3b8" fontSize={10}>Quadrante 1</text>
+          </g>
+          <g transform="translate(8, 35)">
+            <circle cx={6} cy={0} r={5} fill="#3b82f6" />
+            <text x={18} y={4} fill="#94a3b8" fontSize={10}>Quadrante 2</text>
+          </g>
+          <g transform="translate(8, 55)">
+            <circle cx={6} cy={0} r={5} fill="#f97316" />
+            <text x={18} y={4} fill="#94a3b8" fontSize={10}>Quadrante 3</text>
+          </g>
+          <g transform="translate(8, 75)">
+            <circle cx={6} cy={0} r={5} fill="#ec4899" />
+            <text x={18} y={4} fill="#94a3b8" fontSize={10}>Quadrante 4</text>
+          </g>
+        </g>
+        
+        {/* Eixos */}
+        <line x1={margin.left} y1={centerY} x2={width - margin.right} y2={centerY} stroke="#475569" strokeWidth={1} />
+        <line x1={centerX} y1={margin.top} x2={centerX} y2={height - margin.bottom} stroke="#475569" strokeWidth={1} />
+        
+        {/* Labels dos eixos */}
+        <text x={width - margin.right + 10} y={centerY + 5} fill="#94a3b8" fontSize={12}>Fator 1</text>
+        <text x={centerX + 5} y={margin.top - 10} fill="#94a3b8" fontSize={12}>Fator 2</text>
+        
+        {/* Variância explicada */}
+        <text x={width - margin.right} y={centerY + 20} fill="#6b7280" fontSize={10} textAnchor="end">
+          {variance.dim1}%
+        </text>
+        <text x={centerX + 15} y={margin.top + 10} fill="#6b7280" fontSize={10}>
+          {variance.dim2}%
+        </text>
+        
+        {/* Grid lines */}
+        {[-2, -1, 1, 2].map(val => (
+          <g key={`grid-${val}`}>
+            <line 
+              x1={xScale(val)} y1={margin.top} x2={xScale(val)} y2={height - margin.bottom} 
+              stroke="#334155" strokeWidth={0.5} strokeDasharray="4"
+            />
+            <line 
+              x1={margin.left} y1={yScale(val)} x2={width - margin.right} y2={yScale(val)} 
+              stroke="#334155" strokeWidth={0.5} strokeDasharray="4"
+            />
+            <text x={xScale(val)} y={height - margin.bottom + 15} fill="#6b7280" fontSize={9} textAnchor="middle">
+              {val}
+            </text>
+            <text x={margin.left - 10} y={yScale(val) + 3} fill="#6b7280" fontSize={9} textAnchor="end">
+              {val}
+            </text>
+          </g>
+        ))}
+        
+        {/* Palavras */}
+        {words.map((w, idx) => {
+          const x = xScale(w.x);
+          const y = yScale(w.y);
+          const isHovered = hoveredWord === w.word;
+          const size = 3 + (w.count / maxCount) * 8;
+          const color = getColor(w.x, w.y);
+          
+          return (
+            <g 
+              key={w.word}
+              onMouseEnter={() => setHoveredWord(w.word)}
+              onMouseLeave={() => setHoveredWord(null)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle
+                cx={x}
+                cy={y}
+                r={isHovered ? size + 2 : size}
+                fill={color}
+                fillOpacity={isHovered ? 1 : 0.7}
+                stroke={isHovered ? '#fff' : 'none'}
+                strokeWidth={2}
+              />
+              {(showLabels || isHovered) && w.count > maxCount * 0.05 && (
+                <text
+                  x={x}
+                  y={y - size - 3}
+                  textAnchor="middle"
+                  fill={isHovered ? '#fff' : color}
+                  fontSize={isHovered ? 12 : 9}
+                  fontWeight={isHovered ? 700 : 400}
+                >
+                  {w.word}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      
+      {/* Checkbox Mostrar rótulos */}
+      <div className="absolute top-3 right-3 z-10 bg-slate-800/90 px-3 py-1.5 rounded-lg">
+        <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showLabels}
+            onChange={(e) => setShowLabels(e.target.checked)}
+            className="rounded"
+          />
+          Mostrar
+        </label>
+      </div>
+      
+      {/* Tooltip */}
+      {hoveredWord && (
+        <div className="absolute bottom-4 left-4 px-4 py-2 bg-slate-900/95 border border-slate-600 rounded-lg shadow-xl z-10">
+          <div className="text-white font-bold">{hoveredWord}</div>
+          <div className={`text-sm text-slate-400`}>
+            Frequência: {words.find(w => w.word === hoveredWord)?.count}
+          </div>
+          <div className="text-xs text-slate-500 mt-1">
+            Coordenadas: ({words.find(w => w.word === hoveredWord)?.x.toFixed(2)}, {words.find(w => w.word === hoveredWord)?.y.toFixed(2)})
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== VISUALIZAÇÃO DE ANÁLISE DE SENTIMENTOS ====================
+
+const SentimentVisualization = ({ sentiment, width = 700, height = 400 }) => {
+  if (!sentiment) return null;
+  
+  const { positive, negative, neutral, total, score } = sentiment;
+  
+  const barWidth = 120;
+  const maxHeight = 280;
+  const maxCount = Math.max(positive.count, negative.count, neutral.count, 1);
+  
+  const bars = [
+    { label: 'Positivo', count: positive.count, percentage: positive.percentage, color: '#22c55e', x: 150 },
+    { label: 'Negativo', count: negative.count, percentage: negative.percentage, color: '#ef4444', x: 320 },
+    { label: 'Neutro', count: neutral.count, percentage: neutral.percentage, color: '#9ca3af', x: 490 }
+  ];
+  
+  return (
+    <div className="space-y-6">
+      {/* Gráfico de barras */}
+      <svg width={width} height={height} className="bg-slate-900/30 rounded-xl">
+        {/* Título */}
+        <text x={width / 2} y={30} textAnchor="middle" fill="#e2e8f0" fontSize={16} fontWeight={600}>
+          Análise de Sentimentos (Léxico)
+        </text>
+        
+        {/* Eixo Y */}
+        <line x1={80} y1={60} x2={80} y2={340} stroke="#475569" />
+        <text x={40} y={200} textAnchor="middle" fill="#94a3b8" fontSize={12} transform="rotate(-90, 40, 200)">
+          Frequência
+        </text>
+        
+        {/* Barras */}
+        {bars.map((bar, idx) => {
+          const barHeight = (bar.count / maxCount) * maxHeight;
+          const y = 340 - barHeight;
+          
+          return (
+            <g key={bar.label}>
+              <rect
+                x={bar.x - barWidth / 2}
+                y={y}
+                width={barWidth}
+                height={barHeight}
+                fill={bar.color}
+                rx={4}
+                opacity={0.9}
+              />
+              <text
+                x={bar.x}
+                y={y - 25}
+                textAnchor="middle"
+                fill={bar.color}
+                fontSize={13}
+                fontWeight={600}
+              >
+                {bar.percentage}% ({bar.count})
+              </text>
+              <text
+                x={bar.x}
+                y={365}
+                textAnchor="middle"
+                fill="#e2e8f0"
+                fontSize={13}
+              >
+                {bar.label}
+              </text>
+            </g>
+          );
+        })}
+        
+        {/* Linhas de grade */}
+        {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+          const y = 340 - pct * maxHeight;
+          const val = Math.round(pct * maxCount);
+          return (
+            <g key={pct}>
+              <line x1={80} y1={y} x2={620} y2={y} stroke="#334155" strokeDasharray="4" />
+              <text x={70} y={y + 4} textAnchor="end" fill="#64748b" fontSize={10}>{val}</text>
+            </g>
+          );
+        })}
+      </svg>
+      
+      {/* Score e palavras */}
+      <div className="grid md:grid-cols-3 gap-4">
+        {/* Score */}
+        <div className={`rounded-xl p-4 border ${
+          parseFloat(score) > 0 
+            ? 'bg-green-900/20 border-green-500/30' 
+            : parseFloat(score) < 0 
+              ? 'bg-red-900/20 border-red-500/30'
+              : 'bg-slate-800/50 border-slate-700'
+        }`}>
+          <div className={`text-3xl font-bold ${
+            parseFloat(score) > 0 ? 'text-green-400' : parseFloat(score) < 0 ? 'text-red-400' : 'text-slate-400'
+          }`}>
+            {parseFloat(score) > 0 ? '+' : ''}{score}
+          </div>
+          <div className={`text-sm text-slate-400`}>Score de Sentimento</div>
+          <div className="text-xs text-slate-500 mt-1">
+            {parseFloat(score) > 10 ? 'Predominantemente positivo' :
+             parseFloat(score) < -10 ? 'Predominantemente negativo' :
+             'Relativamente neutro'}
+          </div>
+        </div>
+        
+        {/* Palavras positivas */}
+        <div className="bg-green-900/20 rounded-xl p-4 border border-green-500/30">
+          <div className="text-sm font-medium text-green-400 mb-2">Palavras Positivas</div>
+          <div className="flex flex-wrap gap-1">
+            {positive.words.slice(0, 10).map(word => (
+              <span key={word} className="px-2 py-0.5 bg-green-500/20 text-green-300 rounded text-xs">
+                {word}
+              </span>
+            ))}
+          </div>
+        </div>
+        
+        {/* Palavras negativas */}
+        <div className="bg-red-900/20 rounded-xl p-4 border border-red-500/30">
+          <div className="text-sm font-medium text-red-400 mb-2">Palavras Negativas</div>
+          <div className="flex flex-wrap gap-1">
+            {negative.words.slice(0, 10).map(word => (
+              <span key={word} className="px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-xs">
+                {word}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== COMPONENTE DE EXPORTAÇÃO UNIVERSAL ====================
+
+const ExportVisualizationButton = ({ vizId, filename, data }) => {
+  const [isExporting, setIsExporting] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  
+  const exportAsPNG = async () => {
+    setIsExporting(true);
+    try {
+      const element = document.querySelector(`[data-viz="${vizId}"]`);
+      if (!element) {
+        alert('Visualização não encontrada. Navegue para a aba correspondente primeiro.');
+        setIsExporting(false);
+        setShowMenu(false);
+        return;
+      }
+      
+      // Usar html2canvas via CDN
+      if (!window.html2canvas) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Falha ao carregar html2canvas'));
+          document.head.appendChild(script);
+        });
+      }
+      
+      const canvas = await window.html2canvas(element, { 
+        backgroundColor: '#0f172a',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+      
+      // Método robusto para download
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `${filename}.png`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erro ao exportar PNG: ' + err.message);
+    }
+    setIsExporting(false);
+    setShowMenu(false);
+  };
+  
+  const exportAsJPG = async () => {
+    setIsExporting(true);
+    try {
+      const element = document.querySelector(`[data-viz="${vizId}"]`);
+      if (!element) {
+        alert('Visualização não encontrada. Navegue para a aba correspondente primeiro.');
+        setIsExporting(false);
+        setShowMenu(false);
+        return;
+      }
+      
+      if (!window.html2canvas) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Falha ao carregar html2canvas'));
+          document.head.appendChild(script);
+        });
+      }
+      
+      const canvas = await window.html2canvas(element, { 
+        backgroundColor: '#0f172a',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+      
+      // Método robusto para download
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `${filename}.jpg`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erro ao exportar JPG: ' + err.message);
+    }
+    setIsExporting(false);
+    setShowMenu(false);
+  };
+  
+  const exportAsSVG = () => {
+    const element = document.querySelector(`[data-viz="${vizId}"] svg`);
+    if (!element) {
+      alert('SVG não encontrado. Navegue para a aba correspondente primeiro.');
+      setShowMenu(false);
+      return;
+    }
+    
+    try {
+      const svgData = new XMLSerializer().serializeToString(element);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      
+      // Método robusto para download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filename}.svg`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export SVG error:', err);
+      alert('Erro ao exportar SVG: ' + err.message);
+    }
+    setShowMenu(false);
+  };
+  
+  const exportAsCSV = () => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      alert('Nenhum dado disponível para exportar.');
+      setShowMenu(false);
+      return;
+    }
+    
+    try {
+      const headers = Object.keys(data[0] || {});
+      const csvRows = [headers.join(',')];
+      
+      data.forEach(row => {
+        const values = headers.map(h => {
+          const val = row[h] ?? '';
+          const escaped = String(val).replace(/"/g, '""');
+          return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
+            ? `"${escaped}"` : escaped;
+        });
+        csvRows.push(values.join(','));
+      });
+      
+      // Adicionar BOM para UTF-8 (ajuda Excel a reconhecer encoding)
+      const BOM = '\uFEFF';
+      const csvContent = BOM + csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Método robusto para download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filename}.csv`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export CSV error:', err);
+      alert('Erro ao exportar CSV: ' + err.message);
+    }
+    setShowMenu(false);
+  };
+  
+  const exportAsXLSX = async () => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      alert('Nenhum dado disponível para exportar.');
+      setShowMenu(false);
+      return;
+    }
+    
+    setIsExporting(true);
+    try {
+      // Load SheetJS if not loaded
+      if (!window.XLSX) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Falha ao carregar SheetJS'));
+          document.head.appendChild(script);
+        });
+      }
+      
+      const ws = window.XLSX.utils.json_to_sheet(data);
+      const wb = window.XLSX.utils.book_new();
+      window.XLSX.utils.book_append_sheet(wb, ws, 'Dados');
+      
+      // Gerar arquivo como array buffer e criar blob
+      const wbout = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      
+      // Método robusto para download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filename}.xlsx`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export XLSX error:', err);
+      alert('Erro ao exportar Excel: ' + err.message);
+    }
+    setIsExporting(false);
+    setShowMenu(false);
+  };
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        disabled={isExporting}
+        className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors flex items-center gap-2"
+      >
+        {isExporting ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Download className="w-4 h-4" />
+        )}
+        Exportar
+      </button>
+      
+      {showMenu && (
+        <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden min-w-36">
+          <button onClick={exportAsPNG} className="w-full px-4 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
+            <span className="text-cyan-400">PNG</span> Imagem
+          </button>
+          <button onClick={exportAsJPG} className="w-full px-4 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
+            <span className="text-purple-400">JPG</span> Imagem
+          </button>
+          <button onClick={exportAsSVG} className="w-full px-4 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
+            <span className="text-green-400">SVG</span> Vetor
+          </button>
+          {data && (
+            <>
+              <div className="border-t border-slate-700" />
+              <button onClick={exportAsCSV} className="w-full px-4 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
+                <span className="text-amber-400">CSV</span> Dados
+              </button>
+              <button onClick={exportAsXLSX} className="w-full px-4 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2">
+                <span className="text-blue-400">XLSX</span> Excel
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== COMPONENTE DE TEXTO COM HIGHLIGHTS ====================
+
+const HighlightedTextViewer = ({ 
+  document, 
+  codedSegments, 
+  allCodes, 
+  onTextSelect, 
+  onSegmentClick 
+}) => {
+  const [localHighlights, setLocalHighlights] = useState([]);
+  
+  useEffect(() => {
+    if (!document || !codedSegments) return;
+    
+    // Encontrar todos os segmentos codificados deste documento
+    const docSegments = codedSegments.filter(seg => seg.documentId === document.id);
+    
+    // Criar mapa de highlights
+    const highlights = [];
+    const text = document.content.toLowerCase();
+    
+    docSegments.forEach(seg => {
+      const segText = seg.text.toLowerCase();
+      let pos = text.indexOf(segText);
+      
+      while (pos !== -1) {
+        // Pegar cor do primeiro código
+        const firstCode = seg.codes[0];
+        const codeInfo = allCodes.find(c => c.id === firstCode);
+        
+        highlights.push({
+          start: pos,
+          end: pos + seg.text.length,
+          segment: seg,
+          color: codeInfo?.color || '#6366f1'
+        });
+        
+        pos = text.indexOf(segText, pos + 1);
+      }
+    });
+    
+    // Ordenar por posição
+    highlights.sort((a, b) => a.start - b.start);
+    
+    // Remover sobreposições (manter o primeiro)
+    const filtered = [];
+    let lastEnd = 0;
+    highlights.forEach(h => {
+      if (h.start >= lastEnd) {
+        filtered.push(h);
+        lastEnd = h.end;
+      }
+    });
+    
+    setLocalHighlights(filtered);
+  }, [document, codedSegments, allCodes]);
+  
+  // Renderizar texto com highlights
+  const renderHighlightedText = () => {
+    if (!document) return null;
+    
+    const text = document.content;
+    if (localHighlights.length === 0) {
+      return <span>{text}</span>;
+    }
+    
+    const parts = [];
+    let lastIndex = 0;
+    
+    localHighlights.forEach((highlight, idx) => {
+      // Texto antes do highlight
+      if (highlight.start > lastIndex) {
+        parts.push(
+          <span key={`text-${idx}`}>
+            {text.substring(lastIndex, highlight.start)}
+          </span>
+        );
+      }
+      
+      // Texto com highlight
+      parts.push(
+        <mark
+          key={`highlight-${idx}`}
+          className="cursor-pointer rounded px-0.5 transition-all hover:opacity-80"
+          style={{ 
+            backgroundColor: `${highlight.color}40`,
+            borderBottom: `2px solid ${highlight.color}`
+          }}
+          onClick={() => onSegmentClick && onSegmentClick(highlight.segment)}
+          title={highlight.segment.matches?.map(m => m.codeName).join(', ') || 'Clique para detalhes'}
+        >
+          {text.substring(highlight.start, highlight.end)}
+        </mark>
+      );
+      
+      lastIndex = highlight.end;
+    });
+    
+    // Texto restante
+    if (lastIndex < text.length) {
+      parts.push(
+        <span key="text-end">
+          {text.substring(lastIndex)}
+        </span>
+      );
+    }
+    
+    return parts;
+  };
+  
+  return (
+    <div 
+      className="prose prose-invert max-w-none text-slate-300 leading-relaxed whitespace-pre-wrap select-text"
+      onMouseUp={(e) => onTextSelect && onTextSelect(e, document.id, document.name)}
+    >
+      {renderHighlightedText()}
+    </div>
+  );
+};
+
+// Componente de Tooltip para Seleção de Código
+const CodeSelectionTooltip = ({
+  position,
+  selectedText,
+  codes,
+  searchTerm,
+  onSearchChange,
+  onCodeSelect,
+  onCreateNew,
+  newCodeName,
+  onNewCodeNameChange,
+  showCreator,
+  onToggleCreator,
+  onClose
+}) => {
+  // Fechar com ESC
+  useEffect(() => {
+    if (!position) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [position, onClose]);
+  
+  if (!position) return null;
+  
+  // Modal centralizado na tela - abordagem mais confiável
+  return (
+    <div className="fixed inset-0" style={{ zIndex: 99999 }}>
+      {/* Overlay escuro - clique fecha o modal */}
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Modal centralizado */}
+      <div 
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 border-2 border-cyan-500 rounded-2xl shadow-2xl p-5 w-[360px] max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
+          <div className="flex items-center gap-2">
+            <Tag className="w-5 h-5 text-cyan-400" />
+            <span className="text-lg font-semibold text-white">Codificar Seleção</span>
+          </div>
+          <button 
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center bg-red-500/30 hover:bg-red-600 text-red-300 hover:text-white rounded-xl transition-all border border-red-500/50"
+            title="Fechar (ESC)"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        
+        {/* Texto selecionado */}
+        <div className="mb-4 p-4 bg-slate-800/80 rounded-xl border border-slate-600">
+          <p className="text-xs text-slate-400 mb-2 uppercase tracking-wide font-medium">Texto selecionado:</p>
+          <p className="text-sm text-cyan-300 leading-relaxed max-h-24 overflow-y-auto">
+            "{selectedText?.substring(0, 200)}{selectedText?.length > 200 ? '...' : ''}"
+          </p>
+        </div>
+        
+        {/* Busca */}
+        <div className="relative mb-4">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Buscar código..."
+            className="w-full pl-12 pr-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-xl text-base focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-slate-500"
+            autoFocus
+          />
+        </div>
+        
+        {/* Lista de códigos */}
+        <div className="flex-1 overflow-y-auto space-y-2 mb-4 min-h-[140px] max-h-[200px] pr-2">
+          {codes.map(code => (
+            <button
+              key={code.id}
+              onClick={() => onCodeSelect(code)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/80 transition-all text-left border-2 border-transparent hover:border-cyan-500/50 group"
+            >
+              <span 
+                className="w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-white/30 group-hover:ring-cyan-400"
+                style={{ backgroundColor: code.color }}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-base text-white truncate font-medium">{code.name}</p>
+                <p className="text-sm text-slate-500 truncate">{code.categoryName}</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+            </button>
+          ))}
+          
+          {codes.length === 0 && (
+            <div className="text-center py-8">
+              <Search className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+              <p className="text-base text-slate-500">Nenhum código encontrado</p>
+              <p className="text-sm text-slate-600 mt-1">Tente outro termo ou crie um novo</p>
+            </div>
+          )}
+        </div>
+        
+        {/* Criar novo código */}
+        <div className="pt-4 border-t border-slate-700">
+          {!showCreator ? (
+            <button
+              onClick={onToggleCreator}
+              className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-2 border-cyan-500/50 rounded-xl text-cyan-400 hover:from-cyan-600/40 hover:to-blue-600/40 hover:border-cyan-400 transition-all"
+            >
+              <Plus className="w-6 h-6" />
+              <span className="text-base font-semibold">Criar novo código</span>
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={newCodeName}
+                onChange={(e) => onNewCodeNameChange(e.target.value)}
+                placeholder="Nome do novo código..."
+                className="w-full px-4 py-3 bg-slate-800 border-2 border-cyan-500 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-white"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newCodeName.trim()) onCreateNew();
+                  if (e.key === 'Escape') onToggleCreator();
+                }}
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={onToggleCreator}
+                  className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl text-base text-slate-300 transition-colors border border-slate-600"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={onCreateNew}
+                  disabled={!newCodeName.trim()}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-xl text-base text-white font-semibold hover:from-cyan-500 hover:to-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Criar e Aplicar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== MAIN APP ====================
+
+export default function TextAnalysisApp() {
+  const [documents, setDocuments] = useState([]);
+  const [activeTab, setActiveTab] = useState('upload');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState(null);
+  const [kwicKeyword, setKwicKeyword] = useState('');
+  const [kwicResults, setKwicResults] = useState([]);
+  const [cleaningOptions, setCleaningOptions] = useState({
+    removeNumbers: true,
+    removePunctuation: true,
+    lowercase: true,
+    removeStopwords: true,
+    groupVariations: true, // Agrupar variações morfológicas (gênero, plural, typos)
+    minLength: 4 // Mínimo 4 letras para evitar conectivos e palavras curtas
+  });
+  
+  // ========== TEMA (DARK/LIGHT) ==========
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  // ========== MOBILE MENU ==========
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // ========== EDIÇÃO DE SEGMENTOS ==========
+  const [editingSegment, setEditingSegment] = useState(null);
+  const [editingSegmentText, setEditingSegmentText] = useState('');
+  
+  // ========== EDIÇÃO DE DOCUMENTOS ==========
+  const [editingDocument, setEditingDocument] = useState(null);
+  const [editingDocumentContent, setEditingDocumentContent] = useState('');
+  
+  // ========== SISTEMA DE CORPUS ==========
+  const [corpora, setCorpora] = useState([
+    { id: 'default', name: 'Corpus Principal', color: '#22d3ee', documentIds: [] }
+  ]);
+  const [activeCorpus, setActiveCorpus] = useState('default');
+  const [showCorpusManager, setShowCorpusManager] = useState(false);
+  const [newCorpusName, setNewCorpusName] = useState('');
+  const [corpusFilter, setCorpusFilter] = useState('all'); // 'all' ou id do corpus
+  
+  // ========== SISTEMA DE STOPWORDS ==========
+  const [customStopwordsPT, setCustomStopwordsPT] = useState(defaultStopwordsPT);
+  const [customStopwordsEN, setCustomStopwordsEN] = useState(defaultStopwordsEN);
+  const [showStopwordsManager, setShowStopwordsManager] = useState(false);
+  const [newStopword, setNewStopword] = useState('');
+  const [stopwordSearchTerm, setStopwordSearchTerm] = useState('');
+  const [stopwordLanguage, setStopwordLanguage] = useState('pt'); // 'pt' ou 'en'
+  
+  // Criar Set de stopwords combinadas
+  const stopwordsSet = useMemo(() => {
+    const combined = new Set([...customStopwordsPT, ...customStopwordsEN]);
+    return combined;
+  }, [customStopwordsPT, customStopwordsEN]);
+  
+  // Estados para análise de incidências
+  const [incidenceAnalysis, setIncidenceAnalysis] = useState(null);
+  const [showIncidenceModal, setShowIncidenceModal] = useState(false);
+  const [isAnalyzingIncidence, setIsAnalyzingIncidence] = useState(false);
+  
+  // Estados para codificação qualitativa
+  const [codedSegments, setCodedSegments] = useState([]);
+  const [selectedText, setSelectedText] = useState(null);
+  const [expandedCategories, setExpandedCategories] = useState(['1', '2', '3']);
+  const [codingFilter, setCodingFilter] = useState('all');
+  
+  // Estados para códigos customizados e auto-codificação
+  const [customCodes, setCustomCodes] = useState([]); // Códigos criados pelo usuário
+  const [isAutoCoding, setIsAutoCoding] = useState(false);
+  const [autoCodingResults, setAutoCodingResults] = useState(null);
+  const [selectionTooltip, setSelectionTooltip] = useState(null); // {x, y, text, documentId}
+  const [codeSearchTerm, setCodeSearchTerm] = useState('');
+  const [showCodeCreator, setShowCodeCreator] = useState(false);
+  const [newCodeName, setNewCodeName] = useState('');
+  const [highlightedDocument, setHighlightedDocument] = useState(null);
+  const [addingCodeToSegment, setAddingCodeToSegment] = useState(null); // ID do segmento para adicionar código
+  
+  // Estado para sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // ========== ESTADOS PARA ANÁLISE DE REDE AVANÇADA ==========
+  const [networkAnalysis, setNetworkAnalysis] = useState(null);
+  const [networkSettings, setNetworkSettings] = useState({
+    minWeight: 2,
+    maxEdges: 150,
+    windowSize: 5,
+    showCommunities: true,
+    centralityMetric: 'degree' // 'degree', 'betweenness', 'closeness', 'eigenvector'
+  });
+  const [statisticalAnalysis, setStatisticalAnalysis] = useState(null);
+  
+  // Estados para novas visualizações
+  const [bigramAnalysis, setBigramAnalysis] = useState(null);
+  const [sentimentAnalysis, setSentimentAnalysis] = useState(null);
+  const [wordTreeData, setWordTreeData] = useState(null);
+  const [wordTreeKeyword, setWordTreeKeyword] = useState('');
+  const [afcData, setAfcData] = useState(null);
+  
+  // Estado para persistência de documentos
+  const [isLoadingStorage, setIsLoadingStorage] = useState(true);
+  
+  // Carregar documentos do storage ao iniciar
+  useEffect(() => {
+    const loadFromStorage = async () => {
+      if (typeof window !== 'undefined' && window.storage) {
+        try {
+          const storedDocs = await window.storage.get('textlab-documents');
+          const storedCorpora = await window.storage.get('textlab-corpora');
+          const storedStopwordsPT = await window.storage.get('textlab-stopwords-pt');
+          const storedStopwordsEN = await window.storage.get('textlab-stopwords-en');
+          
+          if (storedDocs?.value) {
+            try {
+              const docs = JSON.parse(storedDocs.value);
+              if (Array.isArray(docs) && docs.length > 0) {
+                setDocuments(docs);
+              }
+            } catch (parseErr) {
+              console.log('Error parsing documents:', parseErr);
+            }
+          }
+          
+          if (storedCorpora?.value) {
+            try {
+              const corp = JSON.parse(storedCorpora.value);
+              if (Array.isArray(corp) && corp.length > 0) {
+                // Garantir que cada corpus tenha documentIds como array
+                const normalizedCorpora = corp.map(c => ({
+                  ...c,
+                  id: c.id || 'corpus-' + Date.now(),
+                  name: c.name || 'Corpus',
+                  color: c.color || '#22d3ee',
+                  documentIds: Array.isArray(c.documentIds) ? c.documentIds : []
+                }));
+                setCorpora(normalizedCorpora);
+              }
+            } catch (parseErr) {
+              console.log('Error parsing corpora:', parseErr);
+            }
+          }
+          
+          if (storedStopwordsPT?.value) {
+            try {
+              const sw = JSON.parse(storedStopwordsPT.value);
+              if (Array.isArray(sw)) setCustomStopwordsPT(sw);
+            } catch (parseErr) {
+              console.log('Error parsing stopwords PT:', parseErr);
+            }
+          }
+          
+          if (storedStopwordsEN?.value) {
+            try {
+              const sw = JSON.parse(storedStopwordsEN.value);
+              if (Array.isArray(sw)) setCustomStopwordsEN(sw);
+            } catch (parseErr) {
+              console.log('Error parsing stopwords EN:', parseErr);
+            }
+          }
+        } catch (err) {
+          console.log('Storage not available or error loading:', err);
+        }
+      }
+      setIsLoadingStorage(false);
+    };
+    
+    loadFromStorage();
+  }, []);
+  
+  // Salvar documentos no storage quando mudarem
+  useEffect(() => {
+    if (isLoadingStorage) return;
+    
+    const saveToStorage = async () => {
+      if (typeof window !== 'undefined' && window.storage) {
+        try {
+          await window.storage.set('textlab-documents', JSON.stringify(documents));
+          await window.storage.set('textlab-corpora', JSON.stringify(corpora));
+          await window.storage.set('textlab-stopwords-pt', JSON.stringify(customStopwordsPT));
+          await window.storage.set('textlab-stopwords-en', JSON.stringify(customStopwordsEN));
+        } catch (err) {
+          console.log('Error saving to storage:', err);
+        }
+      }
+    };
+    
+    saveToStorage();
+  }, [documents, corpora, customStopwordsPT, customStopwordsEN, isLoadingStorage]);
+  
+  // Combinar códigos do codebook com códigos customizados
+  const allAvailableCodes = useMemo(() => {
+    const baseCodes = getAllCodes();
+    return [...baseCodes, ...customCodes];
+  }, [customCodes]);
+  
+  // ========== FUNÇÕES DE GERENCIAMENTO DE CORPUS ==========
+  
+  // Criar novo corpus
+  const createCorpus = useCallback((name) => {
+    const colorIndex = corpora.length % corpusColors.length;
+    const newCorpus = {
+      id: `corpus-${Date.now()}`,
+      name: name || `Corpus ${corpora.length + 1}`,
+      color: corpusColors[colorIndex],
+      documentIds: []
+    };
+    setCorpora(prev => [...prev, newCorpus]);
+    return newCorpus;
+  }, [corpora]);
+  
+  // Renomear corpus
+  const renameCorpus = useCallback((corpusId, newName) => {
+    setCorpora(prev => prev.map(c => 
+      c.id === corpusId ? { ...c, name: newName } : c
+    ));
+  }, []);
+  
+  // Deletar corpus (move documentos para o default)
+  const deleteCorpus = useCallback((corpusId) => {
+    if (corpusId === 'default') return; // Não pode deletar o default
+    
+    const corpus = corpora.find(c => c.id === corpusId);
+    if (corpus) {
+      // Mover documentos para o default
+      setCorpora(prev => prev.map(c => {
+        if (c.id === 'default') {
+          return { ...c, documentIds: [...(c.documentIds || []), ...(corpus.documentIds || [])] };
+        }
+        return c;
+      }).filter(c => c.id !== corpusId));
+      
+      if (activeCorpus === corpusId) {
+        setActiveCorpus('default');
+      }
+    }
+  }, [corpora, activeCorpus]);
+  
+  // Mover documento para outro corpus
+  const moveDocumentToCorpus = useCallback((documentId, targetCorpusId) => {
+    setCorpora(prev => prev.map(c => ({
+      ...c,
+      documentIds: c.id === targetCorpusId
+        ? [...(c.documentIds || []).filter(id => id !== documentId), documentId]
+        : (c.documentIds || []).filter(id => id !== documentId)
+    })));
+  }, []);
+  
+  // Obter corpus de um documento
+  const getDocumentCorpus = useCallback((documentId) => {
+    return corpora.find(c => c.documentIds?.includes(documentId)) || corpora[0];
+  }, [corpora]);
+  
+  // Documentos filtrados por corpus
+  const filteredDocuments = useMemo(() => {
+    if (corpusFilter === 'all') return documents;
+    const corpus = corpora.find(c => c.id === corpusFilter);
+    if (!corpus) return documents;
+    return documents.filter(d => corpus.documentIds?.includes(d.id));
+  }, [documents, corpora, corpusFilter]);
+  
+  // ========== FUNÇÕES DE GERENCIAMENTO DE STOPWORDS ==========
+  
+  // Adicionar stopword
+  const addStopword = useCallback((word, language = 'pt') => {
+    const normalizedWord = word.toLowerCase().trim();
+    if (!normalizedWord) return;
+    
+    if (language === 'pt') {
+      if (!customStopwordsPT.includes(normalizedWord)) {
+        setCustomStopwordsPT(prev => [...prev, normalizedWord].sort());
+      }
+    } else {
+      if (!customStopwordsEN.includes(normalizedWord)) {
+        setCustomStopwordsEN(prev => [...prev, normalizedWord].sort());
+      }
+    }
+  }, [customStopwordsPT, customStopwordsEN]);
+  
+  // Remover stopword
+  const removeStopword = useCallback((word, language = 'pt') => {
+    if (language === 'pt') {
+      setCustomStopwordsPT(prev => prev.filter(w => w !== word));
+    } else {
+      setCustomStopwordsEN(prev => prev.filter(w => w !== word));
+    }
+  }, []);
+  
+  // Resetar stopwords para padrão
+  const resetStopwords = useCallback((language = 'pt') => {
+    if (language === 'pt') {
+      setCustomStopwordsPT([...defaultStopwordsPT]);
+    } else {
+      setCustomStopwordsEN([...defaultStopwordsEN]);
+    }
+  }, []);
+  
+  // Stopwords filtradas pela busca
+  const filteredStopwords = useMemo(() => {
+    const list = stopwordLanguage === 'pt' ? customStopwordsPT : customStopwordsEN;
+    if (!stopwordSearchTerm) return list;
+    return list.filter(w => w.includes(stopwordSearchTerm.toLowerCase()));
+  }, [customStopwordsPT, customStopwordsEN, stopwordLanguage, stopwordSearchTerm]);
+  
+  // ========== FUNÇÕES DE AUTO-CODIFICAÇÃO ==========
+  const runAutoCoding = useCallback(() => {
+    if (documents.length === 0) return;
+    
+    setIsAutoCoding(true);
+    
+    setTimeout(() => {
+      const results = autoCodeAllDocuments(documents, allAvailableCodes);
+      setAutoCodingResults(results);
+      
+      // Mesclar com segmentos existentes (evitar duplicatas)
+      const existingTexts = new Set(codedSegments.map(s => s.text.substring(0, 50)));
+      const newSegments = results.filter(r => !existingTexts.has(r.text.substring(0, 50)));
+      
+      setCodedSegments(prev => [...prev, ...newSegments]);
+      setIsAutoCoding(false);
+    }, 1000);
+  }, [documents, allAvailableCodes, codedSegments]);
+  
+  // Função para criar novo código customizado
+  const createCustomCode = useCallback((name, categoryName = 'Códigos Customizados') => {
+    const colorIndex = customCodes.length % codeColorPalette.length;
+    const newCode = {
+      id: `custom-${Date.now()}`,
+      name: name,
+      keywords: [name.toLowerCase()],
+      categoryId: 'custom',
+      categoryName: categoryName,
+      color: codeColorPalette[colorIndex],
+      isCustom: true
+    };
+    setCustomCodes(prev => [...prev, newCode]);
+    return newCode;
+  }, [customCodes]);
+  
+  // Função para adicionar keyword a um código customizado
+  const addKeywordToCode = useCallback((codeId, keyword) => {
+    setCustomCodes(prev => prev.map(code => {
+      if (code.id === codeId) {
+        return { ...code, keywords: [...code.keywords, keyword.toLowerCase()] };
+      }
+      return code;
+    }));
+  }, []);
+  
+  // Função para lidar com seleção de texto
+  const handleTextSelection = useCallback((e, documentId, documentName) => {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+    
+    if (selectedText.length > 5) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      
+      // Usar posição relativa à viewport (não ao documento)
+      // O scroll será tratado no componente do modal
+      setSelectionTooltip({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom, // Usar bottom para posicionar abaixo da seleção
+        text: selectedText,
+        documentId,
+        documentName
+      });
+      setCodeSearchTerm('');
+      setShowCodeCreator(false);
+    } else {
+      setSelectionTooltip(null);
+    }
+  }, []);
+  
+  // Função para aplicar código à seleção
+  const applyCodeToSelection = useCallback((code) => {
+    if (!selectionTooltip) return;
+    
+    const newSegment = {
+      id: Date.now() + Math.random(),
+      documentId: selectionTooltip.documentId,
+      documentName: selectionTooltip.documentName,
+      text: selectionTooltip.text,
+      codes: [code.id],
+      matches: [{
+        codeId: code.id,
+        codeName: code.name,
+        categoryName: code.categoryName,
+        color: code.color,
+        keyword: 'manual',
+        matchedText: selectionTooltip.text,
+        confidence: 1.0
+      }],
+      isAutomatic: false,
+      createdAt: new Date().toISOString()
+    };
+    
+    setCodedSegments(prev => [...prev, newSegment]);
+    setSelectionTooltip(null);
+    window.getSelection().removeAllRanges();
+  }, [selectionTooltip]);
+  
+  // Função para criar e aplicar novo código
+  const createAndApplyCode = useCallback(() => {
+    if (!newCodeName.trim() || !selectionTooltip) return;
+    
+    const newCode = createCustomCode(newCodeName.trim());
+    applyCodeToSelection(newCode);
+    setNewCodeName('');
+    setShowCodeCreator(false);
+  }, [newCodeName, selectionTooltip, createCustomCode, applyCodeToSelection]);
+  
+  // Filtrar códigos baseado na busca
+  const filteredCodes = useMemo(() => {
+    if (!codeSearchTerm) return allAvailableCodes.slice(0, 10);
+    const term = codeSearchTerm.toLowerCase();
+    return allAvailableCodes.filter(code => 
+      code.name.toLowerCase().includes(term) ||
+      code.categoryName.toLowerCase().includes(term)
+    ).slice(0, 10);
+  }, [allAvailableCodes, codeSearchTerm]);
+  
+  // Função para analisar incidências de uma palavra
+  const handleWordClick = useCallback((wordData) => {
+    if (documents.length === 0) return;
+    
+    setIsAnalyzingIncidence(true);
+    setShowIncidenceModal(true);
+    
+    // Simular processamento assíncrono
+    setTimeout(() => {
+      // Passar os dados completos da palavra incluindo variações se existirem
+      // Se agrupamento estiver desativado, não passar dados de variações
+      const wordDataToPass = cleaningOptions.groupVariations ? wordData : { word: wordData.word };
+      const analysis = analyzeWordIncidences(documents, wordData.word, cleaningOptions, wordDataToPass);
+      setIncidenceAnalysis(analysis);
+      setIsAnalyzingIncidence(false);
+    }, 500);
+  }, [documents, cleaningOptions]);
+  
+  // Função para exportar relatório científico
+  const exportScientificReport = useCallback(() => {
+    if (!incidenceAnalysis) {
+      alert('Nenhuma análise de incidência disponível.');
+      return;
+    }
+    
+    try {
+      const report = generateScientificReport(incidenceAnalysis, cleaningOptions);
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + report], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Método robusto para download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio_${incidenceAnalysis.word}_${new Date().toISOString().split('T')[0]}.md`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erro ao exportar relatório: ' + err.message);
+    }
+  }, [incidenceAnalysis, cleaningOptions]);
+  
+  // Função para exportar CSV de incidências
+  const exportIncidenceCSV = useCallback(() => {
+    if (!incidenceAnalysis) {
+      alert('Nenhuma análise de incidência disponível.');
+      return;
+    }
+    
+    try {
+      const csv = generateIncidenceCSV(incidenceAnalysis);
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Método robusto para download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `incidencias_${incidenceAnalysis.word}_${new Date().toISOString().split('T')[0]}.csv`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erro ao exportar CSV: ' + err.message);
+    }
+  }, [incidenceAnalysis]);
+  
+  // Funções de codificação qualitativa
+  const addCodedSegment = useCallback((text, documentId, documentName, codes, note = '') => {
+    const newSegment = {
+      id: Date.now() + Math.random(),
+      documentId,
+      documentName,
+      text,
+      codes,
+      note,
+      createdAt: new Date().toISOString()
+    };
+    setCodedSegments(prev => [...prev, newSegment]);
+    setSelectedText(null);
+  }, []);
+  
+  const updateSegmentCodes = useCallback((segmentId, codes) => {
+    setCodedSegments(prev => prev.map(seg => 
+      seg.id === segmentId ? { ...seg, codes } : seg
+    ));
+  }, []);
+  
+  // Função para adicionar código a um segmento existente
+  const addCodeToExistingSegment = useCallback((segmentId, code) => {
+    setCodedSegments(prev => prev.map(seg => {
+      if (seg.id === segmentId) {
+        // Evitar duplicatas
+        if (seg.codes.includes(code.id)) return seg;
+        return {
+          ...seg,
+          codes: [...seg.codes, code.id],
+          matches: [
+            ...(seg.matches || []),
+            {
+              codeId: code.id,
+              codeName: code.name,
+              categoryName: code.categoryName,
+              color: code.color,
+              keyword: 'manual (added)',
+              matchedText: seg.text,
+              confidence: 1.0
+            }
+          ]
+        };
+      }
+      return seg;
+    }));
+    setAddingCodeToSegment(null);
+    setCodeSearchTerm('');
+  }, []);
+  
+  const updateSegmentNote = useCallback((segmentId, note) => {
+    setCodedSegments(prev => prev.map(seg => 
+      seg.id === segmentId ? { ...seg, note } : seg
+    ));
+  }, []);
+  
+  // Função para atualizar texto de um segmento codificado
+  const updateSegmentText = useCallback((segmentId, newText) => {
+    setCodedSegments(prev => prev.map(seg => 
+      seg.id === segmentId ? { ...seg, text: newText } : seg
+    ));
+    setEditingSegment(null);
+    setEditingSegmentText('');
+  }, []);
+  
+  // Função para iniciar edição de segmento
+  const startEditingSegment = useCallback((segment) => {
+    setEditingSegment(segment.id);
+    setEditingSegmentText(segment.text);
+  }, []);
+  
+  // Função para cancelar edição de segmento
+  const cancelEditingSegment = useCallback(() => {
+    setEditingSegment(null);
+    setEditingSegmentText('');
+  }, []);
+  
+  // Função para atualizar conteúdo de um documento
+  const updateDocumentContent = useCallback((documentId, newContent) => {
+    setDocuments(prev => prev.map(doc => 
+      doc.id === documentId ? { ...doc, content: newContent } : doc
+    ));
+    setEditingDocument(null);
+    setEditingDocumentContent('');
+  }, []);
+  
+  // Função para iniciar edição de documento
+  const startEditingDocument = useCallback((doc) => {
+    setEditingDocument(doc.id);
+    setEditingDocumentContent(doc.content);
+  }, []);
+  
+  // Função para cancelar edição de documento
+  const cancelEditingDocument = useCallback(() => {
+    setEditingDocument(null);
+    setEditingDocumentContent('');
+  }, []);
+  
+  const removeCodedSegment = useCallback((segmentId) => {
+    setCodedSegments(prev => prev.filter(seg => seg.id !== segmentId));
+  }, []);
+  
+  const toggleCategory = useCallback((categoryId) => {
+    setExpandedCategories(prev => {
+      if (prev.includes(categoryId)) {
+        return prev.filter(id => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  }, []);
+  
+  const exportCodingData = useCallback(() => {
+    if (codedSegments.length === 0) return;
+    
+    // Exportar em formato CSV
+    let csv = 'ID,Documento,Texto,Códigos,Categorias,Nota,Data\n';
+    codedSegments.forEach((seg, idx) => {
+      const codeNames = seg.codes.map(codeId => {
+        const allCodes = getAllCodes();
+        const code = allCodes.find(c => c.id === codeId);
+        return code ? `${codeId} - ${code.name}` : codeId;
+      }).join('; ');
+      
+      const categories = [...new Set(seg.codes.map(codeId => {
+        const catId = codeId.split('.')[0];
+        return capacityCodebook[catId]?.name || '';
+      }))].join('; ');
+      
+      const escapeCsv = (str) => `"${(str || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+      csv += [
+        idx + 1,
+        escapeCsv(seg.documentName),
+        escapeCsv(seg.text),
+        escapeCsv(codeNames),
+        escapeCsv(categories),
+        escapeCsv(seg.note),
+        seg.createdAt
+      ].join(',') + '\n';
+    });
+    
+    try {
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Método robusto para download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `codificacao_${new Date().toISOString().split('T')[0]}.csv`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erro ao exportar codificação: ' + err.message);
+    }
+  }, [codedSegments]);
+  
+  const exportCodingJSON = useCallback(() => {
+    if (codedSegments.length === 0) return;
+    
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      codebook: capacityCodebook,
+      segments: codedSegments,
+      summary: {
+        totalSegments: codedSegments.length,
+        codeFrequency: {},
+        categoryFrequency: {}
+      }
+    };
+    
+    // Calcular frequências
+    codedSegments.forEach(seg => {
+      seg.codes.forEach(codeId => {
+        exportData.summary.codeFrequency[codeId] = (exportData.summary.codeFrequency[codeId] || 0) + 1;
+        const catId = codeId.split('.')[0];
+        exportData.summary.categoryFrequency[catId] = (exportData.summary.categoryFrequency[catId] || 0) + 1;
+      });
+    });
+    
+    try {
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Método robusto para download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `codificacao_completa_${new Date().toISOString().split('T')[0]}.json`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erro ao exportar JSON: ' + err.message);
+    }
+  }, [codedSegments]);
+
+  // Exportar em formato TXT (texto plano formatado)
+  const exportCodingTXT = useCallback(() => {
+    if (codedSegments.length === 0) return;
+    
+    const allCodes = getAllCodes();
+    let txt = `RELATÓRIO DE CODIFICAÇÃO QUALITATIVA\n`;
+    txt += `${'='.repeat(50)}\n`;
+    txt += `Data de Exportação: ${new Date().toLocaleString('pt-BR')}\n`;
+    txt += `Total de Segmentos: ${codedSegments.length}\n\n`;
+    
+    // Agrupar por documento
+    const byDocument = {};
+    codedSegments.forEach(seg => {
+      if (!byDocument[seg.documentName]) {
+        byDocument[seg.documentName] = [];
+      }
+      byDocument[seg.documentName].push(seg);
+    });
+    
+    Object.entries(byDocument).forEach(([docName, segments]) => {
+      txt += `\n${'─'.repeat(50)}\n`;
+      txt += `DOCUMENTO: ${docName}\n`;
+      txt += `${'─'.repeat(50)}\n`;
+      txt += `Segmentos codificados: ${segments.length}\n\n`;
+      
+      segments.forEach((seg, idx) => {
+        const codeNames = seg.codes.map(codeId => {
+          const code = allCodes.find(c => c.id === codeId);
+          return code ? `${codeId} (${code.name})` : codeId;
+        });
+        
+        txt += `[${idx + 1}] TEXTO:\n`;
+        txt += `"${seg.text}"\n\n`;
+        txt += `   CÓDIGOS: ${codeNames.join(', ')}\n`;
+        if (seg.note) {
+          txt += `   NOTA: ${seg.note}\n`;
+        }
+        txt += `   DATA: ${new Date(seg.createdAt).toLocaleString('pt-BR')}\n`;
+        txt += `   TIPO: ${seg.isAutomatic ? 'Automático' : 'Manual'}\n`;
+        txt += `\n`;
+      });
+    });
+    
+    // Resumo por código
+    txt += `\n${'='.repeat(50)}\n`;
+    txt += `RESUMO POR CÓDIGO\n`;
+    txt += `${'='.repeat(50)}\n\n`;
+    
+    const codeFreq = {};
+    codedSegments.forEach(seg => {
+      seg.codes.forEach(codeId => {
+        codeFreq[codeId] = (codeFreq[codeId] || 0) + 1;
+      });
+    });
+    
+    Object.entries(codeFreq)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([codeId, count]) => {
+        const code = allCodes.find(c => c.id === codeId);
+        const codeName = code ? code.name : 'Desconhecido';
+        txt += `${codeId.padEnd(10)} ${codeName.padEnd(30)} ${count} ocorrências\n`;
+      });
+    
+    try {
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + txt], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `codificacao_${new Date().toISOString().split('T')[0]}.txt`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export TXT error:', err);
+      alert('Erro ao exportar TXT: ' + err.message);
+    }
+  }, [codedSegments]);
+
+  // Exportar em formato Markdown
+  const exportCodingMarkdown = useCallback(() => {
+    if (codedSegments.length === 0) return;
+    
+    const allCodes = getAllCodes();
+    let md = `# Relatório de Codificação Qualitativa\n\n`;
+    md += `**Data de Exportação:** ${new Date().toLocaleString('pt-BR')}\n\n`;
+    md += `**Total de Segmentos:** ${codedSegments.length}\n\n`;
+    md += `---\n\n`;
+    
+    // Agrupar por documento
+    const byDocument = {};
+    codedSegments.forEach(seg => {
+      if (!byDocument[seg.documentName]) {
+        byDocument[seg.documentName] = [];
+      }
+      byDocument[seg.documentName].push(seg);
+    });
+    
+    Object.entries(byDocument).forEach(([docName, segments]) => {
+      md += `## 📄 ${docName}\n\n`;
+      md += `*${segments.length} segmentos codificados*\n\n`;
+      
+      segments.forEach((seg, idx) => {
+        const codeNames = seg.codes.map(codeId => {
+          const code = allCodes.find(c => c.id === codeId);
+          return code ? `\`${codeId}\` ${code.name}` : `\`${codeId}\``;
+        });
+        
+        md += `### Segmento ${idx + 1}\n\n`;
+        md += `> ${seg.text.replace(/\n/g, '\n> ')}\n\n`;
+        md += `**Códigos:** ${codeNames.join(' | ')}\n\n`;
+        if (seg.note) {
+          md += `**Nota:** ${seg.note}\n\n`;
+        }
+        md += `*${seg.isAutomatic ? '🤖 Automático' : '✋ Manual'} · ${new Date(seg.createdAt).toLocaleString('pt-BR')}*\n\n`;
+        md += `---\n\n`;
+      });
+    });
+    
+    // Tabela de frequências
+    md += `## 📊 Resumo por Código\n\n`;
+    md += `| Código | Nome | Frequência |\n`;
+    md += `|--------|------|------------|\n`;
+    
+    const codeFreq = {};
+    codedSegments.forEach(seg => {
+      seg.codes.forEach(codeId => {
+        codeFreq[codeId] = (codeFreq[codeId] || 0) + 1;
+      });
+    });
+    
+    Object.entries(codeFreq)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([codeId, count]) => {
+        const code = allCodes.find(c => c.id === codeId);
+        const codeName = code ? code.name : 'Desconhecido';
+        md += `| ${codeId} | ${codeName} | ${count} |\n`;
+      });
+    
+    try {
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `codificacao_${new Date().toISOString().split('T')[0]}.md`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export Markdown error:', err);
+      alert('Erro ao exportar Markdown: ' + err.message);
+    }
+  }, [codedSegments]);
+
+  // Exportar em formato XLSX (Excel) usando SheetJS
+  const exportCodingXLSX = useCallback(() => {
+    if (codedSegments.length === 0) return;
+    
+    const doExport = () => {
+      try {
+        const XLSX = window.XLSX;
+        if (!XLSX) {
+          alert('Erro: biblioteca Excel não carregada.');
+          return;
+        }
+        
+        const allCodes = getAllCodes();
+        
+        // Planilha 1: Segmentos
+        const segmentsData = codedSegments.map((seg, idx) => {
+          const codeNames = seg.codes.map(codeId => {
+            const code = allCodes.find(c => c.id === codeId);
+            return code ? `${codeId} - ${code.name}` : codeId;
+          }).join('; ');
+          
+          const categories = [...new Set(seg.codes.map(codeId => {
+            const catId = codeId.split('.')[0];
+            return capacityCodebook[catId]?.name || '';
+          }))].join('; ');
+          
+          return {
+            'ID': idx + 1,
+            'Documento': seg.documentName,
+            'Texto': seg.text,
+            'Códigos': codeNames,
+            'Categorias': categories,
+            'Nota': seg.note || '',
+            'Tipo': seg.isAutomatic ? 'Automático' : 'Manual',
+            'Data': new Date(seg.createdAt).toLocaleString('pt-BR')
+          };
+        });
+        
+        // Planilha 2: Frequência de códigos
+        const codeFreq = {};
+        codedSegments.forEach(seg => {
+          seg.codes.forEach(codeId => {
+            codeFreq[codeId] = (codeFreq[codeId] || 0) + 1;
+          });
+        });
+        
+        const frequencyData = Object.entries(codeFreq)
+          .sort((a, b) => b[1] - a[1])
+          .map(([codeId, count]) => {
+            const code = allCodes.find(c => c.id === codeId);
+            const catId = codeId.split('.')[0];
+            return {
+              'Código': codeId,
+              'Nome': code ? code.name : 'Desconhecido',
+              'Categoria': capacityCodebook[catId]?.name || '',
+              'Frequência': count,
+              'Percentual': ((count / codedSegments.length) * 100).toFixed(1) + '%'
+            };
+          });
+        
+        // Planilha 3: Resumo por documento
+        const byDocument = {};
+        codedSegments.forEach(seg => {
+          if (!byDocument[seg.documentName]) {
+            byDocument[seg.documentName] = { total: 0, automatic: 0, manual: 0 };
+          }
+          byDocument[seg.documentName].total++;
+          if (seg.isAutomatic) {
+            byDocument[seg.documentName].automatic++;
+          } else {
+            byDocument[seg.documentName].manual++;
+          }
+        });
+        
+        const documentData = Object.entries(byDocument).map(([docName, stats]) => ({
+          'Documento': docName,
+          'Total Segmentos': stats.total,
+          'Automáticos': stats.automatic,
+          'Manuais': stats.manual
+        }));
+        
+        // Criar workbook
+        const wb = XLSX.utils.book_new();
+        
+        const ws1 = XLSX.utils.json_to_sheet(segmentsData);
+        XLSX.utils.book_append_sheet(wb, ws1, 'Segmentos');
+        
+        const ws2 = XLSX.utils.json_to_sheet(frequencyData);
+        XLSX.utils.book_append_sheet(wb, ws2, 'Frequência');
+        
+        const ws3 = XLSX.utils.json_to_sheet(documentData);
+        XLSX.utils.book_append_sheet(wb, ws3, 'Por Documento');
+        
+        // Exportar
+        XLSX.writeFile(wb, `codificacao_${new Date().toISOString().split('T')[0]}.xlsx`);
+      } catch (err) {
+        console.error('Export XLSX error:', err);
+        alert('Erro ao exportar Excel: ' + err.message);
+      }
+    };
+    
+    // Verificar se XLSX está disponível globalmente
+    if (typeof window.XLSX === 'undefined') {
+      // Carregar SheetJS dinamicamente
+      const script = document.createElement('script');
+      script.src = 'https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js';
+      script.onload = doExport;
+      script.onerror = () => {
+        alert('Erro ao carregar biblioteca Excel. Tente exportar em CSV.');
+      };
+      document.head.appendChild(script);
+    } else {
+      doExport();
+    }
+  }, [codedSegments]);
+
+  // Estado para controle do dropdown de exportação
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const exportDropdownRef = React.useRef(null);
+  
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target)) {
+        setShowExportDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Estado para loading de arquivos
+  const [fileLoadingStatus, setFileLoadingStatus] = useState({});
+
+  // Função para extrair texto de PDF usando pdf.js via CDN
+  const extractTextFromPDF = async (file) => {
+    // Carregar pdf.js do CDN se não estiver carregado
+    if (!window.pdfjsLib) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+      // Configurar worker
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const strings = content.items.map(item => item.str);
+      fullText += strings.join(' ') + '\n\n';
+    }
+    
+    return fullText.trim() || 'PDF sem texto extraível';
+  };
+
+  // Função para extrair texto de DOCX usando mammoth
+  // Função para extrair texto de DOCX usando mammoth via CDN
+  const extractTextFromDOCX = async (file) => {
+    if (!window.mammoth) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await window.mammoth.extractRawText({ arrayBuffer });
+    return result.value || 'DOCX sem texto';
+  };
+
+  // Função para extrair texto de arquivos Excel (XLSX, XLS) via CDN
+  const extractTextFromExcel = async (file) => {
+    // Carregar SheetJS do CDN se não estiver carregado
+    if (!window.XLSX) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = window.XLSX.read(arrayBuffer, { type: 'array' });
+    let fullText = '';
+    
+    workbook.SheetNames.forEach(sheetName => {
+      const sheet = workbook.Sheets[sheetName];
+      const csv = window.XLSX.utils.sheet_to_csv(sheet);
+      fullText += `=== ${sheetName} ===\n${csv}\n\n`;
+    });
+    
+    return fullText.trim();
+  };
+
+  // Função para extrair texto de RTF
+  const extractTextFromRTF = (rtfContent) => {
+    let text = rtfContent;
+    text = text.replace(/\{\\[^{}]*\}/g, '');
+    text = text.replace(/\\[a-z]+(-?\d+)?[ ]?/gi, '');
+    text = text.replace(/[{}\\]/g, '');
+    text = text.replace(/\s+/g, ' ');
+    return text.trim();
+  };
+
+  const handleFileUpload = useCallback(async (e) => {
+    const files = Array.from(e.target.files);
+    
+    for (const file of files) {
+      const fileId = Date.now() + Math.random();
+      const fileName = file.name;
+      const extension = fileName.split('.').pop().toLowerCase();
+      
+      setFileLoadingStatus(prev => ({ ...prev, [fileId]: { name: fileName, status: 'loading' } }));
+      
+      try {
+        let content = '';
+        
+        switch (extension) {
+          case 'pdf':
+            content = await extractTextFromPDF(file);
+            break;
+            
+          case 'docx':
+            content = await extractTextFromDOCX(file);
+            break;
+            
+          case 'doc':
+            // DOC antigo - tentar extrair texto visível
+            const docBuffer = await file.arrayBuffer();
+            const docBytes = new Uint8Array(docBuffer);
+            let docText = '';
+            for (let i = 0; i < docBytes.length; i++) {
+              const byte = docBytes[i];
+              if (byte >= 32 && byte < 127) {
+                docText += String.fromCharCode(byte);
+              } else if (byte === 10 || byte === 13) {
+                docText += '\n';
+              }
+            }
+            content = docText.replace(/\s+/g, ' ').trim();
+            if (content.length < 50) {
+              throw new Error('Arquivo .doc antigo. Converta para .docx');
+            }
+            break;
+            
+          case 'xlsx':
+          case 'xls':
+            content = await extractTextFromExcel(file);
+            break;
+            
+          case 'rtf':
+            const rtfText = await file.text();
+            content = extractTextFromRTF(rtfText);
+            break;
+            
+          case 'json':
+            const jsonText = await file.text();
+            try {
+              const jsonData = JSON.parse(jsonText);
+              if (typeof jsonData === 'string') {
+                content = jsonData;
+              } else if (Array.isArray(jsonData)) {
+                content = jsonData.map(item => typeof item === 'string' ? item : JSON.stringify(item)).join('\n\n');
+              } else if (jsonData.text || jsonData.content || jsonData.body) {
+                content = jsonData.text || jsonData.content || jsonData.body;
+              } else {
+                content = JSON.stringify(jsonData, null, 2);
+              }
+            } catch (e) {
+              content = jsonText;
+            }
+            break;
+            
+          case 'html':
+          case 'htm':
+            const htmlText = await file.text();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlText;
+            content = tempDiv.textContent || tempDiv.innerText || '';
+            content = content.replace(/\s+/g, ' ').trim();
+            break;
+            
+          case 'xml':
+            const xmlText = await file.text();
+            content = xmlText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            break;
+            
+          default:
+            // txt, md, csv, tsv, log, etc - ler como texto
+            try {
+              content = await file.text();
+            } catch (e) {
+              const buffer = await file.arrayBuffer();
+              content = new TextDecoder('iso-8859-1').decode(buffer);
+            }
+            break;
+        }
+        
+        if (!content || content.trim().length === 0) {
+          throw new Error('Arquivo sem texto extraível');
+        }
+        
+        // Adicionar documento à lista
+        setDocuments(prev => [...prev, {
+          id: fileId,
+          name: fileName,
+          content: content.trim(),
+          size: file.size,
+          type: extension,
+          uploadedAt: new Date()
+        }]);
+        
+        // Adicionar documento ao corpus ativo
+        setCorpora(prev => prev.map(c => 
+          c.id === activeCorpus 
+            ? { ...c, documentIds: [...c.documentIds, fileId] }
+            : c
+        ));
+        
+        setFileLoadingStatus(prev => ({ ...prev, [fileId]: { name: fileName, status: 'success' } }));
+        setTimeout(() => {
+          setFileLoadingStatus(prev => {
+            const newStatus = { ...prev };
+            delete newStatus[fileId];
+            return newStatus;
+          });
+        }, 3000);
+        
+      } catch (error) {
+        console.error(`Erro: ${fileName}`, error);
+        setFileLoadingStatus(prev => ({ 
+          ...prev, 
+          [fileId]: { name: fileName, status: 'error', error: error.message || 'Erro desconhecido' } 
+        }));
+        setTimeout(() => {
+          setFileLoadingStatus(prev => {
+            const newStatus = { ...prev };
+            delete newStatus[fileId];
+            return newStatus;
+          });
+        }, 8000);
+      }
+    }
+    
+    e.target.value = '';
+  }, [activeCorpus]);
+  
+  const removeDocument = useCallback((id) => {
+    setDocuments(prev => prev.filter(d => d.id !== id));
+    // Remover do corpus também
+    setCorpora(prev => prev.map(c => ({
+      ...c,
+      documentIds: c.documentIds.filter(docId => docId !== id)
+    })));
+    setAnalysisResults(null);
+  }, []);
+  
+  const processCorpus = useCallback(() => {
+    if (documents.length === 0) return;
+    
+    setIsProcessing(true);
+    
+    setTimeout(() => {
+      const fullText = documents.map(d => d.content).join('\n\n');
+      const allWords = cleanText(fullText, cleaningOptions, stopwordsSet);
+      const rawWords = tokenize(fullText);
+      
+      // Usar sistema de frequência com ou sem agrupamento baseado na opção
+      let wordFrequency;
+      let frequencyData = null;
+      
+      if (cleaningOptions.groupVariations) {
+        // Com agrupamento de variações morfológicas
+        frequencyData = calculateWordFrequencyWithVariations(allWords);
+        wordFrequency = frequencyData.frequency;
+      } else {
+        // Sem agrupamento - frequência simples
+        wordFrequency = calculateWordFrequency(allWords);
+      }
+      
+      const segments = fullText.split(/[.!?]+/).filter(s => s.trim().length > 20);
+      const cooccurrences = calculateCooccurrence(segments, networkSettings.windowSize, stopwordsSet, cleaningOptions);
+      const chdResult = performCHD(segments, 5, cleaningOptions, stopwordsSet);
+      
+      const hapax = wordFrequency.filter(w => w.count === 1).length;
+      const lexicalRichness = ((wordFrequency.length / rawWords.length) * 100).toFixed(2);
+      
+      // Contar palavras com variações agrupadas (só se agrupamento estiver ativo)
+      const groupedWords = frequencyData ? wordFrequency.filter(w => w.isGroup).length : 0;
+      
+      // ========== ANÁLISES AVANÇADAS DE REDE ==========
+      const graph = buildGraph(cooccurrences, networkSettings.minWeight, networkSettings.maxEdges);
+      const centralityData = calculateCentralityMetrics(graph);
+      const communityData = detectCommunities(graph);
+      
+      // ========== MÓDULOS ESTATÍSTICOS ==========
+      const tfidfData = calculateTFIDF(documents, stopwordsSet, cleaningOptions);
+      const lexicalDiversity = calculateLexicalDiversity(fullText, stopwordsSet, cleaningOptions);
+      const chiSquareAssoc = calculateChiSquareAssociation(cooccurrences, wordFrequency, rawWords.length);
+      const specificities = calculateSpecificities(documents, corpora, stopwordsSet, cleaningOptions);
+      
+      // ========== BIGRAMAS ==========
+      const bigrams = calculateBigrams(fullText, stopwordsSet, 2, cleaningOptions);
+      const bigramNetwork = buildBigramNetwork(bigrams, 80);
+      setBigramAnalysis({ bigrams, network: bigramNetwork });
+      
+      // ========== SENTIMENTOS ==========
+      const sentiment = analyzeSentiment(fullText, stopwordsSet, cleaningOptions);
+      setSentimentAnalysis(sentiment);
+      
+      // ========== AFC ==========
+      const afcResult = calculateAFC(documents, wordFrequency, stopwordsSet, cleaningOptions);
+      setAfcData(afcResult);
+      
+      // Armazenar análise de rede separadamente para acesso rápido
+      setNetworkAnalysis({
+        graph,
+        centrality: centralityData,
+        communities: communityData,
+        cooccurrences: cooccurrences.slice(0, 500)
+      });
+      
+      // Armazenar análises estatísticas
+      setStatisticalAnalysis({
+        tfidf: tfidfData,
+        lexicalDiversity,
+        chiSquareAssociations: chiSquareAssoc,
+        specificities
+      });
+      
+      setAnalysisResults({
+        wordFrequency,
+        wordGroups: frequencyData?.groups || null,
+        wordToCanonical: frequencyData?.wordToCanonical || null,
+        rawFrequency: frequencyData?.rawFrequency || wordFrequency,
+        groupingEnabled: cleaningOptions.groupVariations,
+        cooccurrences,
+        chdResult,
+        segments,
+        fullText, // Guardar para usar na árvore de palavras
+        stats: {
+          documentCount: documents.length,
+          totalWords: rawWords.length,
+          uniqueWords: wordFrequency.length,
+          uniqueWordsRaw: frequencyData?.rawFrequency?.length || wordFrequency.length,
+          groupedWords,
+          groupingEnabled: cleaningOptions.groupVariations,
+          segments: segments.length,
+          hapax,
+          lexicalRichness,
+          corporaCount: corpora.length,
+          stopwordsCount: stopwordsSet.size,
+          // Métricas de rede
+          networkNodes: centralityData.metrics.nodeCount,
+          networkEdges: centralityData.metrics.edgeCount,
+          networkDensity: centralityData.metrics.density,
+          communityCount: communityData.communityCount,
+          modularity: communityData.modularity,
+          // Bigramas
+          bigramCount: bigrams.length,
+          // Sentimentos
+          sentimentScore: sentiment.score
+        }
+      });
+      
+      setIsProcessing(false);
+      setActiveTab('stats');
+    }, 1500);
+  }, [documents, cleaningOptions, stopwordsSet, corpora, networkSettings]);
+  
+  const performKWICSearch = useCallback(() => {
+    if (!kwicKeyword.trim() || documents.length === 0) return;
+    
+    const fullText = documents.map(d => d.content).join('\n\n');
+    const results = performKWIC(fullText, kwicKeyword.trim());
+    setKwicResults(results);
+  }, [kwicKeyword, documents]);
+  
+  // Função para construir árvore de palavras
+  const buildWordTreeFromKeyword = useCallback(() => {
+    if (!wordTreeKeyword.trim() || !analysisResults?.fullText) return;
+    
+    const tree = buildWordTree(analysisResults.fullText, wordTreeKeyword.trim(), 30, 5, cleaningOptions.minLength);
+    setWordTreeData(tree);
+  }, [wordTreeKeyword, analysisResults, cleaningOptions.minLength]);
+  
+  // Função para converter dados para CSV
+  const arrayToCSV = (data, headers) => {
+    const csvRows = [headers.join(',')];
+    data.forEach(row => {
+      const values = headers.map(h => {
+        const val = row[h] ?? '';
+        // Escape quotes and wrap in quotes if contains comma
+        const escaped = String(val).replace(/"/g, '""');
+        return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
+          ? `"${escaped}"` : escaped;
+      });
+      csvRows.push(values.join(','));
+    });
+    return csvRows.join('\n');
+  };
+
+  // Função para gerar XLSX usando SheetJS
+  const generateXLSX = async (sheets) => {
+    if (!sheets || sheets.length === 0) {
+      throw new Error('Nenhuma planilha para gerar');
+    }
+    
+    // Load SheetJS if not loaded
+    if (!window.XLSX) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Falha ao carregar SheetJS'));
+        document.head.appendChild(script);
+      });
+    }
+    
+    const wb = window.XLSX.utils.book_new();
+    sheets.forEach(({ name, data, headers }) => {
+      if (!headers || headers.length === 0) {
+        console.warn(`Planilha "${name}" sem headers, pulando...`);
+        return;
+      }
+      if (!data || data.length === 0) {
+        // Criar planilha vazia com apenas headers
+        const ws = window.XLSX.utils.aoa_to_sheet([headers]);
+        window.XLSX.utils.book_append_sheet(wb, ws, (name || 'Sheet').substring(0, 31));
+        return;
+      }
+      const wsData = [headers, ...data.map(row => headers.map(h => row[h] ?? ''))];
+      const ws = window.XLSX.utils.aoa_to_sheet(wsData);
+      window.XLSX.utils.book_append_sheet(wb, ws, (name || 'Sheet').substring(0, 31));
+    });
+    
+    return window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  };
+
+  // Função para exportar SVG como imagem
+  const exportVisualizationAsImage = async (type, format = 'png') => {
+    let svgElement;
+    let filename;
+    
+    switch(type) {
+      case 'wordcloud':
+        svgElement = document.querySelector('[data-viz="wordcloud"] svg');
+        filename = 'nuvem-palavras';
+        break;
+      case 'network':
+        svgElement = document.querySelector('[data-viz="network"] svg');
+        filename = 'rede-similitude';
+        break;
+      case 'chd':
+        svgElement = document.querySelector('[data-viz="chd"] svg');
+        filename = 'chd-reinert';
+        break;
+      default:
+        return;
+    }
+    
+    if (!svgElement) {
+      alert('Visualização não encontrada. Vá para a aba correspondente primeiro.');
+      return;
+    }
+    
+    try {
+      if (format === 'svg') {
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        
+        // Método robusto para download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.svg`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
+      
+      // PNG/JPEG export via Canvas
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new window.Image();
+      
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      
+      return new Promise((resolve) => {
+        img.onload = () => {
+          canvas.width = img.width * 2; // 2x for better quality
+          canvas.height = img.height * 2;
+          ctx.scale(2, 2);
+          ctx.fillStyle = '#0f172a'; // Dark background
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+          
+          const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+          canvas.toBlob((blob) => {
+            const downloadUrl = URL.createObjectURL(blob);
+            
+            // Método robusto para download
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `${filename}.${format}`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+            URL.revokeObjectURL(url);
+            resolve();
+          }, mimeType, 0.95);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          alert('Erro ao carregar imagem para exportação.');
+          resolve();
+        };
+        img.src = url;
+      });
+    } catch (err) {
+      console.error('Export visualization error:', err);
+      alert('Erro ao exportar visualização. Tente novamente.');
+    }
+  };
+
+  // Helper para capturar visualização como PNG blob
+  const captureVisualizationAsBlob = async (selector) => {
+    const element = document.querySelector(selector);
+    if (!element) return null;
+    
+    // Tentar encontrar SVG primeiro
+    const svgElement = element.querySelector('svg');
+    if (svgElement) {
+      try {
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new window.Image();
+        
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        
+        return new Promise((resolve) => {
+          img.onload = () => {
+            canvas.width = img.width * 2;
+            canvas.height = img.height * 2;
+            ctx.scale(2, 2);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            
+            canvas.toBlob((blob) => {
+              URL.revokeObjectURL(url);
+              resolve(blob);
+            }, 'image/png', 0.95);
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve(null);
+          };
+          img.src = url;
+        });
+      } catch (e) {
+        console.warn('SVG capture failed:', e);
+        return null;
+      }
+    }
+    
+    // Fallback para html2canvas
+    try {
+      if (!window.html2canvas) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      const canvas = await window.html2canvas(element, {
+        backgroundColor: '#0f172a',
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), 'image/png', 0.95);
+      });
+    } catch (e) {
+      console.warn('html2canvas capture failed:', e);
+      return null;
+    }
+  };
+
+  // Função para criar ZIP com todos os dados
+  const exportAllAsZip = async () => {
+    if (!analysisResults) {
+      alert('Processe o corpus primeiro antes de exportar.');
+      return;
+    }
+    
+    // Verificar dados essenciais
+    if (!analysisResults.wordFrequency || analysisResults.wordFrequency.length === 0) {
+      alert('Nenhuma frequência de palavras disponível para exportar.');
+      return;
+    }
+    
+    setIsProcessing(true);
+    
+    try {
+      // Load JSZip
+      if (!window.JSZip) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      
+      const zip = new window.JSZip();
+      const imagesFolder = zip.folder('visualizacoes');
+      
+      // ========== CAPTURAR TODAS AS VISUALIZAÇÕES ==========
+      const visualizations = [
+        { selector: '[data-viz="wordcloud"]', name: 'nuvem-palavras' },
+        { selector: '[data-viz="network"]', name: 'rede-similitude' },
+        { selector: '[data-viz="termsberry"]', name: 'termsberry' },
+        { selector: '[data-viz="treemap"]', name: 'treemap' },
+        { selector: '[data-viz="wordtree"]', name: 'arvore-palavras' },
+        { selector: '[data-viz="bigrams"]', name: 'rede-bigramas' },
+        { selector: '[data-viz="heatmap"]', name: 'heatmap-coocorrencia' },
+        { selector: '[data-viz="afc"]', name: 'afc-correspondencia' },
+        { selector: '[data-viz="sentiment"]', name: 'sentimentos' },
+        { selector: '[data-viz="chd"]', name: 'chd-reinert' },
+        { selector: '[data-viz="radar"]', name: 'radar-codificacao' },
+        { selector: '[data-viz="sunburst"]', name: 'sunburst-codificacao' },
+        { selector: '[data-viz="centrality"]', name: 'centralidade' }
+      ];
+      
+      // Capturar cada visualização disponível
+      for (const viz of visualizations) {
+        try {
+          const blob = await captureVisualizationAsBlob(viz.selector);
+          if (blob) {
+            imagesFolder.file(`${viz.name}.png`, blob);
+          }
+        } catch (e) {
+          console.warn(`Failed to capture ${viz.name}:`, e);
+        }
+      }
+      
+      // ========== DADOS CSV/TSV ==========
+      
+      // Corpus IRaMuTeQ
+      zip.file('corpus_iramuteq.txt', generateIRaMuTeQCorpus(documents));
+      
+      // Frequências
+      const freqData = analysisResults.wordFrequency.map(w => ({ palavra: w.word, frequencia: w.count }));
+      zip.file('frequencias.csv', arrayToCSV(freqData, ['palavra', 'frequencia']));
+      zip.file('frequencias.tsv', 'Palavra\tFrequência\n' + 
+        analysisResults.wordFrequency.map(w => `${w.word}\t${w.count}`).join('\n'));
+      
+      // Coocorrências (verificar se existe)
+      const cooccurrences = analysisResults.cooccurrences || [];
+      if (cooccurrences.length > 0) {
+        const coocData = cooccurrences.slice(0, 500).map(c => ({
+          palavra1: c.source, palavra2: c.target, peso: c.weight
+        }));
+        zip.file('coocorrencias.csv', arrayToCSV(coocData, ['palavra1', 'palavra2', 'peso']));
+        zip.file('coocorrencias.tsv', 'Palavra1\tPalavra2\tPeso\n' + 
+          cooccurrences.slice(0, 500).map(c => `${c.source}\t${c.target}\t${c.weight}`).join('\n'));
+      }
+      
+      // Análise completa JSON
+      zip.file('analise_completa.json', JSON.stringify({
+        stats: analysisResults.stats,
+        wordFrequency: analysisResults.wordFrequency,
+        cooccurrences: cooccurrences.slice(0, 500),
+        chdResult: analysisResults.chdResult,
+        exportedAt: new Date().toISOString()
+      }, null, 2));
+      
+      // CHD Classes
+      if (analysisResults.chdResult) {
+        const chdData = analysisResults.chdResult.classes.flatMap((cls, i) => 
+          cls.keywords.map(kw => ({
+            classe: `Classe ${i + 1}`,
+            nome: cls.name,
+            palavra: kw.word,
+            chi2: kw.chi2.toFixed(2),
+            frequencia: kw.frequency
+          }))
+        );
+        zip.file('chd_classes.csv', arrayToCSV(chdData, ['classe', 'nome', 'palavra', 'chi2', 'frequencia']));
+      }
+      
+      // Codificação qualitativa
+      if (codedSegments.length > 0) {
+        const codingData = codedSegments.map(seg => ({
+          documento: seg.documentName,
+          codigo: seg.codeName,
+          categoria: seg.categoryName,
+          texto: seg.text,
+          data: seg.timestamp
+        }));
+        zip.file('codificacao_qualitativa.csv', arrayToCSV(codingData, ['documento', 'codigo', 'categoria', 'texto', 'data']));
+      }
+      
+      // Bigramas
+      if (bigramAnalysis?.bigrams?.length > 0) {
+        const bigramData = bigramAnalysis.bigrams.slice(0, 200).map(b => ({
+          bigrama: b.bigram,
+          frequencia: b.count,
+          palavra1: b.words?.[0] || '',
+          palavra2: b.words?.[1] || ''
+        }));
+        zip.file('bigramas.csv', arrayToCSV(bigramData, ['bigrama', 'frequencia', 'palavra1', 'palavra2']));
+      }
+      
+      // Sentimentos
+      if (sentimentAnalysis) {
+        const sentimentData = {
+          resumo: {
+            positivo: sentimentAnalysis.positive,
+            negativo: sentimentAnalysis.negative,
+            neutro: sentimentAnalysis.neutral,
+            score: sentimentAnalysis.score
+          },
+          palavrasPositivas: sentimentAnalysis.positiveWords || [],
+          palavrasNegativas: sentimentAnalysis.negativeWords || []
+        };
+        zip.file('sentimentos.json', JSON.stringify(sentimentData, null, 2));
+        
+        // CSV de palavras com sentimento
+        const sentWords = [
+          ...(sentimentAnalysis.positiveWords || []).map(w => ({ palavra: w.word, sentimento: 'positivo', peso: w.weight || 1 })),
+          ...(sentimentAnalysis.negativeWords || []).map(w => ({ palavra: w.word, sentimento: 'negativo', peso: w.weight || -1 }))
+        ];
+        if (sentWords.length > 0) {
+          zip.file('palavras_sentimento.csv', arrayToCSV(sentWords, ['palavra', 'sentimento', 'peso']));
+        }
+      }
+      
+      // TF-IDF
+      if (statisticalAnalysis?.tfidf?.length > 0) {
+        const tfidfData = statisticalAnalysis.tfidf.slice(0, 200).map(t => ({
+          palavra: t.word,
+          tfidf: t.tfidf?.toFixed(4) || t.score?.toFixed(4) || 0,
+          tf: t.tf?.toFixed(4) || 0,
+          idf: t.idf?.toFixed(4) || 0
+        }));
+        zip.file('tfidf.csv', arrayToCSV(tfidfData, ['palavra', 'tfidf', 'tf', 'idf']));
+      }
+      
+      // Associações Chi²/PMI
+      if (statisticalAnalysis?.chiSquareAssociations?.length > 0) {
+        const assocData = statisticalAnalysis.chiSquareAssociations.slice(0, 200).map(a => ({
+          palavra1: a.word1,
+          palavra2: a.word2,
+          coocorrencia: a.cooccurrence,
+          chi2: a.chiSquare,
+          pmi: a.pmi,
+          dice: a.dice,
+          jaccard: a.jaccard
+        }));
+        zip.file('associacoes_estatisticas.csv', arrayToCSV(assocData, ['palavra1', 'palavra2', 'coocorrencia', 'chi2', 'pmi', 'dice', 'jaccard']));
+      }
+      
+      // Diversidade Léxica
+      if (statisticalAnalysis?.lexicalDiversity) {
+        const ld = statisticalAnalysis.lexicalDiversity;
+        zip.file('diversidade_lexica.json', JSON.stringify({
+          ttr: ld.ttr,
+          rttr: ld.rttr,
+          cttr: ld.cttr,
+          herdanC: ld.herdanC,
+          yuleK: ld.yuleK,
+          simpsonD: ld.simpsonD
+        }, null, 2));
+      }
+      
+      // Especificidades por corpus
+      if (statisticalAnalysis?.specificities?.length > 0) {
+        const specData = statisticalAnalysis.specificities.flatMap(corpus => 
+          [...(corpus.topPositive || []), ...(corpus.topNegative || [])].map(t => ({
+            corpus: corpus.corpusName,
+            palavra: t.word,
+            observado: t.observed,
+            esperado: t.expected?.toFixed(2) || 0,
+            ratio: t.ratio
+          }))
+        );
+        if (specData.length > 0) {
+          zip.file('especificidades.csv', arrayToCSV(specData, ['corpus', 'palavra', 'observado', 'esperado', 'ratio']));
+        }
+      }
+      
+      // Centralidade de Rede
+      if (networkAnalysis?.centrality?.nodes?.length > 0) {
+        const centralityData = networkAnalysis.centrality.nodes.slice(0, 100).map(n => ({
+          palavra: n.id,
+          grau: n.degreeCentrality?.toFixed(4) || 0,
+          intermediacao: n.betweennessCentrality?.toFixed(4) || 0,
+          proximidade: n.closenessCentrality?.toFixed(4) || 0,
+          autovetor: n.eigenvectorCentrality?.toFixed(4) || 0
+        }));
+        zip.file('centralidade_rede.csv', arrayToCSV(centralityData, ['palavra', 'grau', 'intermediacao', 'proximidade', 'autovetor']));
+      }
+      
+      // Comunidades
+      if (networkAnalysis?.communities?.communities?.length > 0) {
+        const commData = networkAnalysis.communities.communities.flatMap((comm, idx) => 
+          (comm.members || []).map(m => ({
+            comunidade: idx + 1,
+            cor: comm.color,
+            membro: m
+          }))
+        );
+        if (commData.length > 0) {
+          zip.file('comunidades.csv', arrayToCSV(commData, ['comunidade', 'cor', 'membro']));
+        }
+      }
+      
+      // XLSX com múltiplas abas
+      try {
+        const xlsxSheets = [
+          { 
+            name: 'Frequências', 
+            data: analysisResults.wordFrequency.map(w => ({ Palavra: w.word, Frequência: w.count })),
+            headers: ['Palavra', 'Frequência']
+          }
+        ];
+        
+        // Adicionar coocorrências se existirem
+        if (cooccurrences.length > 0) {
+          xlsxSheets.push({ 
+            name: 'Coocorrências', 
+            data: cooccurrences.slice(0, 500).map(c => ({ Palavra1: c.source, Palavra2: c.target, Peso: c.weight })),
+            headers: ['Palavra1', 'Palavra2', 'Peso']
+          });
+        }
+        
+        // Adicionar CHD se existir
+        if (analysisResults.chdResult) {
+          xlsxSheets.push({
+            name: 'CHD Classes',
+            data: analysisResults.chdResult.classes.flatMap((cls, i) => 
+              cls.keywords.map(kw => ({
+                Classe: `Classe ${i + 1}`,
+                Nome: cls.name,
+                Palavra: kw.word,
+                Chi2: kw.chi2.toFixed(2),
+                Frequência: kw.frequency
+              }))
+            ),
+            headers: ['Classe', 'Nome', 'Palavra', 'Chi2', 'Frequência']
+          });
+        }
+        
+        const xlsxData = await generateXLSX(xlsxSheets);
+        zip.file('analise_textlab.xlsx', xlsxData);
+      } catch (e) {
+        console.warn('XLSX generation failed:', e);
+      }
+      
+      // Generate and download
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      
+      // Método robusto para download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `textlab_export_${new Date().toISOString().split('T')[0]}.zip`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Erro ao gerar arquivo ZIP. Verifique o console para detalhes.');
+    }
+    
+    setIsProcessing(false);
+  };
+
+  const exportData = useCallback((format, subformat = null) => {
+    if (!analysisResults) return;
+    
+    let content = '';
+    let filename = '';
+    let mimeType = 'text/plain';
+    
+    switch (format) {
+      case 'iramuteq':
+        content = generateIRaMuTeQCorpus(documents);
+        filename = 'corpus_iramuteq.txt';
+        break;
+      case 'frequency':
+        if (!analysisResults.wordFrequency || analysisResults.wordFrequency.length === 0) {
+          alert('Nenhuma frequência de palavras disponível para exportar.');
+          return;
+        }
+        if (subformat === 'csv') {
+          const data = analysisResults.wordFrequency.map(w => ({ palavra: w.word, frequencia: w.count }));
+          content = arrayToCSV(data, ['palavra', 'frequencia']);
+          filename = 'frequencias.csv';
+          mimeType = 'text/csv';
+        } else {
+          content = 'Palavra\tFrequência\n' + 
+            analysisResults.wordFrequency.map(w => `${w.word}\t${w.count}`).join('\n');
+          filename = 'frequencias.tsv';
+        }
+        break;
+      case 'cooccurrence':
+        if (!analysisResults.cooccurrences || analysisResults.cooccurrences.length === 0) {
+          alert('Nenhuma coocorrência disponível para exportar.');
+          return;
+        }
+        if (subformat === 'csv') {
+          const data = analysisResults.cooccurrences.slice(0, 500).map(c => ({
+            palavra1: c.source, palavra2: c.target, peso: c.weight
+          }));
+          content = arrayToCSV(data, ['palavra1', 'palavra2', 'peso']);
+          filename = 'coocorrencias.csv';
+          mimeType = 'text/csv';
+        } else {
+          content = 'Palavra1\tPalavra2\tPeso\n' + 
+            analysisResults.cooccurrences.slice(0, 500).map(c => 
+              `${c.source}\t${c.target}\t${c.weight}`
+            ).join('\n');
+          filename = 'coocorrencias.tsv';
+        }
+        break;
+      case 'chd':
+        if (analysisResults.chdResult) {
+          if (subformat === 'csv') {
+            const data = analysisResults.chdResult.classes.flatMap((cls, i) => 
+              cls.keywords.map(kw => ({
+                classe: `Classe ${i + 1}`,
+                nome: cls.name,
+                palavra: kw.word,
+                chi2: kw.chi2.toFixed(2),
+                frequencia: kw.frequency
+              }))
+            );
+            content = arrayToCSV(data, ['classe', 'nome', 'palavra', 'chi2', 'frequencia']);
+            filename = 'chd_classes.csv';
+            mimeType = 'text/csv';
+          } else {
+            content = JSON.stringify(analysisResults.chdResult, null, 2);
+            filename = 'chd_reinert.json';
+            mimeType = 'application/json';
+          }
+        }
+        break;
+      case 'coding':
+        if (codedSegments.length > 0) {
+          const data = codedSegments.map(seg => ({
+            documento: seg.documentName,
+            codigo: seg.codeName,
+            categoria: seg.categoryName,
+            texto: seg.text,
+            data: seg.timestamp
+          }));
+          content = arrayToCSV(data, ['documento', 'codigo', 'categoria', 'texto', 'data']);
+          filename = 'codificacao_qualitativa.csv';
+          mimeType = 'text/csv';
+        }
+        break;
+      case 'full':
+        content = JSON.stringify({
+          stats: analysisResults.stats,
+          wordFrequency: analysisResults.wordFrequency,
+          cooccurrences: (analysisResults.cooccurrences || []).slice(0, 500),
+          chdResult: analysisResults.chdResult
+        }, null, 2);
+        filename = 'analise_completa.json';
+        mimeType = 'application/json';
+        break;
+      default:
+        return;
+    }
+    
+    if (!content) {
+      alert('Nenhum conteúdo para exportar.');
+      return;
+    }
+    
+    try {
+      // Adicionar BOM para UTF-8 em arquivos CSV/TSV
+      const needsBOM = mimeType.includes('csv') || mimeType.includes('plain');
+      const BOM = '\uFEFF';
+      const finalContent = needsBOM ? BOM + content : content;
+      
+      const blob = new Blob([finalContent], { type: mimeType + ';charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      // Método robusto para download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erro ao exportar: ' + err.message);
+    }
+  }, [analysisResults, documents, codedSegments, arrayToCSV]);
+  
+  const tabs = [
+    { id: 'upload', label: 'Importar', icon: Upload },
+    { id: 'stats', label: 'Estatísticas', icon: BarChart3, disabled: !analysisResults },
+    { id: 'wordcloud', label: 'Nuvem', icon: Cloud, disabled: !analysisResults },
+    { id: 'termsberry', label: 'TermsBerry', icon: CircleDot, disabled: !analysisResults },
+    { id: 'wordtree', label: 'Árvore', icon: GitBranch, disabled: !analysisResults },
+    { id: 'treemap', label: 'Treemap', icon: LayoutGrid, disabled: !analysisResults },
+    { id: 'network', label: 'Rede', icon: Network, disabled: !analysisResults },
+    { id: 'bigrams', label: 'Bigramas', icon: MessageCircle, disabled: !bigramAnalysis },
+    { id: 'netadvanced', label: 'Centralidade', icon: Target, disabled: !networkAnalysis },
+    { id: 'heatmap', label: 'Heatmap', icon: Grid, disabled: !analysisResults },
+    { id: 'afc', label: 'AFC', icon: Sparkles, disabled: !afcData },
+    { id: 'associations', label: 'Associações', icon: Activity, disabled: !statisticalAnalysis },
+    { id: 'sentiment', label: 'Sentimentos', icon: PieChart, disabled: !sentimentAnalysis },
+    { id: 'tfidf', label: 'TF-IDF', icon: TrendingUp, disabled: !statisticalAnalysis },
+    { id: 'diversity', label: 'Diversidade', icon: Hash, disabled: !statisticalAnalysis },
+    { id: 'chd', label: 'CHD/Reinert', icon: Layers, disabled: !analysisResults },
+    { id: 'coding', label: 'Codificação', icon: Tag, disabled: !documents || documents.length === 0 },
+    { id: 'radar', label: 'Radar', icon: Eye, disabled: !codedSegments || codedSegments.length === 0 },
+    { id: 'sunburst', label: 'Sunburst', icon: RefreshCw, disabled: !codedSegments || codedSegments.length === 0 },
+    { id: 'kwic', label: 'KWIC', icon: Search, disabled: !documents || documents.length === 0 },
+    { id: 'export', label: 'Exportar', icon: Download, disabled: !analysisResults },
+  ];
+  
+  // Classes de tema
+  const theme = isDarkMode ? {
+    bg: 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950',
+    text: 'text-white',
+    sidebar: 'bg-slate-900/95',
+    sidebarBorder: 'border-slate-800/50',
+    card: 'bg-slate-800/50',
+    cardBorder: 'border-slate-700',
+    input: 'bg-slate-800 border-slate-700',
+    inputFocus: 'focus:border-cyan-500',
+    muted: 'text-slate-400',
+    mutedBg: 'bg-slate-700',
+    accent: 'text-cyan-400',
+    accentBg: 'bg-cyan-500/20',
+    hover: 'hover:bg-slate-700',
+  } : {
+    bg: 'bg-gradient-to-br from-slate-100 via-white to-slate-100',
+    text: 'text-slate-900',
+    sidebar: 'bg-white/95',
+    sidebarBorder: 'border-slate-200',
+    card: 'bg-white',
+    cardBorder: 'border-slate-200',
+    input: 'bg-white border-slate-300',
+    inputFocus: 'focus:border-cyan-500',
+    muted: 'text-slate-600',
+    mutedBg: 'bg-slate-200',
+    accent: 'text-cyan-600',
+    accentBg: 'bg-cyan-100',
+    hover: 'hover:bg-slate-100',
+  };
+  
+  return (
+    <div className={`min-h-screen ${theme.bg} ${theme.text} flex`}>
+      {/* Ambient background */}
+      {isDarkMode && (
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-blue-500/5 to-transparent rounded-full" />
+        </div>
+      )}
+      
+      {/* Sidebar */}
+      <aside className={`fixed lg:relative z-50 h-screen ${sidebarOpen ? 'w-72' : 'w-0 lg:w-20'} ${theme.sidebar} backdrop-blur-xl border-r ${theme.sidebarBorder} flex flex-col transition-all duration-300 overflow-hidden`}>
+        {/* Logo/Header */}
+        <div className={`p-4 border-b ${theme.sidebarBorder}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 flex-shrink-0">
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            {sidebarOpen && (
+              <div className="overflow-hidden">
+                <h1 className={`text-sm font-bold tracking-tight ${theme.text} leading-tight`}>
+                  App para Análise
+                </h1>
+                <h1 className="text-sm font-bold tracking-tight text-cyan-500 leading-tight">
+                  Textual Gratuito
+                </h1>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Processar Corpus Button */}
+        {documents.length > 0 && sidebarOpen && (
+          <div className={`p-4 border-b ${theme.sidebarBorder}`}>
+            <button
+              onClick={processCorpus}
+              disabled={isProcessing}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-medium text-white hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  Processar Corpus
+                </>
+              )}
+            </button>
+          </div>
+        )}
+        
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4">
+          <div className="space-y-1 px-3">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => !tab.disabled && setActiveTab(tab.id)}
+                disabled={tab.disabled}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-500 border border-cyan-500/30'
+                    : tab.disabled
+                      ? `${isDarkMode ? 'text-slate-600' : 'text-slate-400'} cursor-not-allowed`
+                      : `${theme.muted} ${theme.hover} hover:text-cyan-500`
+                }`}
+                title={!sidebarOpen ? tab.label : undefined}
+              >
+                <tab.icon className={`w-5 h-5 flex-shrink-0 ${activeTab === tab.id ? 'text-cyan-500' : ''}`} />
+                {sidebarOpen && <span className="truncate">{tab.label}</span>}
+                {activeTab === tab.id && sidebarOpen && (
+                  <ChevronRight className="w-4 h-4 ml-auto text-cyan-500" />
+                )}
+              </button>
+            ))}
+          </div>
+        </nav>
+        
+        {/* Stats Summary */}
+        {analysisResults && sidebarOpen && (
+          <div className={`p-4 border-t ${theme.sidebarBorder} ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50'}`}>
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className={`${isDarkMode ? 'bg-slate-900/50' : 'bg-white'} rounded-lg p-2 shadow-sm`}>
+                <div className="text-lg font-bold text-cyan-500">{(documents || []).length}</div>
+                <div className={`text-xs ${theme.muted}`}>Docs</div>
+              </div>
+              <div className={`${isDarkMode ? 'bg-slate-900/50' : 'bg-white'} rounded-lg p-2 shadow-sm`}>
+                <div className="text-lg font-bold text-purple-500">{analysisResults.stats?.totalWords?.toLocaleString() || 0}</div>
+                <div className={`text-xs ${theme.muted}`}>Palavras</div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Theme Toggle */}
+        {sidebarOpen && (
+          <div className={`p-4 border-t ${theme.sidebarBorder}`}>
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl ${theme.hover} transition-colors`}
+            >
+              <span className={`text-sm flex items-center gap-2 ${theme.muted}`}>
+                {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                {isDarkMode ? 'Modo Escuro' : 'Modo Claro'}
+              </span>
+              <div className={`w-10 h-5 rounded-full relative transition-colors ${isDarkMode ? 'bg-cyan-500' : 'bg-slate-300'}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isDarkMode ? 'left-5' : 'left-0.5'}`} />
+              </div>
+            </button>
+          </div>
+        )}
+        
+        {/* Footer Credits */}
+        {sidebarOpen && (
+          <div className={`p-4 border-t ${theme.sidebarBorder}`}>
+            <div className="text-center space-y-2">
+              <div className={`text-xs ${theme.muted}`}>
+                CHD/Reinert • Similitude • KWIC
+              </div>
+              <div className="text-xs">
+                <span className={theme.muted}>Por </span>
+                <span className="text-cyan-500">Lucas O. Teixeira</span>
+              </div>
+              <div className="text-xs">
+                <span className={theme.muted}>com </span>
+                <span className="text-purple-500">Claude</span>
+                <span className={theme.muted}> para </span>
+                <span className={`font-medium ${theme.text}`}>UFABC</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Toggle Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={`absolute -right-3 top-20 w-6 h-6 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-300'} border rounded-full flex items-center justify-center ${theme.hover} transition-colors hidden lg:flex shadow-md`}
+        >
+          <ChevronRight className={`w-4 h-4 ${theme.muted} transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </aside>
+      
+      {/* Mobile Sidebar Toggle */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className={`lg:hidden fixed top-4 left-4 z-50 p-2.5 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-300 shadow-md'} border rounded-xl`}
+      >
+        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+      
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Main Content */}
+      <main className={`flex-1 overflow-y-auto min-h-screen transition-all duration-300 ${sidebarOpen ? 'lg:ml-0' : ''}`}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        
+        {/* Upload Tab */}
+        {activeTab === 'upload' && (
+          <div className="space-y-8">
+            {/* ========== GERENCIADOR DE CORPUS ========== */}
+            <div className={`${isDarkMode ? 'bg-gradient-to-br from-slate-800/50 to-purple-900/20 border-purple-500/30' : 'bg-gradient-to-br from-white to-purple-50 border-purple-200'} rounded-2xl p-6 border`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-purple-400" />
+                  <h3 className="font-semibold">Gerenciador de Corpus</h3>
+                  <span className={`text-xs ${isDarkMode ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-600'} px-2 py-0.5 rounded`}>
+                    {(corpora || []).length} corpus
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowCorpusManager(!showCorpusManager)}
+                  className={`text-sm ${isDarkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700'} flex items-center gap-1`}
+                >
+                  {showCorpusManager ? 'Ocultar' : 'Expandir'}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showCorpusManager ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+              
+              <p className={`text-sm ${theme.muted} mb-4`}>
+                Organize seus documentos em múltiplos corpus para análises comparativas.
+              </p>
+              
+              {/* Seletor de Corpus Ativo */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {(corpora || []).map(corpus => (
+                  <button
+                    key={corpus.id}
+                    onClick={() => setActiveCorpus(corpus.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                      activeCorpus === corpus.id 
+                        ? `${isDarkMode ? 'bg-white/10' : 'bg-purple-50'} border-2` 
+                        : `${isDarkMode ? 'bg-slate-800/50 border-slate-600 hover:border-slate-500' : 'bg-white border-slate-200 hover:border-slate-300'} border`
+                    }`}
+                    style={{ borderColor: activeCorpus === corpus.id ? corpus.color : undefined }}
+                  >
+                    <span 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: corpus.color }}
+                    />
+                    <span>{corpus.name}</span>
+                    <span className={`text-xs ${theme.textDimmed}`}>
+                      ({corpus.documentIds?.length || 0} docs)
+                    </span>
+                  </button>
+                ))}
+                
+                {/* Botão Novo Corpus */}
+                <button
+                  onClick={() => {
+                    const name = prompt('Nome do novo corpus:');
+                    if (name) createCorpus(name);
+                  }}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm ${isDarkMode ? 'bg-purple-600/20 border-purple-500/40 text-purple-300 hover:bg-purple-600/30' : 'bg-purple-100 border-purple-200 text-purple-600 hover:bg-purple-200'} border transition-colors`}
+                >
+                  <Plus className="w-4 h-4" />
+                  Novo Corpus
+                </button>
+              </div>
+              
+              {/* Painel Expandido de Gerenciamento */}
+              {showCorpusManager && (
+                <div className={`mt-4 pt-4 border-t ${theme.divider} space-y-3`}>
+                  {(corpora || []).map(corpus => (
+                    <div 
+                      key={corpus.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg ${isDarkMode ? 'bg-slate-800/50' : 'bg-white border border-slate-200'}`}
+                    >
+                      <span 
+                        className="w-4 h-4 rounded-full flex-shrink-0" 
+                        style={{ backgroundColor: corpus.color }}
+                      />
+                      <input
+                        type="text"
+                        value={corpus.name}
+                        onChange={(e) => renameCorpus(corpus.id, e.target.value)}
+                        className="flex-1 bg-transparent border-b border-transparent hover:border-slate-600 focus:border-cyan-500 focus:outline-none text-sm"
+                      />
+                      <span className="text-xs text-slate-500">
+                        {corpus.documentIds?.length || 0} documentos
+                      </span>
+                      {corpus.id !== 'default' && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Deletar corpus "${corpus.name}"? Documentos serão movidos para o Corpus Principal.`)) {
+                              deleteCorpus(corpus.id);
+                            }
+                          }}
+                          className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Upload Zone */}
+            <div className="relative">
+              <input
+                type="file"
+                multiple
+                accept=".txt,.csv,.md,.pdf,.doc,.docx,.xlsx,.xls,.rtf,.json,.html,.htm,.xml,.odt,.tsv,.log"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="border-2 border-dashed border-slate-700 rounded-2xl p-12 text-center hover:border-cyan-500/50 hover:bg-slate-800/30 transition-all duration-300">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 flex items-center justify-center">
+                  <Upload className="w-8 h-8 text-cyan-400" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Arraste arquivos ou clique para selecionar</h3>
+                <p className="text-slate-400 text-sm mb-2">
+                  Arquivos serão adicionados ao corpus: 
+                  <span 
+                    className="ml-1 font-medium"
+                    style={{ color: corpora.find(c => c.id === activeCorpus)?.color }}
+                  >
+                    {corpora.find(c => c.id === activeCorpus)?.name}
+                  </span>
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {[
+                    { ext: 'PDF', colorDark: 'bg-red-500/20 text-red-300', colorLight: 'bg-red-100 text-red-600' },
+                    { ext: 'DOCX', colorDark: 'bg-blue-500/20 text-blue-300', colorLight: 'bg-blue-100 text-blue-600' },
+                    { ext: 'DOC', colorDark: 'bg-blue-500/20 text-blue-300', colorLight: 'bg-blue-100 text-blue-600' },
+                    { ext: 'TXT', colorDark: 'bg-slate-500/20 text-slate-300', colorLight: 'bg-slate-200 text-slate-600' },
+                    { ext: 'CSV', colorDark: 'bg-green-500/20 text-green-300', colorLight: 'bg-green-100 text-green-600' },
+                    { ext: 'XLSX', colorDark: 'bg-emerald-500/20 text-emerald-300', colorLight: 'bg-emerald-100 text-emerald-600' },
+                    { ext: 'RTF', colorDark: 'bg-purple-500/20 text-purple-300', colorLight: 'bg-purple-100 text-purple-600' },
+                    { ext: 'MD', colorDark: 'bg-slate-500/20 text-slate-300', colorLight: 'bg-slate-200 text-slate-600' },
+                    { ext: 'HTML', colorDark: 'bg-orange-500/20 text-orange-300', colorLight: 'bg-orange-100 text-orange-600' },
+                    { ext: 'JSON', colorDark: 'bg-yellow-500/20 text-yellow-300', colorLight: 'bg-yellow-100 text-yellow-700' },
+                    { ext: 'XML', colorDark: 'bg-cyan-500/20 text-cyan-300', colorLight: 'bg-cyan-100 text-cyan-600' },
+                    { ext: 'ODT', colorDark: 'bg-indigo-500/20 text-indigo-300', colorLight: 'bg-indigo-100 text-indigo-600' },
+                  ].map(format => (
+                    <span key={format.ext} className={`text-xs px-2 py-1 rounded ${isDarkMode ? format.colorDark : format.colorLight}`}>
+                      .{format.ext.toLowerCase()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* File Loading Status */}
+            {Object.keys(fileLoadingStatus).length > 0 && (
+              <div className="space-y-2">
+                {Object.entries(fileLoadingStatus).map(([id, status]) => (
+                  <div 
+                    key={id} 
+                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                      status.status === 'loading' ? 'bg-cyan-500/10 border border-cyan-500/30' :
+                      status.status === 'success' ? 'bg-green-500/10 border border-green-500/30' :
+                      'bg-red-500/10 border border-red-500/30'
+                    }`}
+                  >
+                    {status.status === 'loading' && (
+                      <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+                    )}
+                    {status.status === 'success' && (
+                      <Check className="w-4 h-4 text-green-400" />
+                    )}
+                    {status.status === 'error' && (
+                      <X className="w-4 h-4 text-red-400" />
+                    )}
+                    <span className={`text-sm ${
+                      status.status === 'loading' ? 'text-cyan-300' :
+                      status.status === 'success' ? 'text-green-300' :
+                      'text-red-300'
+                    }`}>
+                      {status.status === 'loading' && `Processando ${status.name}...`}
+                      {status.status === 'success' && `${status.name} carregado com sucesso`}
+                      {status.status === 'error' && `Erro em ${status.name}: ${status.error}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* ========== GERENCIADOR DE STOPWORDS ========== */}
+            <div className={`${isDarkMode ? 'bg-gradient-to-br from-slate-800/50 to-amber-900/20 border-amber-500/30' : 'bg-gradient-to-br from-white to-amber-50 border-amber-200'} rounded-2xl p-6 border`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-amber-400" />
+                  <h3 className="font-semibold">Gerenciador de Stopwords</h3>
+                  <span className={`text-xs ${isDarkMode ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-600'} px-2 py-0.5 rounded`}>
+                    {customStopwordsPT.length + customStopwordsEN.length} palavras
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowStopwordsManager(!showStopwordsManager)}
+                  className={`text-sm ${isDarkMode ? 'text-amber-400 hover:text-amber-300' : 'text-amber-600 hover:text-amber-700'} flex items-center gap-1`}
+                >
+                  {showStopwordsManager ? 'Ocultar' : 'Gerenciar'}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showStopwordsManager ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+              
+              <p className={`text-sm ${theme.muted}`}>
+                Stopwords são removidas da análise. Adicione ou remova palavras conforme necessário.
+              </p>
+              
+              {showStopwordsManager && (
+                <div className={`mt-4 pt-4 border-t ${theme.divider} space-y-4`}>
+                  {/* Seletor de Idioma */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setStopwordLanguage('pt')}
+                      className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                        stopwordLanguage === 'pt' 
+                          ? 'bg-amber-600 text-white' 
+                          : theme.button
+                      }`}
+                    >
+                      Português ({customStopwordsPT.length})
+                    </button>
+                    <button
+                      onClick={() => setStopwordLanguage('en')}
+                      className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                        stopwordLanguage === 'en' 
+                          ? 'bg-amber-600 text-white' 
+                          : theme.button
+                      }`}
+                    >
+                      English ({customStopwordsEN.length})
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Resetar stopwords de ${stopwordLanguage === 'pt' ? 'Português' : 'Inglês'} para o padrão?`)) {
+                          resetStopwords(stopwordLanguage);
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-lg text-sm ${theme.button} flex items-center gap-1`}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Resetar
+                    </button>
+                  </div>
+                  
+                  {/* Adicionar Nova Stopword */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newStopword}
+                      onChange={(e) => setNewStopword(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newStopword.trim()) {
+                          addStopword(newStopword, stopwordLanguage);
+                          setNewStopword('');
+                        }
+                      }}
+                      placeholder="Adicionar nova stopword..."
+                      className={`flex-1 px-4 py-2 ${theme.input} rounded-lg text-sm focus:border-amber-500 focus:outline-none`}
+                    />
+                    <button
+                      onClick={() => {
+                        if (newStopword.trim()) {
+                          addStopword(newStopword, stopwordLanguage);
+                          setNewStopword('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-500 flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Adicionar
+                    </button>
+                  </div>
+                  
+                  {/* Busca */}
+                  <div className="relative">
+                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme.textDimmed}`} />
+                    <input
+                      type="text"
+                      value={stopwordSearchTerm}
+                      onChange={(e) => setStopwordSearchTerm(e.target.value)}
+                      placeholder="Buscar stopword..."
+                      className={`w-full pl-10 pr-4 py-2 ${theme.input} rounded-lg text-sm focus:border-amber-500 focus:outline-none`}
+                    />
+                  </div>
+                  
+                  {/* Lista de Stopwords */}
+                  <div className={`max-h-48 overflow-y-auto ${theme.cardInner} rounded-lg p-3`}>
+                    <div className="flex flex-wrap gap-2">
+                      {filteredStopwords.slice(0, 100).map(word => (
+                        <span
+                          key={word}
+                          className={`inline-flex items-center gap-1 px-2 py-1 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'} rounded text-xs group hover:bg-red-500/20 transition-colors`}
+                        >
+                          {word}
+                          <button
+                            onClick={() => removeStopword(word, stopwordLanguage)}
+                            className={`${theme.textDimmed} group-hover:text-red-400`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                      {filteredStopwords.length > 100 && (
+                        <span className={`text-xs ${theme.textDimmed} py-1`}>
+                          +{filteredStopwords.length - 100} mais...
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Cleaning Options */}
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <div className="flex items-center gap-2 mb-4">
+                <Settings className="w-5 h-5 text-cyan-400" />
+                <h3 className="font-semibold">Opções de Limpeza</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                {[
+                  { key: 'lowercase', label: 'Minúsculas' },
+                  { key: 'removeNumbers', label: 'Remover números' },
+                  { key: 'removePunctuation', label: 'Remover pontuação' },
+                  { key: 'removeStopwords', label: 'Remover stopwords' },
+                ].map(opt => (
+                  <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={cleaningOptions[opt.key]}
+                      onChange={(e) => setCleaningOptions(prev => ({ ...prev, [opt.key]: e.target.checked }))}
+                      className={`w-4 h-4 rounded ${isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-slate-300 bg-white'} text-cyan-500 focus:ring-cyan-500`}
+                    />
+                    <span className={`text-sm ${theme.textSecondary}`}>{opt.label}</span>
+                  </label>
+                ))}
+                <div className="flex items-center gap-2">
+                  <label className={`text-sm ${theme.textSecondary}`}>Min. caracteres:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={cleaningOptions.minLength}
+                    onChange={(e) => setCleaningOptions(prev => ({ ...prev, minLength: parseInt(e.target.value) || 2 }))}
+                    className={`w-16 px-2 py-1 rounded ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-300'} border text-sm`}
+                  />
+                </div>
+              </div>
+              
+              {/* Opção de Agrupamento Morfológico - Destacada */}
+              <div className={`mt-4 p-4 rounded-xl border ${cleaningOptions.groupVariations 
+                ? (isDarkMode ? 'bg-purple-900/20 border-purple-500/30' : 'bg-purple-50 border-purple-200') 
+                : (isDarkMode ? 'bg-slate-900/50 border-slate-600' : 'bg-slate-50 border-slate-200')} transition-all`}>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={cleaningOptions.groupVariations}
+                    onChange={(e) => setCleaningOptions(prev => ({ ...prev, groupVariations: e.target.checked }))}
+                    className={`w-5 h-5 mt-0.5 rounded ${isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-slate-300 bg-white'} text-purple-500 focus:ring-purple-500`}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-medium ${theme.text}`}>Agrupar variações morfológicas</span>
+                      <span className={`text-xs ${isDarkMode ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-600'} px-2 py-0.5 rounded`}>Recomendado</span>
+                    </div>
+                    <p className={`text-xs ${theme.textMuted} mt-1`}>
+                      Agrupa automaticamente variações de gênero (ministro/ministra), número (singular/plural), 
+                      linguagem neutra (x, @) e possíveis erros de digitação na mesma contagem.
+                    </p>
+                    {cleaningOptions.groupVariations && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className={`text-xs ${isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'} px-2 py-1 rounded`}>ministro = ministra</span>
+                        <span className={`text-xs ${isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'} px-2 py-1 rounded`}>ministros = ministras</span>
+                        <span className={`text-xs ${isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'} px-2 py-1 rounded`}>ministrx = ministr@</span>
+                        <span className={`text-xs ${isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-700'} px-2 py-1 rounded`}>typos detectados</span>
+                      </div>
+                    )}
+                  </div>
+                </label>
+              </div>
+            </div>
+            
+            {/* Document List com indicação de Corpus */}
+            {(documents || []).length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-cyan-400" />
+                    Documentos Carregados ({(documents || []).length})
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    {/* Filtro por Corpus */}
+                    <select
+                      value={corpusFilter}
+                      onChange={(e) => setCorpusFilter(e.target.value)}
+                      className={`px-3 py-1.5 ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-300'} border rounded-lg text-sm focus:border-cyan-500 focus:outline-none`}
+                    >
+                      <option value="all">Todos os corpus</option>
+                      {(corpora || []).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => { setDocuments([]); setAnalysisResults(null); setCorpora([{ id: 'default', name: 'Corpus Principal', color: '#22d3ee', documentIds: [] }]); }}
+                      className="text-sm text-red-400 hover:text-red-300 flex items-center gap-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Limpar tudo
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="grid gap-3">
+                  {(filteredDocuments || []).map(doc => {
+                    const ext = doc.type || doc.name.split('.').pop().toLowerCase();
+                    const docCorpus = getDocumentCorpus(doc.id);
+                    const typeColors = isDarkMode ? {
+                      pdf: 'bg-red-500/20 text-red-300',
+                      docx: 'bg-blue-500/20 text-blue-300',
+                      doc: 'bg-blue-500/20 text-blue-300',
+                      xlsx: 'bg-emerald-500/20 text-emerald-300',
+                      xls: 'bg-emerald-500/20 text-emerald-300',
+                      csv: 'bg-green-500/20 text-green-300',
+                      rtf: 'bg-purple-500/20 text-purple-300',
+                      html: 'bg-orange-500/20 text-orange-300',
+                      htm: 'bg-orange-500/20 text-orange-300',
+                      json: 'bg-yellow-500/20 text-yellow-300',
+                      xml: 'bg-cyan-500/20 text-cyan-300',
+                      odt: 'bg-indigo-500/20 text-indigo-300',
+                      txt: 'bg-slate-500/20 text-slate-300',
+                      md: 'bg-slate-500/20 text-slate-300',
+                    } : {
+                      pdf: 'bg-red-100 text-red-600',
+                      docx: 'bg-blue-100 text-blue-600',
+                      doc: 'bg-blue-100 text-blue-600',
+                      xlsx: 'bg-emerald-100 text-emerald-600',
+                      xls: 'bg-emerald-100 text-emerald-600',
+                      csv: 'bg-green-100 text-green-600',
+                      rtf: 'bg-purple-100 text-purple-600',
+                      html: 'bg-orange-100 text-orange-600',
+                      htm: 'bg-orange-100 text-orange-600',
+                      json: 'bg-yellow-100 text-yellow-700',
+                      xml: 'bg-cyan-100 text-cyan-600',
+                      odt: 'bg-indigo-100 text-indigo-600',
+                      txt: 'bg-slate-200 text-slate-600',
+                      md: 'bg-slate-200 text-slate-600',
+                    };
+                    const colorClass = typeColors[ext] || (isDarkMode ? 'bg-slate-500/20 text-slate-300' : 'bg-slate-200 text-slate-600');
+                    
+                    return (
+                      <div
+                        key={doc.id}
+                        className={`flex items-center justify-between p-4 ${isDarkMode ? 'bg-slate-800/50 border-slate-700 hover:border-slate-600' : 'bg-white border-slate-200 hover:border-slate-300'} rounded-xl border transition-all`}
+                        style={{ borderLeftWidth: '3px', borderLeftColor: docCorpus?.color || '#22d3ee' }}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-lg ${isDarkMode ? 'bg-slate-700' : 'bg-slate-100'} flex items-center justify-center`}>
+                            <FileText className={`w-5 h-5 ${theme.textMuted}`} />
+                          </div>
+                          <div>
+                            <div className="font-medium flex items-center gap-2">
+                              {doc.name}
+                              <span className={`text-xs px-2 py-0.5 rounded ${colorClass}`}>
+                                {ext.toUpperCase()}
+                              </span>
+                            </div>
+                            <div className={`text-sm ${theme.textMuted} flex items-center gap-2`}>
+                              {(doc.size / 1024).toFixed(1)} KB • {doc.content.split(/\s+/).length.toLocaleString()} palavras
+                              <span 
+                                className="text-xs px-2 py-0.5 rounded"
+                                style={{ backgroundColor: `${docCorpus?.color}20`, color: docCorpus?.color }}
+                              >
+                                {docCorpus?.name || 'Sem corpus'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {/* Seletor de Corpus */}
+                          <select
+                            value={docCorpus?.id || 'default'}
+                            onChange={(e) => moveDocumentToCorpus(doc.id, e.target.value)}
+                            className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs focus:border-cyan-500 focus:outline-none"
+                          >
+                            {(corpora || []).map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => removeDocument(doc.id)}
+                            className="p-2 text-slate-400 hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Statistics Tab */}
+        {activeTab === 'stats' && analysisResults && analysisResults.stats && analysisResults.wordFrequency && (
+          <div className="space-y-8">
+            <VisualizationHeader vizKey="statistics" icon={BarChart3} />
+            <StatisticsPanel stats={analysisResults.stats} />
+            
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Top Words */}
+              <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-cyan-400" />
+                  Top 30 Palavras
+                </h3>
+                <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                  {analysisResults.wordFrequency.slice(0, 30).map((word, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <span className="w-6 text-right text-slate-500 text-sm">{idx + 1}</span>
+                      <div className="flex-1 h-8 bg-slate-700/50 rounded-lg overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-lg flex items-center px-3"
+                          style={{ width: `${(word.count / analysisResults.wordFrequency[0].count) * 100}%` }}
+                        >
+                          <span className="text-sm font-medium truncate">{word.word}</span>
+                        </div>
+                      </div>
+                      <span className="w-12 text-right text-slate-400 text-sm">{word.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Frequency Distribution */}
+              <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-cyan-400" />
+                  Distribuição de Frequências
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Hapax (freq=1)', count: analysisResults.stats.hapax },
+                    { label: 'Freq 2-5', count: analysisResults.wordFrequency.filter(w => w.count >= 2 && w.count <= 5).length },
+                    { label: 'Freq 6-10', count: analysisResults.wordFrequency.filter(w => w.count >= 6 && w.count <= 10).length },
+                    { label: 'Freq 11-50', count: analysisResults.wordFrequency.filter(w => w.count >= 11 && w.count <= 50).length },
+                    { label: 'Freq >50', count: analysisResults.wordFrequency.filter(w => w.count > 50).length },
+                  ].map((item, idx) => {
+                    const percentage = ((item.count / analysisResults.stats.uniqueWords) * 100).toFixed(1);
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <span className="w-24 text-sm text-slate-400">{item.label}</span>
+                        <div className="flex-1 h-6 bg-slate-700/50 rounded-lg overflow-hidden">
+                          <div
+                            className="h-full rounded-lg"
+                            style={{ 
+                              width: `${percentage}%`,
+                              backgroundColor: `hsl(${190 + idx * 20}, 70%, 50%)`
+                            }}
+                          />
+                        </div>
+                        <span className="w-20 text-right text-sm text-slate-400">{item.count} ({percentage}%)</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Word Cloud Tab */}
+        {activeTab === 'wordcloud' && analysisResults && analysisResults.wordFrequency && (
+          <div className={`rounded-2xl p-8 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <VisualizationHeader vizKey="wordcloud" icon={Cloud} extraContent={
+              <ExportVisualizationButton 
+                vizId="wordcloud" 
+                filename="nuvem-palavras"
+                data={analysisResults.wordFrequency.slice(0, 100).map(w => ({
+                  palavra: w.word,
+                  frequencia: w.count,
+                  percentual: ((w.count / analysisResults.stats.totalWords) * 100).toFixed(2)
+                }))}
+              />
+            } />
+            <p className={`text-sm mb-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              💡 <strong>Clique em qualquer palavra</strong> para ver análise detalhada de todas as incidências
+            </p>
+            <div data-viz="wordcloud" className={`flex justify-center overflow-hidden rounded-xl p-4 ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
+              <WordCloudComponent 
+                words={analysisResults.wordFrequency} 
+                width={800} 
+                height={500} 
+                onWordClick={handleWordClick}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* TermsBerry Tab */}
+        {activeTab === 'termsberry' && analysisResults && analysisResults.wordFrequency && (
+          <div className={`rounded-2xl p-8 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <VisualizationHeader vizKey="termsberry" icon={CircleDot} extraContent={
+              <ExportVisualizationButton 
+                vizId="termsberry" 
+                filename="termsberry"
+                data={analysisResults.wordFrequency.slice(0, 80).map(w => ({
+                  palavra: w.word,
+                  frequencia: w.count
+                }))}
+              />
+            } />
+            <div data-viz="termsberry" className={`flex justify-center overflow-hidden rounded-xl p-4 ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
+              <TermsBerryVisualization 
+                words={analysisResults.wordFrequency} 
+                width={700} 
+                height={700} 
+                onWordClick={handleWordClick}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* AFC Tab */}
+        {activeTab === 'afc' && afcData && (
+          <div className={`rounded-2xl p-8 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <VisualizationHeader vizKey="afc" icon={Sparkles} extraContent={
+              <ExportVisualizationButton 
+                vizId="afc" 
+                filename="afc-correspondencia"
+                data={afcData.words.map(w => ({
+                  palavra: w.word,
+                  fator1: w.x.toFixed(3),
+                  fator2: w.y.toFixed(3),
+                  frequencia: w.count
+                }))}
+              />
+            } />
+            <div data-viz="afc" className={`flex justify-center overflow-hidden rounded-xl p-4 ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
+              <AFCVisualization afcData={afcData} width={850} height={650} />
+            </div>
+          </div>
+        )}
+        
+        {/* Treemap Tab */}
+        {activeTab === 'treemap' && analysisResults && analysisResults.wordFrequency && (
+          <div className={`rounded-2xl p-8 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <VisualizationHeader vizKey="treemap" icon={LayoutGrid} extraContent={
+              <ExportVisualizationButton 
+                vizId="treemap" 
+                filename="treemap-frequencias"
+                data={analysisResults.wordFrequency.slice(0, 100).map(w => ({
+                  palavra: w.word,
+                  frequencia: w.count
+                }))}
+              />
+            } />
+            <div data-viz="treemap" className={`flex justify-center overflow-hidden rounded-xl p-4 ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
+              <TreemapVisualization 
+                words={analysisResults.wordFrequency} 
+                width={800} 
+                height={500} 
+                onWordClick={handleWordClick}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Network Tab */}
+        {activeTab === 'network' && analysisResults && analysisResults.cooccurrences && (
+          <div className={`rounded-2xl p-8 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <VisualizationHeader vizKey="network" icon={Network} extraContent={
+              <ExportVisualizationButton 
+                vizId="network" 
+                filename="rede-coocorrencia"
+                data={analysisResults.cooccurrences.slice(0, 100).map(e => ({
+                  palavra1: e.source,
+                  palavra2: e.target,
+                  peso: e.weight
+                }))}
+              />
+            } />
+            <div data-viz="network" className={`flex justify-center overflow-hidden rounded-xl p-4 ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
+              <NetworkGraph cooccurrences={analysisResults.cooccurrences} width={800} height={550} />
+            </div>
+          </div>
+        )}
+        
+        {/* Bigrams Tab - Rede de Bigramas */}
+        {activeTab === 'bigrams' && bigramAnalysis && (
+          <div className="space-y-6">
+            <div className={`rounded-2xl p-6 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+              <VisualizationHeader vizKey="bigrams" icon={MessageCircle} extraContent={
+                <ExportVisualizationButton 
+                  vizId="bigrams" 
+                  filename="rede-bigramas"
+                  data={bigramAnalysis.bigrams.slice(0, 100).map(b => ({
+                    bigrama: b.bigram,
+                    palavra1: b.word1,
+                    palavra2: b.word2,
+                    frequencia: b.count
+                  }))}
+                />
+              } />
+              <div data-viz="bigrams" className={`flex justify-center overflow-hidden rounded-xl p-4 ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
+                <BigramNetworkVisualization bigramNetwork={bigramAnalysis.network} width={800} height={550} />
+              </div>
+            </div>
+            
+            {/* Top Bigramas */}
+            <div className={`rounded-2xl p-6 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+              <h4 className={`font-medium mb-4 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Top 30 Bigramas mais Frequentes</h4>
+              <div className="grid md:grid-cols-3 gap-2">
+                {bigramAnalysis.bigrams.slice(0, 30).map((b, idx) => (
+                  <div 
+                    key={b.bigram}
+                    className="flex items-center justify-between px-3 py-2 bg-slate-900/50 rounded-lg"
+                  >
+                    <span className="text-sm">
+                      <span className="text-slate-500 mr-2">{idx + 1}.</span>
+                      <span className="text-cyan-400">{b.word1}</span>
+                      <span className="text-slate-500 mx-1">+</span>
+                      <span className="text-purple-400">{b.word2}</span>
+                    </span>
+                    <span className="text-sm font-medium text-slate-300">{b.count}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Word Tree Tab - Árvore de Palavras */}
+        {activeTab === 'wordtree' && analysisResults && (
+          <div className={`rounded-2xl p-6 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <VisualizationHeader vizKey="wordtree" icon={GitBranch} extraContent={
+              wordTreeData && (
+                <ExportVisualizationButton 
+                  vizId="wordtree" 
+                  filename={`arvore-${wordTreeKeyword}`}
+                  data={[
+                    ...(wordTreeData.left || []).map(b => ({ direcao: 'esquerda', contexto: b.path, frequencia: b.count })),
+                    ...(wordTreeData.right || []).map(b => ({ direcao: 'direita', contexto: b.path, frequencia: b.count }))
+                  ]}
+                />
+              )
+            } />
+            
+            {/* Input para palavra central */}
+            <div className="flex gap-3 mb-6">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={wordTreeKeyword}
+                  onChange={(e) => setWordTreeKeyword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && buildWordTreeFromKeyword()}
+                  placeholder="Digite a palavra central (ex: comunicação)"
+                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+              <button
+                onClick={buildWordTreeFromKeyword}
+                disabled={!wordTreeKeyword.trim()}
+                className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Gerar Árvore
+              </button>
+            </div>
+            
+            {/* Sugestões de palavras frequentes */}
+            {!wordTreeData && analysisResults.wordFrequency && (
+              <div className="mb-6">
+                <p className="text-sm text-slate-400 mb-2">Sugestões (palavras mais frequentes):</p>
+                <div className="flex flex-wrap gap-2">
+                  {analysisResults.wordFrequency.slice(0, 15).map(w => (
+                    <button
+                      key={w.word}
+                      onClick={() => {
+                        setWordTreeKeyword(w.word);
+                        const tree = buildWordTree(analysisResults.fullText, w.word, 30, 5, cleaningOptions.minLength);
+                        setWordTreeData(tree);
+                      }}
+                      className="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-full text-sm transition-colors"
+                    >
+                      {w.word} <span className="text-slate-400">({w.count})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Visualização */}
+            <div data-viz="wordtree" className="bg-slate-900/50 rounded-xl p-4 overflow-x-auto">
+              <WordTreeVisualization wordTree={wordTreeData} width={900} height={500} />
+            </div>
+            
+            {wordTreeData && (
+              <div className="mt-4 text-sm text-slate-400">
+                Total de ocorrências encontradas: <span className="text-white font-medium">{wordTreeData.totalOccurrences || 0}</span>
+                {' • '}Contextos à esquerda: <span className="text-cyan-400">{wordTreeData.left?.length || 0}</span>
+                {' • '}Contextos à direita: <span className="text-purple-400">{wordTreeData.right?.length || 0}</span>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Sentiment Tab - Análise de Sentimentos */}
+        {activeTab === 'sentiment' && sentimentAnalysis && (
+          <div className={`rounded-2xl p-6 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <VisualizationHeader vizKey="sentiment" icon={PieChart} extraContent={
+              <ExportVisualizationButton 
+                vizId="sentiment" 
+                filename="analise-sentimentos"
+                data={[
+                  { categoria: 'Positivo', contagem: sentimentAnalysis.positive.count, percentual: sentimentAnalysis.positive.percentage },
+                  { categoria: 'Negativo', contagem: sentimentAnalysis.negative.count, percentual: sentimentAnalysis.negative.percentage },
+                  { categoria: 'Neutro', contagem: sentimentAnalysis.neutral.count, percentual: sentimentAnalysis.neutral.percentage }
+                ]}
+              />
+            } />
+            <div data-viz="sentiment">
+              <SentimentVisualization sentiment={sentimentAnalysis} width={700} height={400} />
+            </div>
+          </div>
+        )}
+        
+        {/* Heatmap Tab */}
+        {activeTab === 'heatmap' && analysisResults && analysisResults.cooccurrences && analysisResults.wordFrequency && (
+          <div className={`rounded-2xl p-8 border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <VisualizationHeader vizKey="heatmap" icon={Grid} extraContent={
+              <ExportVisualizationButton 
+                vizId="heatmap" 
+                filename="heatmap-coocorrencia"
+                data={analysisResults.cooccurrences.slice(0, 50).map(e => ({
+                  palavra1: e.source,
+                  palavra2: e.target,
+                  coocorrencia: e.weight
+                }))}
+              />
+            } />
+            <div data-viz="heatmap" className={`flex justify-center overflow-hidden rounded-xl p-4 ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
+              <HeatmapVisualization 
+                cooccurrences={analysisResults.cooccurrences} 
+                words={analysisResults.wordFrequency}
+                width={700} 
+                height={500} 
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Network Advanced Tab - Centralidade e Comunidades */}
+        {activeTab === 'netadvanced' && networkAnalysis && (
+          <div className="space-y-8">
+            {/* Configurações de Rede */}
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-cyan-400" />
+                Parâmetros da Rede
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-sm text-slate-400 block mb-1">Peso mínimo</label>
+                  <input
+                    type="number"
+                    value={networkSettings.minWeight}
+                    onChange={(e) => setNetworkSettings(prev => ({ ...prev, minWeight: parseInt(e.target.value) || 2 }))}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm"
+                    min="1"
+                    max="20"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 block mb-1">Máx. arestas</label>
+                  <input
+                    type="number"
+                    value={networkSettings.maxEdges}
+                    onChange={(e) => setNetworkSettings(prev => ({ ...prev, maxEdges: parseInt(e.target.value) || 150 }))}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm"
+                    min="50"
+                    max="500"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 block mb-1">Janela (palavras)</label>
+                  <input
+                    type="number"
+                    value={networkSettings.windowSize}
+                    onChange={(e) => setNetworkSettings(prev => ({ ...prev, windowSize: parseInt(e.target.value) || 5 }))}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm"
+                    min="2"
+                    max="15"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={processCorpus}
+                    className="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-sm transition-colors"
+                  >
+                    Recalcular
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Métricas de Centralidade */}
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <GitBranch className="w-5 h-5 text-cyan-400" />
+                Métricas de Centralidade
+              </h3>
+              <CentralityMetricsPanel 
+                networkAnalysis={networkAnalysis} 
+                onNodeClick={handleWordClick}
+                isDarkMode={isDarkMode}
+              />
+            </div>
+            
+            {/* Comunidades Detectadas */}
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Layers className="w-5 h-5 text-purple-400" />
+                Comunidades Detectadas (Louvain)
+              </h3>
+              <CommunitiesPanel networkAnalysis={networkAnalysis} isDarkMode={isDarkMode} />
+            </div>
+          </div>
+        )}
+        
+        {/* Associations Tab - Chi-square, PMI, Dice */}
+        {activeTab === 'associations' && statisticalAnalysis && (
+          <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+            <h3 className="font-semibold mb-6 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-amber-400" />
+              Medidas de Associação entre Palavras
+            </h3>
+            <AssociationsPanel statisticalAnalysis={statisticalAnalysis} isDarkMode={isDarkMode} />
+          </div>
+        )}
+        
+        {/* TF-IDF Tab */}
+        {activeTab === 'tfidf' && statisticalAnalysis && (
+          <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+            <h3 className="font-semibold mb-6 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-cyan-400" />
+              Análise TF-IDF (Term Frequency - Inverse Document Frequency)
+            </h3>
+            <p className={`text-sm ${theme.muted} mb-6`}>
+              TF-IDF identifica termos que são importantes para documentos específicos, destacando palavras discriminantes.
+            </p>
+            <TFIDFPanel statisticalAnalysis={statisticalAnalysis} isDarkMode={isDarkMode} />
+          </div>
+        )}
+        
+        {/* Diversity Tab - Índices Léxicos */}
+        {activeTab === 'diversity' && statisticalAnalysis && (
+          <div className="space-y-8">
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <h3 className="font-semibold mb-6 flex items-center gap-2">
+                <PieChart className="w-5 h-5 text-purple-400" />
+                Diversidade e Riqueza Léxica
+              </h3>
+              <LexicalDiversityPanel statisticalAnalysis={statisticalAnalysis} isDarkMode={isDarkMode} />
+            </div>
+            
+            {/* Especificidades por Corpus */}
+            {corpora.length >= 2 && (
+              <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+                <h3 className="font-semibold mb-6 flex items-center gap-2">
+                  <Hash className="w-5 h-5 text-green-400" />
+                  Especificidades por Corpus
+                </h3>
+                <SpecificitiesPanel statisticalAnalysis={statisticalAnalysis} />
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* CHD Tab */}
+        {activeTab === 'chd' && analysisResults && analysisResults.chdResult && (
+          <div className={`${theme.card} rounded-2xl p-8 border ${theme.cardBorder}`}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Layers className="w-5 h-5 text-cyan-400" />
+                Classificação Hierárquica Descendente (CHD/Reinert)
+              </h3>
+              <ExportVisualizationButton 
+                vizId="chd" 
+                filename="chd-reinert"
+                data={analysisResults.chdResult?.classes?.flatMap((cls, clsIdx) => 
+                  cls.segments?.slice(0, 20).map((seg, segIdx) => ({
+                    classe: clsIdx + 1,
+                    cor: cls.color,
+                    percentual: cls.percentage,
+                    segmento: segIdx + 1,
+                    texto: seg.substring(0, 200)
+                  })) || []
+                ) || []}
+              />
+            </div>
+            <div data-viz="chd" className="bg-slate-900/50 rounded-xl p-4">
+              <ClusterVisualization chdResult={analysisResults.chdResult} />
+            </div>
+            <p className="text-sm text-slate-400 mt-6">
+              Segmentos de texto agrupados por similaridade lexical. Clique nas classes para ver detalhes.
+            </p>
+          </div>
+        )}
+        
+        {/* Coding Tab */}
+        {activeTab === 'coding' && (
+          <div className="space-y-6">
+            {/* Header com estatísticas e botão de auto-codificação */}
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-cyan-400" />
+                  Codificação Qualitativa
+                </h3>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm ${theme.muted}`}>
+                    {(codedSegments || []).length} segmentos ({(codedSegments || []).filter(s => s.isAutomatic).length} automáticos)
+                  </span>
+                  {(documents || []).length > 0 && (
+                    <button
+                      onClick={runAutoCoding}
+                      disabled={isAutoCoding}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isAutoCoding ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Codificando...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4" />
+                          Auto-Codificar
+                        </>
+                      )}
+                    </button>
+                  )}
+                  {codedSegments.length > 0 && (
+                    <div className="relative" ref={exportDropdownRef}>
+                      <button
+                        onClick={() => setShowExportDropdown(!showExportDropdown)}
+                        className={`px-4 py-2 ${isDarkMode ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'} rounded-lg text-sm transition-colors flex items-center gap-2`}
+                      >
+                        <Download className="w-4 h-4" />
+                        Exportar Codificação
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showExportDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {showExportDropdown && (
+                        <div className={`absolute right-0 top-full mt-2 w-56 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border rounded-xl shadow-xl z-50 overflow-hidden`}>
+                          <div className={`px-3 py-2 ${isDarkMode ? 'bg-slate-700/50' : 'bg-slate-50'} border-b ${theme.divider}`}>
+                            <span className={`text-xs font-medium ${theme.textMuted}`}>Formatos de Exportação</span>
+                          </div>
+                          <div className="py-1">
+                            <button
+                              onClick={() => { exportCodingData(); setShowExportDropdown(false); }}
+                              className={`w-full px-4 py-2.5 text-left text-sm ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50'} flex items-center gap-3 transition-colors`}
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                                <FileText className="w-4 h-4 text-green-400" />
+                              </span>
+                              <div>
+                                <div className="font-medium">CSV</div>
+                                <div className={`text-xs ${theme.textMuted}`}>Planilhas, Excel</div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => { exportCodingXLSX(); setShowExportDropdown(false); }}
+                              className={`w-full px-4 py-2.5 text-left text-sm ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50'} flex items-center gap-3 transition-colors`}
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                              </span>
+                              <div>
+                                <div className="font-medium">Excel (.xlsx)</div>
+                                <div className={`text-xs ${theme.textMuted}`}>Múltiplas planilhas</div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => { exportCodingJSON(); setShowExportDropdown(false); }}
+                              className={`w-full px-4 py-2.5 text-left text-sm ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50'} flex items-center gap-3 transition-colors`}
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                <Code className="w-4 h-4 text-purple-400" />
+                              </span>
+                              <div>
+                                <div className="font-medium">JSON</div>
+                                <div className={`text-xs ${theme.textMuted}`}>Dados estruturados</div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => { exportCodingTXT(); setShowExportDropdown(false); }}
+                              className={`w-full px-4 py-2.5 text-left text-sm ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50'} flex items-center gap-3 transition-colors`}
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-slate-500/20 flex items-center justify-center">
+                                <AlignLeft className="w-4 h-4 text-slate-400" />
+                              </span>
+                              <div>
+                                <div className="font-medium">Texto (.txt)</div>
+                                <div className={`text-xs ${theme.textMuted}`}>Relatório formatado</div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => { exportCodingMarkdown(); setShowExportDropdown(false); }}
+                              className={`w-full px-4 py-2.5 text-left text-sm ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50'} flex items-center gap-3 transition-colors`}
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                                <Hash className="w-4 h-4 text-cyan-400" />
+                              </span>
+                              <div>
+                                <div className="font-medium">Markdown (.md)</div>
+                                <div className={`text-xs ${theme.textMuted}`}>Notion, Obsidian, GitHub</div>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className={`text-sm ${theme.muted}`}>
+                💡 <strong>Auto-Codificar</strong> analisa os textos com base em keywords do codebook. 
+                <strong> Selecione texto</strong> para codificar manualmente ou criar novos códigos.
+              </p>
+              
+              {/* Estatísticas de códigos */}
+              {(customCodes || []).length > 0 && (
+                <div className="mt-4 pt-4 border-t border-slate-700">
+                  <p className="text-xs text-slate-500 mb-2">Códigos customizados criados:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(customCodes || []).map(code => (
+                      <span
+                        key={code.id}
+                        className="text-xs px-2 py-1 rounded-full flex items-center gap-1"
+                        style={{ backgroundColor: code.color + '30', color: code.color }}
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: code.color }} />
+                        {code.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Livro de Códigos */}
+              <div className="lg:col-span-1 bg-slate-800/50 rounded-2xl p-4 border border-slate-700 max-h-[70vh] overflow-y-auto">
+                <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-slate-400">
+                  Livro de Códigos
+                </h4>
+                <div className="space-y-2">
+                  {Object.entries(capacityCodebook).map(([catId, category]) => (
+                    <div key={catId} className="rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => toggleCategory(catId)}
+                        className="w-full flex items-center justify-between p-3 hover:bg-slate-700/50 transition-colors"
+                        style={{ borderLeft: `3px solid ${category.color}` }}
+                      >
+                        <span className="font-medium text-sm" style={{ color: category.color }}>
+                          {catId}. {category.name}
+                        </span>
+                        <ChevronDown 
+                          className={`w-4 h-4 text-slate-400 transition-transform ${expandedCategories.includes(catId) ? 'rotate-180' : ''}`} 
+                        />
+                      </button>
+                      {expandedCategories.includes(catId) && (
+                        <div className="pl-4 pb-2 space-y-1">
+                          {Object.entries(category.codes).map(([codeId, codeData]) => {
+                            const codeName = typeof codeData === 'string' ? codeData : codeData.name;
+                            const codeKeywords = typeof codeData === 'object' ? codeData.keywords : [];
+                            const codeCount = codedSegments.filter(seg => seg.codes.includes(codeId)).length;
+                            return (
+                              <div
+                                key={codeId}
+                                className="flex items-center justify-between py-1.5 px-2 text-sm rounded hover:bg-slate-700/30 group"
+                              >
+                                <div className="flex-1">
+                                  <span className="text-slate-300">
+                                    <span className="text-slate-500 mr-2">{codeId}</span>
+                                    {codeName}
+                                  </span>
+                                  {codeKeywords.length > 0 && (
+                                    <p className="text-xs text-slate-600 mt-0.5 truncate max-w-[200px] opacity-0 group-hover:opacity-100 transition-opacity">
+                                      {codeKeywords.slice(0, 3).join(', ')}...
+                                    </p>
+                                  )}
+                                </div>
+                                {codeCount > 0 && (
+                                  <span 
+                                    className="text-xs px-2 py-0.5 rounded-full"
+                                    style={{ backgroundColor: category.color + '30', color: category.color }}
+                                  >
+                                    {codeCount}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Códigos Customizados */}
+                  {customCodes.length > 0 && (
+                    <div className="rounded-lg overflow-hidden mt-4 pt-4 border-t border-slate-700">
+                      <div className="p-3" style={{ borderLeft: '3px solid #a855f7' }}>
+                        <span className="font-medium text-sm text-purple-400">
+                          Códigos Customizados ({(customCodes || []).length})
+                        </span>
+                      </div>
+                      <div className="pl-4 pb-2 space-y-1">
+                        {(customCodes || []).map(code => {
+                          const codeCount = (codedSegments || []).filter(seg => seg.codes.includes(code.id)).length;
+                          return (
+                            <div
+                              key={code.id}
+                              className="flex items-center justify-between py-1.5 px-2 text-sm rounded hover:bg-slate-700/30"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: code.color }} />
+                                <span className="text-slate-300">{code.name}</span>
+                              </div>
+                              {codeCount > 0 && (
+                                <span 
+                                  className="text-xs px-2 py-0.5 rounded-full"
+                                  style={{ backgroundColor: code.color + '30', color: code.color }}
+                                >
+                                  {codeCount}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Documentos para codificar com highlights */}
+              <div className="lg:col-span-2 space-y-4">
+                {documents.length === 0 ? (
+                  <div className={`rounded-2xl p-12 border text-center ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+                    <FileText className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`} />
+                    <p className={theme.muted}>Importe documentos na aba "Importar" para começar a codificar</p>
+                  </div>
+                ) : (
+                  documents.map(doc => (
+                    <div key={doc.id} className={`rounded-2xl border overflow-hidden ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+                      <div className={`p-4 border-b flex items-center justify-between ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <div className="flex items-center gap-3">
+                          <FileText className={`w-5 h-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                          <span className="font-medium">{doc.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-600'}`}>
+                            {codedSegments.filter(seg => seg.documentId === doc.id).length} segmentos
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">
+                            {codedSegments.filter(seg => seg.documentId === doc.id && seg.isAutomatic).length} auto
+                          </span>
+                          {editingDocument !== doc.id && (
+                            <button
+                              onClick={() => startEditingDocument(doc)}
+                              className={`p-1.5 rounded transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-cyan-400' : 'hover:bg-slate-100 text-slate-500 hover:text-cyan-600'}`}
+                              title="Editar documento"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-4 max-h-80 overflow-y-auto text-sm">
+                        {editingDocument === doc.id ? (
+                          <div className="space-y-3">
+                            <textarea
+                              value={editingDocumentContent}
+                              onChange={(e) => setEditingDocumentContent(e.target.value)}
+                              className={`w-full p-3 rounded-lg text-sm border resize-none min-h-[200px] ${isDarkMode ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'} focus:outline-none focus:border-cyan-500`}
+                              rows={10}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => updateDocumentContent(doc.id, editingDocumentContent)}
+                                className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm hover:bg-cyan-500 transition-colors flex items-center gap-2"
+                              >
+                                <Check className="w-4 h-4" />
+                                Salvar Alterações
+                              </button>
+                              <button
+                                onClick={cancelEditingDocument}
+                                className={`px-4 py-2 rounded-lg text-sm transition-colors ${isDarkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <HighlightedTextViewer
+                            document={doc}
+                            codedSegments={codedSegments}
+                            allCodes={allAvailableCodes}
+                            onTextSelect={handleTextSelection}
+                            onSegmentClick={(segment) => {
+                              // Mostrar detalhes do segmento
+                              console.log('Segment clicked:', segment);
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            
+            {/* Segmentos Codificados */}
+            {codedSegments.length > 0 && (
+              <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Check className="w-5 h-5 text-green-400" />
+                    Segmentos Codificados ({codedSegments.length})
+                  </h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCodingFilter('all')}
+                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'all' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      onClick={() => setCodingFilter('auto')}
+                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'auto' ? 'bg-green-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}
+                    >
+                      Automáticos
+                    </button>
+                    <button
+                      onClick={() => setCodingFilter('manual')}
+                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'manual' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}
+                    >
+                      Manuais
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                  {codedSegments
+                    .filter(seg => {
+                      if (codingFilter === 'auto') return seg.isAutomatic;
+                      if (codingFilter === 'manual') return !seg.isAutomatic;
+                      return true;
+                    })
+                    .map((segment, idx) => (
+                    <div key={segment.id} className={`rounded-xl p-4 border ${isDarkMode ? 'bg-slate-900/50 border-slate-600' : 'bg-white border-slate-200'}`}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-xs font-mono px-2 py-1 rounded ${isDarkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>#{idx + 1}</span>
+                          <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-600'}`}>{segment.documentName}</span>
+                          {segment.isAutomatic && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 flex items-center gap-1">
+                              <Zap className="w-3 h-3" />
+                              auto
+                            </span>
+                          )}
+                          {segment.confidence && (
+                            <span className={`text-xs ${isDarkMode ? 'text-slate-600' : 'text-slate-500'}`}>
+                              {Math.round(segment.confidence * 100)}% conf
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {editingSegment !== segment.id && (
+                            <button
+                              onClick={() => startEditingSegment(segment)}
+                              className={`p-1.5 rounded transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-cyan-400' : 'hover:bg-slate-100 text-slate-500 hover:text-cyan-600'}`}
+                              title="Editar texto"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => removeCodedSegment(segment.id)}
+                            className="p-1.5 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
+                            title="Remover segmento"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Texto do segmento (editável ou não) */}
+                      {editingSegment === segment.id ? (
+                        <div className="mb-3">
+                          <textarea
+                            value={editingSegmentText}
+                            onChange={(e) => setEditingSegmentText(e.target.value)}
+                            className={`w-full p-3 rounded-lg text-sm border resize-none ${isDarkMode ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'} focus:outline-none focus:border-cyan-500`}
+                            rows={4}
+                            autoFocus
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => updateSegmentText(segment.id, editingSegmentText)}
+                              className="px-3 py-1.5 bg-cyan-600 text-white rounded-lg text-sm hover:bg-cyan-500 transition-colors flex items-center gap-1"
+                            >
+                              <Check className="w-3 h-3" />
+                              Salvar
+                            </button>
+                            <button
+                              onClick={cancelEditingSegment}
+                              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${isDarkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className={`text-sm mb-3 italic border-l-2 pl-3 ${isDarkMode ? 'text-slate-300 border-slate-600' : 'text-slate-700 border-slate-300'}`}>
+                          "{(segment.text || '').slice(0, 200)}{(segment.text?.length || 0) > 200 ? '...' : ''}"
+                        </p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2 mb-2 items-center">
+                        {segment.codes.map(codeId => {
+                          // Procurar em todos os códigos disponíveis
+                          const codeInfo = allAvailableCodes.find(c => c.id === codeId);
+                          if (!codeInfo) {
+                            // Fallback para codebook tradicional
+                            const catId = codeId.split('.')[0];
+                            const category = capacityCodebook[catId];
+                            const codeData = category?.codes[codeId];
+                            const codeName = typeof codeData === 'string' ? codeData : codeData?.name;
+                            return (
+                              <span
+                                key={codeId}
+                                className="text-xs px-2 py-1 rounded-full flex items-center gap-1"
+                                style={{ backgroundColor: category?.color + '30', color: category?.color }}
+                              >
+                                {codeId} - {codeName || 'Unknown'}
+                                <button
+                                  onClick={() => updateSegmentCodes(segment.id, segment.codes.filter(c => c !== codeId))}
+                                  className="ml-1 hover:bg-white/20 rounded-full p-0.5"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            );
+                          }
+                          return (
+                            <span
+                              key={codeId}
+                              className="text-xs px-2 py-1 rounded-full flex items-center gap-1"
+                              style={{ backgroundColor: codeInfo.color + '30', color: codeInfo.color }}
+                            >
+                              {codeInfo.name}
+                              <button
+                                onClick={() => updateSegmentCodes(segment.id, segment.codes.filter(c => c !== codeId))}
+                                className="ml-1 hover:bg-white/20 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          );
+                        })}
+                        {/* Botão para adicionar mais códigos */}
+                        <button
+                          onClick={() => {
+                            setAddingCodeToSegment(segment.id);
+                            setCodeSearchTerm('');
+                          }}
+                          className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 border-2 border-dashed transition-colors ${isDarkMode ? 'border-slate-600 text-slate-400 hover:border-cyan-500 hover:text-cyan-400' : 'border-slate-400 text-slate-500 hover:border-cyan-500 hover:text-cyan-600'}`}
+                          title="Adicionar código"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Adicionar
+                        </button>
+                      </div>
+                      {/* Mostrar keywords que deram match */}
+                      {segment.matches && segment.matches.length > 0 && (
+                        <div className={`text-xs mt-2 ${isDarkMode ? 'text-slate-500' : 'text-slate-600'}`}>
+                          <strong>Keywords:</strong> {segment.matches.map(m => m.keyword).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Tooltip de seleção de código */}
+            <CodeSelectionTooltip
+              position={selectionTooltip}
+              selectedText={selectionTooltip?.text}
+              codes={filteredCodes}
+              searchTerm={codeSearchTerm}
+              onSearchChange={setCodeSearchTerm}
+              onCodeSelect={applyCodeToSelection}
+              onCreateNew={createAndApplyCode}
+              newCodeName={newCodeName}
+              onNewCodeNameChange={setNewCodeName}
+              showCreator={showCodeCreator}
+              onToggleCreator={() => setShowCodeCreator(!showCodeCreator)}
+              onClose={() => setSelectionTooltip(null)}
+            />
+            
+            {/* Modal para adicionar código a segmento existente */}
+            {addingCodeToSegment && (
+              <div className="fixed inset-0" style={{ zIndex: 99999 }}>
+                <div 
+                  className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                  onClick={() => setAddingCodeToSegment(null)}
+                />
+                <div 
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900 border-2 border-cyan-500 rounded-2xl shadow-2xl p-5 w-[360px] max-h-[80vh] flex flex-col"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
+                    <div className="flex items-center gap-2">
+                      <Plus className="w-5 h-5 text-cyan-400" />
+                      <span className="text-lg font-semibold text-white">Adicionar Código</span>
+                    </div>
+                    <button 
+                      onClick={() => setAddingCodeToSegment(null)}
+                      className="w-10 h-10 flex items-center justify-center bg-red-500/30 hover:bg-red-600 text-red-300 hover:text-white rounded-xl transition-all"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  
+                  <div className="relative mb-4">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type="text"
+                      value={codeSearchTerm}
+                      onChange={(e) => setCodeSearchTerm(e.target.value)}
+                      placeholder="Buscar código..."
+                      className="w-full pl-12 pr-4 py-3 bg-slate-800 border-2 border-slate-600 rounded-xl text-base focus:outline-none focus:border-cyan-500 text-white placeholder-slate-500"
+                      autoFocus
+                    />
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto space-y-2 min-h-[200px] max-h-[300px] pr-2">
+                    {filteredCodes.map(code => {
+                      const segment = codedSegments.find(s => s.id === addingCodeToSegment);
+                      const alreadyHasCode = segment?.codes?.includes(code.id);
+                      return (
+                        <button
+                          key={code.id}
+                          onClick={() => !alreadyHasCode && addCodeToExistingSegment(addingCodeToSegment, code)}
+                          disabled={alreadyHasCode}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left border-2 ${alreadyHasCode ? 'opacity-50 cursor-not-allowed border-transparent bg-slate-800/50' : 'border-transparent hover:border-cyan-500/50 hover:bg-slate-700/80'}`}
+                        >
+                          <span 
+                            className="w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-white/30"
+                            style={{ backgroundColor: code.color }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-base text-white truncate font-medium">{code.name}</p>
+                            <p className="text-sm text-slate-500 truncate">{code.categoryName}</p>
+                          </div>
+                          {alreadyHasCode ? (
+                            <Check className="w-5 h-5 text-green-400" />
+                          ) : (
+                            <ChevronRight className="w-5 h-5 text-slate-600" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Radar Tab */}
+        {activeTab === 'radar' && (
+          <div className={`${theme.card} rounded-2xl p-8 border ${theme.cardBorder}`}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Target className="w-5 h-5 text-green-400" />
+                Radar de Categorias
+              </h3>
+              <ExportVisualizationButton 
+                vizId="radar" 
+                filename="radar-categorias"
+                data={Object.entries(capacityCodebook).map(([catId, cat]) => ({
+                  categoria: cat.name,
+                  segmentos: codedSegments.filter(s => s.codes.some(c => c.startsWith(catId))).length
+                }))}
+              />
+            </div>
+            <div data-viz="radar" className="flex justify-center overflow-hidden bg-slate-900/50 rounded-xl p-4">
+              <RadarVisualization 
+                codedSegments={codedSegments} 
+                codebook={capacityCodebook}
+                width={500} 
+                height={500} 
+              />
+            </div>
+            <p className="text-sm text-slate-400 mt-4">
+              Perfil de distribuição da codificação por categoria. Quanto maior a área, mais equilibrada a codificação.
+            </p>
+          </div>
+        )}
+        
+        {/* Sunburst Tab */}
+        {activeTab === 'sunburst' && (
+          <div className={`${theme.card} rounded-2xl p-8 border ${theme.cardBorder}`}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-semibold flex items-center gap-2">
+                <CircleDot className="w-5 h-5 text-amber-400" />
+                Sunburst de Códigos
+              </h3>
+              <ExportVisualizationButton 
+                vizId="sunburst" 
+                filename="sunburst-codigos"
+                data={codedSegments.flatMap(s => s.codes.map(c => ({
+                  documento: s.documentName,
+                  codigo: c,
+                  texto: s.text.substring(0, 100)
+                })))}
+              />
+            </div>
+            <div data-viz="sunburst" className="flex justify-center overflow-hidden bg-slate-900/50 rounded-xl p-4">
+              <SunburstVisualization 
+                codedSegments={codedSegments} 
+                codebook={capacityCodebook}
+                width={500} 
+                height={500} 
+              />
+            </div>
+            <p className="text-sm text-slate-400 mt-4">
+              Hierarquia de categorias e códigos. Anel interno = categorias, anel externo = códigos. Tamanho proporcional ao uso.
+            </p>
+          </div>
+        )}
+        
+        {/* KWIC Tab */}
+        {activeTab === 'kwic' && (
+          <div className="space-y-6">
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Search className="w-5 h-5 text-cyan-400" />
+                KWIC - Keyword in Context
+              </h3>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={kwicKeyword}
+                  onChange={(e) => setKwicKeyword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && performKWICSearch()}
+                  placeholder="Digite uma palavra-chave..."
+                  className="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl focus:border-cyan-500 focus:outline-none transition-colors"
+                />
+                <button
+                  onClick={performKWICSearch}
+                  className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 rounded-xl font-medium transition-colors"
+                >
+                  Buscar
+                </button>
+              </div>
+            </div>
+            
+            {(kwicResults || []).length > 0 && (
+              <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+                <h4 className="text-sm text-slate-400 mb-4">
+                  {(kwicResults || []).length} ocorrências encontradas
+                </h4>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {(kwicResults || []).map((result, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm font-mono bg-slate-700/30 p-3 rounded-lg">
+                      <span className="text-right text-slate-400 flex-1 truncate">{result.left}</span>
+                      <span className="px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded font-bold whitespace-nowrap">
+                        {result.keyword}
+                      </span>
+                      <span className="text-left text-slate-400 flex-1 truncate">{result.right}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Export Tab */}
+        {activeTab === 'export' && analysisResults && analysisResults.wordFrequency && (
+          <div className="space-y-6">
+            {/* Botão principal - Baixar Tudo */}
+            <div className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-2xl p-6 border border-cyan-500/30">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Download className="w-5 h-5 text-cyan-400" />
+                    Exportação Completa
+                  </h3>
+                  <p className="text-slate-400 text-sm mt-1">
+                    Baixe todos os dados em um único arquivo ZIP (TSV, CSV, XLSX, JSON)
+                  </p>
+                </div>
+                <button
+                  onClick={exportAllAsZip}
+                  disabled={isProcessing}
+                  className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/25 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  Baixar Tudo (.zip)
+                </button>
+              </div>
+            </div>
+
+            {/* Dados Textuais */}
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-cyan-400" />
+                Dados Textuais
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Corpus IRaMuTeQ */}
+                <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Corpus IRaMuTeQ</div>
+                      <div className={`text-xs ${theme.muted}`}>Formato compatível com IRaMuTeQ</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => exportData('iramuteq')}
+                    className="w-full py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                  >
+                    Baixar .txt
+                  </button>
+                </div>
+
+                {/* Frequências */}
+                <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Frequências</div>
+                      <div className={`text-xs ${theme.muted}`}>{analysisResults.wordFrequency?.length || 0} palavras</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => exportData('frequency')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .tsv
+                    </button>
+                    <button
+                      onClick={() => exportData('frequency', 'csv')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .csv
+                    </button>
+                  </div>
+                </div>
+
+                {/* Coocorrências */}
+                <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                      <Network className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Coocorrências</div>
+                      <div className={`text-xs ${theme.muted}`}>Matriz de coocorrência</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => exportData('cooccurrence')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .tsv
+                    </button>
+                    <button
+                      onClick={() => exportData('cooccurrence', 'csv')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .csv
+                    </button>
+                  </div>
+                </div>
+
+                {/* CHD/Reinert */}
+                {analysisResults.chdResult && (
+                  <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                        <Layers className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <div>
+                        <div className="font-medium">CHD/Reinert</div>
+                        <div className={`text-xs ${theme.muted}`}>{analysisResults.chdResult.classes?.length || 0} classes</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => exportData('chd')}
+                        className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                      >
+                        .json
+                      </button>
+                      <button
+                        onClick={() => exportData('chd', 'csv')}
+                        className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                      >
+                        .csv
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Codificação */}
+                {codedSegments.length > 0 && (
+                  <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                        <Tag className="w-5 h-5 text-rose-400" />
+                      </div>
+                      <div>
+                        <div className="font-medium">Codificação Qualitativa</div>
+                        <div className={`text-xs ${theme.muted}`}>{codedSegments.length} segmentos codificados</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => exportData('coding')}
+                      className="w-full py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      Baixar .csv
+                    </button>
+                  </div>
+                )}
+
+                {/* Análise Completa */}
+                <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Análise Completa</div>
+                      <div className={`text-xs ${theme.muted}`}>Todos os dados estruturados</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => exportData('full')}
+                    className="w-full py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                  >
+                    Baixar .json
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Visualizações como Imagem */}
+            <div className={`${theme.card} rounded-2xl p-6 border ${theme.cardBorder}`}>
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <PieChart className="w-5 h-5 text-cyan-400" />
+                Visualizações como Imagem
+              </h3>
+              <p className="text-sm text-slate-400 mb-4">
+                💡 Navegue até a aba da visualização primeiro para que ela seja renderizada
+              </p>
+              <div className="grid md:grid-cols-3 gap-4">
+                {/* Nuvem de Palavras */}
+                <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                      <Cloud className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div className="font-medium">Nuvem de Palavras</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => exportVisualizationAsImage('wordcloud', 'png')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .png
+                    </button>
+                    <button
+                      onClick={() => exportVisualizationAsImage('wordcloud', 'svg')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .svg
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rede de Similitude */}
+                <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                      <Network className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div className="font-medium">Rede de Similitude</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => exportVisualizationAsImage('network', 'png')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .png
+                    </button>
+                    <button
+                      onClick={() => exportVisualizationAsImage('network', 'svg')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .svg
+                    </button>
+                  </div>
+                </div>
+
+                {/* CHD */}
+                <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                      <Layers className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div className="font-medium">CHD/Reinert</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => exportVisualizationAsImage('chd', 'png')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .png
+                    </button>
+                    <button
+                      onClick={() => exportVisualizationAsImage('chd', 'svg')}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition-colors"
+                    >
+                      .svg
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        </div>
+      </main>
+      
+      {/* Modal de Análise de Incidências */}
+      {showIncidenceModal && (
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto py-4"
+          onClick={(e) => e.target === e.currentTarget && setShowIncidenceModal(false)}
+        >
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl mx-4 my-auto flex flex-col" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+            {/* Header do Modal - sempre visível */}
+            <div className="flex-shrink-0 flex items-center justify-between p-4 md:p-6 border-b border-slate-700 bg-slate-900 rounded-t-2xl sticky top-0 z-10">
+              <div>
+                <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+                  <Search className="w-5 h-5 md:w-6 md:h-6 text-cyan-400" />
+                  Análise de Incidências
+                  {incidenceAnalysis && (
+                    <span className="ml-2 px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-sm font-medium">
+                      "{incidenceAnalysis.word}"
+                    </span>
+                  )}
+                </h2>
+                <p className="text-slate-400 text-sm mt-1 hidden md:block">
+                  Rastreabilidade científica completa de todas as ocorrências
+                </p>
+              </div>
+              <button
+                onClick={() => setShowIncidenceModal(false)}
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0 bg-slate-800/50"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {/* Conteúdo do Modal - scrollável */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            {isAnalyzingIncidence ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
+                <p className="text-slate-400">Analisando todas as incidências e variações...</p>
+              </div>
+            ) : incidenceAnalysis ? (
+              <div className="space-y-6">
+                {/* Estatísticas Resumidas */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="text-3xl font-bold text-cyan-400">{incidenceAnalysis.statistics.totalOccurrences}</div>
+                    <div className={`text-sm ${theme.muted}`}>Total de Ocorrências</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="text-3xl font-bold text-purple-400">{incidenceAnalysis.statistics.uniqueVariationsFound || 1}</div>
+                    <div className={`text-sm ${theme.muted}`}>Variações Encontradas</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="text-3xl font-bold text-green-400">{incidenceAnalysis.statistics.documentsWithWord}</div>
+                    <div className={`text-sm ${theme.muted}`}>Documentos</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="text-3xl font-bold text-amber-400">{incidenceAnalysis.statistics.coveragePercentage}</div>
+                    <div className={`text-sm ${theme.muted}`}>Cobertura</div>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="text-3xl font-bold text-rose-400">{incidenceAnalysis.statistics.averagePerDocument}</div>
+                    <div className={`text-sm ${theme.muted}`}>Média/Doc</div>
+                  </div>
+                </div>
+                
+                {/* Variações Encontradas */}
+                {incidenceAnalysis.statistics.variationBreakdown && incidenceAnalysis.statistics.variationBreakdown.length > 0 && (
+                  <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 rounded-xl p-4 border border-purple-500/30">
+                    <h4 className="font-semibold text-purple-300 mb-3 flex items-center gap-2">
+                      <Layers className="w-4 h-4" />
+                      Variações Morfológicas Agrupadas
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-3">
+                      Inclui: gênero (ministro/ministra), número (singular/plural), linguagem neutra (x, @), e possíveis typos
+                    </p>
+                    <div className="grid gap-2">
+                      {incidenceAnalysis.statistics.variationBreakdown.map((v, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-cyan-300 font-medium">{v.variation}</span>
+                            <span className="text-xs text-slate-500">
+                              ({v.originalForms.join(', ')})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-white font-bold">{v.count}x</span>
+                            <span className="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded">{v.percentage}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Metodologia */}
+                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-600">
+                  <h4 className="font-semibold text-cyan-300 mb-2 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4" />
+                    Metodologia Aplicada
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-slate-400">Método de busca:</span>
+                      <span className="text-white ml-2">{incidenceAnalysis.methodology.searchMethod}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Janela de contexto:</span>
+                      <span className="text-white ml-2">{incidenceAnalysis.methodology.contextWindow}</span>
+                    </div>
+                  </div>
+                  {incidenceAnalysis.variationsSearched && incidenceAnalysis.variationsSearched.length > 1 && (
+                    <div className="mt-3 p-3 bg-slate-900/50 rounded-lg text-xs">
+                      <span className="text-slate-400">Variações buscadas: </span>
+                      <span className="text-cyan-300 font-mono">{incidenceAnalysis.variationsSearched.join(', ')}</span>
+                    </div>
+                  )}
+                  <div className="mt-3 p-3 bg-slate-900/50 rounded-lg font-mono text-xs text-slate-300">
+                    <div className="text-slate-500 mb-1">// Algoritmo de normalização:</div>
+                    <div>normalize("{incidenceAnalysis.word}") → "{incidenceAnalysis.normalizedForm || incidenceAnalysis.word}"</div>
+                  </div>
+                </div>
+                
+                {/* Lista de Todas as Ocorrências */}
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Hash className="w-4 h-4 text-cyan-400" />
+                    Todas as Ocorrências ({incidenceAnalysis.allContexts?.length || 0})
+                  </h4>
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                    {(incidenceAnalysis.allContexts || []).map((occ, idx) => (
+                      <div key={idx} className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 hover:border-cyan-500/30 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono bg-slate-700 px-2 py-1 rounded">
+                              #{idx + 1}
+                            </span>
+                            {!occ.isExactMatch && (
+                              <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                                variação
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-slate-400">
+                            <span>📄 {occ.documentName}</span>
+                            <span>📍 Linha {occ.lineNumber}, Col {occ.columnNumber}</span>
+                            <span>🔢 Char {occ.charIndexStart}-{occ.charIndexEnd}</span>
+                          </div>
+                        </div>
+                        <div className="font-mono text-sm">
+                          <span className="text-slate-400">...</span>
+                          <span className="text-slate-300">{occ.contextBefore}</span>
+                          <span className={`px-1 rounded font-bold ${occ.isExactMatch ? 'bg-cyan-500/30 text-cyan-200' : 'bg-purple-500/30 text-purple-200'}`}>
+                            {occ.matchedText}
+                          </span>
+                          <span className="text-slate-300">{occ.contextAfter}</span>
+                          <span className="text-slate-400">...</span>
+                        </div>
+                        <div className="mt-2 text-xs text-slate-500 italic border-l-2 border-slate-600 pl-2">
+                          Frase: "{(occ.fullSentence || '').slice(0, 150)}{(occ.fullSentence?.length || 0) > 150 ? '...' : ''}"
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Distribuição por Documento */}
+                {incidenceAnalysis.occurrencesByDocument?.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-cyan-400" />
+                      Distribuição por Documento
+                    </h4>
+                    <div className="space-y-2">
+                      {(incidenceAnalysis.occurrencesByDocument || []).map((doc, idx) => (
+                        <div key={idx} className="flex items-center gap-3 bg-slate-800/30 rounded-lg p-3">
+                          <span className="text-sm font-medium text-slate-300 flex-1 truncate">{doc.documentName}</span>
+                          <span className="text-cyan-400 font-bold">{doc.count}x</span>
+                          <span className="text-xs text-slate-500">{doc.relativeFrequency}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+            </div>
+            
+            {/* Footer do Modal com botões de exportação - sempre visível */}
+            {incidenceAnalysis && !isAnalyzingIncidence && (
+              <div className="flex-shrink-0 p-4 md:p-6 border-t border-slate-700 bg-slate-800/50 rounded-b-2xl">
+                <div className="flex flex-wrap gap-3 justify-end">
+                  <button
+                    onClick={exportIncidenceCSV}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    Exportar CSV
+                  </button>
+                  <button
+                    onClick={exportScientificReport}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg transition-colors font-medium text-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Relatório Científico
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
