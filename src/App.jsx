@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Upload, FileText, Download, Sparkles, Network, BarChart3, Cloud, Search, Zap, BookOpen, Filter, Settings, ChevronRight, X, Check, Loader2, Eye, Trash2, RefreshCw, PieChart, TrendingUp, Hash, MessageCircle, Layers, GitBranch, Activity, Tag, ChevronDown, Plus, Save, Grid, LayoutGrid, Target, CircleDot, Sun, Moon, Edit2, Menu, FileSpreadsheet, Code, AlignLeft, PanelLeftClose, PanelLeft } from "lucide-react";
 import _ from "lodash";
 import { cn } from "@/lib/utils";
@@ -65,6 +65,32 @@ const getThemeClasses = (isDarkMode) => ({
   controlHover: 'hover:bg-accent',
   // Checkbox
   checkbox: 'border-input bg-background' });
+
+// ==================== RESPONSIVE VISUALIZATION WRAPPER ====================
+const ResponsiveViz = ({ children, minHeight = 400, aspectRatio }) => {
+  const containerRef = useRef(null);
+  const [dims, setDims] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      const h = aspectRatio ? Math.max(minHeight, w / aspectRatio) : Math.max(minHeight, w * 0.65);
+      setDims({ width: w, height: h });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [minHeight, aspectRatio]);
+
+  return (
+    <div ref={containerRef} className="w-full">
+      {dims.width > 0 && children(dims.width, dims.height)}
+    </div>
+  );
+};
 
 // ==================== UTILITY FUNCTIONS ====================
 
@@ -6014,50 +6040,46 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const svgRef = React.useRef(null);
-  
-  if (!afcData || !afcData.words || afcData.words.length === 0) {
-    return (
-      <div className="flex items-center justify-center text-muted-foreground" style={{ width, height }}>
-        <div className="text-center">
-          <p>Dados insuficientes para AFC</p>
-          <p className="text-sm mt-2">Necessário pelo menos 2 documentos</p>
-        </div>
-      </div>
-    );
-  }
-  
-  const { words, variance } = afcData;
+
+  const fg = isDarkMode ? "oklch(0.929 0.013 255.51)" : "oklch(0.280 0.037 260.03)";
+  const muted = isDarkMode ? "oklch(0.714 0.019 261.32)" : "oklch(0.551 0.023 264.36)";
+  const border = isDarkMode ? "oklch(0.446 0.026 256.80)" : "oklch(0.872 0.009 258.34)";
+  const tooltipBg = isDarkMode ? "oklch(0.208 0.040 265.75 / 0.95)" : "oklch(1.000 0 0 / 0.95)";
+
   const margin = { top: 60, right: 80, bottom: 60, left: 100 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
-  const centerX = margin.left + plotWidth / 2;
-  const centerY = margin.top + plotHeight / 2;
-  
-  const xScale = (val) => centerX + val * (plotWidth / 4);
-  const yScale = (val) => centerY - val * (plotHeight / 4);
-  
+  const cX = margin.left + plotWidth / 2;
+  const cY = margin.top + plotHeight / 2;
+
+  const xScale = useCallback((val) => cX + val * (plotWidth / 4), [cX, plotWidth]);
+  const yScale = useCallback((val) => cY - val * (plotHeight / 4), [cY, plotHeight]);
+
   const getColor = (x, y) => {
     if (x > 0 && y > 0) return 'oklch(0.585 0.204 277.12)';
     if (x < 0 && y > 0) return 'oklch(0.585 0.204 277.12)';
     if (x < 0 && y < 0) return 'oklch(0.457 0.215 277.02)';
     return 'oklch(0.359 0.135 278.70)';
   };
-  
+
   const getQuadrantName = (x, y) => {
     if (x > 0 && y > 0) return 'Q1 (+ +)';
     if (x < 0 && y > 0) return 'Q2 (- +)';
     if (x < 0 && y < 0) return 'Q3 (- -)';
     return 'Q4 (+ -)';
   };
-  
-  const maxCount = Math.max(...words.map(w => w.count));
+
+  const words = afcData?.words || [];
+  const variance = afcData?.variance || { dim1: '0', dim2: '0' };
+  const maxCount = Math.max(...words.map(w => w.count), 1);
   const hoveredData = words.find(w => w.word === hoveredWord);
-  
+
   // Compute labels with collision avoidance
   const computedLabels = useMemo(() => {
+    if (words.length === 0) return [];
     const threshold = maxCount * (1 - labelDensity);
     const visibleWords = words.filter(w => w.count >= threshold);
-    
+
     const labels = visibleWords.map(w => ({
       word: w.word,
       x: xScale(w.x),
@@ -6070,8 +6092,7 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
       dataX: w.x,
       dataY: w.y
     }));
-    
-    // Simple collision avoidance (20 iterations)
+
     for (let iter = 0; iter < 20; iter++) {
       for (let i = 0; i < labels.length; i++) {
         for (let j = i + 1; j < labels.length; j++) {
@@ -6081,7 +6102,7 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
           const dy = b.y - a.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           const minDist = (a.width + b.width) / 2 + 4;
-          
+
           if (dist < minDist && dist > 0) {
             const overlap = (minDist - dist) / 2;
             const nx = dx / dist;
@@ -6094,39 +6115,49 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
         }
       }
     }
-    
-    // Mark labels needing leader lines
+
     labels.forEach(l => {
       const dist = Math.sqrt(Math.pow(l.x - l.origX, 2) + Math.pow(l.y - l.origY, 2));
       l.needsLeader = dist > 15;
     });
-    
+
     return labels;
   }, [words, maxCount, labelDensity, xScale, yScale]);
-  
+
   // Zoom/Pan handlers
   const handleWheel = useCallback((e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setZoomLevel(prev => Math.max(0.3, Math.min(4, prev * delta)));
   }, []);
-  
+
   const handleMouseDown = useCallback((e) => {
     if (e.button === 0 && !hoveredWord) {
       setIsDragging(true);
       setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
     }
   }, [hoveredWord, panOffset]);
-  
+
   const handleMouseMove = useCallback((e) => {
     if (isDragging) {
       setPanOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
     }
   }, [isDragging, dragStart]);
-  
+
   const handleMouseUp = useCallback(() => setIsDragging(false), []);
   const resetView = useCallback(() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }, []);
-  
+
+  if (!afcData || !afcData.words || afcData.words.length === 0) {
+    return (
+      <div className="flex items-center justify-center text-muted-foreground" style={{ width, height }}>
+        <div className="text-center">
+          <p>Dados insuficientes para AFC</p>
+          <p className="text-sm mt-2">Necessário pelo menos 2 documentos</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
       {/* Controls */}
@@ -6135,7 +6166,7 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
         <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">−</button>
         <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">⟲</button>
       </div>
-      
+
       {/* Label density slider */}
       <div className="absolute top-2 left-2 z-10 bg-card/90 px-3 py-2 rounded-lg flex items-center gap-2">
         <label className="flex items-center gap-2 text-xs text-foreground/80">
@@ -6146,11 +6177,11 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
           <input type="range" min="0" max="1" step="0.1" value={labelDensity} onChange={(e) => setLabelDensity(parseFloat(e.target.value))} className="w-16 h-1" title="Densidade de labels" />
         )}
       </div>
-      
-      <svg 
+
+      <svg
         ref={svgRef}
-        width={width} 
-        height={height} 
+        width={width}
+        height={height}
         className="bg-background/30 rounded-xl cursor-grab"
         style={{ cursor: isDragging ? 'grabbing' : (hoveredWord ? 'pointer' : 'grab') }}
         onWheel={handleWheel}
@@ -6159,39 +6190,36 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        <defs>
-        </defs>
-        
         <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
           {/* Quadrant backgrounds */}
-          <rect x={centerX} y={margin.top} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.585 0.204 277.12)" opacity={0.05} />
+          <rect x={cX} y={margin.top} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.585 0.204 277.12)" opacity={0.05} />
           <rect x={margin.left} y={margin.top} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.585 0.204 277.12)" opacity={0.05} />
-          <rect x={margin.left} y={centerY} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.457 0.215 277.02)" opacity={0.05} />
-          <rect x={centerX} y={centerY} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.359 0.135 278.70)" opacity={0.05} />
-          
+          <rect x={margin.left} y={cY} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.457 0.215 277.02)" opacity={0.05} />
+          <rect x={cX} y={cY} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.359 0.135 278.70)" opacity={0.05} />
+
           {/* Axes */}
-          <line x1={margin.left} y1={centerY} x2={width - margin.right} y2={centerY} stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} />
-          <line x1={centerX} y1={margin.top} x2={centerX} y2={height - margin.bottom} stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} />
-          
+          <line x1={margin.left} y1={cY} x2={width - margin.right} y2={cY} stroke={border} strokeWidth={1} />
+          <line x1={cX} y1={margin.top} x2={cX} y2={height - margin.bottom} stroke={border} strokeWidth={1} />
+
           {/* Axis labels */}
-          <text x={width - margin.right + 10} y={centerY + 5} fill="oklch(0.551 0.023 264.36)" fontSize={12}>Fator 1 ({variance.dim1}%)</text>
-          <text x={centerX + 5} y={margin.top - 10} fill="oklch(0.551 0.023 264.36)" fontSize={12}>Fator 2 ({variance.dim2}%)</text>
-          
+          <text x={width - margin.right + 10} y={cY + 5} fill={muted} fontSize={12}>Fator 1 ({variance.dim1}%)</text>
+          <text x={cX + 5} y={margin.top - 10} fill={muted} fontSize={12}>Fator 2 ({variance.dim2}%)</text>
+
           {/* Grid */}
           {[-2, -1, 1, 2].map(val => (
             <g key={`grid-${val}`}>
-              <line x1={xScale(val)} y1={margin.top} x2={xScale(val)} y2={height - margin.bottom} stroke="oklch(0.872 0.009 258.34)" strokeWidth={0.5} strokeDasharray="4" />
-              <line x1={margin.left} y1={yScale(val)} x2={width - margin.right} y2={yScale(val)} stroke="oklch(0.872 0.009 258.34)" strokeWidth={0.5} strokeDasharray="4" />
-              <text x={xScale(val)} y={height - margin.bottom + 15} fill="oklch(0.551 0.023 264.36)" fontSize={9} textAnchor="middle">{val}</text>
-              <text x={margin.left - 10} y={yScale(val) + 3} fill="oklch(0.551 0.023 264.36)" fontSize={9} textAnchor="end">{val}</text>
+              <line x1={xScale(val)} y1={margin.top} x2={xScale(val)} y2={height - margin.bottom} stroke={border} strokeWidth={0.5} strokeDasharray="4" />
+              <line x1={margin.left} y1={yScale(val)} x2={width - margin.right} y2={yScale(val)} stroke={border} strokeWidth={0.5} strokeDasharray="4" />
+              <text x={xScale(val)} y={height - margin.bottom + 15} fill={muted} fontSize={9} textAnchor="middle">{val}</text>
+              <text x={margin.left - 10} y={yScale(val) + 3} fill={muted} fontSize={9} textAnchor="end">{val}</text>
             </g>
           ))}
-          
+
           {/* Leader lines for displaced labels */}
           {showLabels && computedLabels.filter(l => l.needsLeader).map(label => (
-            <line key={`leader-${label.word}`} x1={label.origX} y1={label.origY - 5} x2={label.x} y2={label.y + 6} stroke="oklch(0.551 0.023 264.36)" strokeWidth={0.5} strokeDasharray="2" opacity={hoveredWord ? (hoveredWord === label.word ? 1 : 0.2) : 0.5} />
+            <line key={`leader-${label.word}`} x1={label.origX} y1={label.origY - 5} x2={label.x} y2={label.y + 6} stroke={muted} strokeWidth={0.5} strokeDasharray="2" opacity={hoveredWord ? (hoveredWord === label.word ? 1 : 0.2) : 0.5} />
           ))}
-          
+
           {/* Points */}
           {words.map((w) => {
             const x = xScale(w.x);
@@ -6199,7 +6227,7 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
             const isHovered = hoveredWord === w.word;
             const size = 3 + (w.count / maxCount) * 8;
             const color = getColor(w.x, w.y);
-            
+
             return (
               <circle
                 key={`point-${w.word}`}
@@ -6208,7 +6236,7 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
                 r={isHovered ? size + 3 : size}
                 fill={color}
                 fillOpacity={hoveredWord ? (isHovered ? 1 : 0.15) : 0.7}
-                stroke={isHovered ? 'oklch(1.000 0 0)' : 'none'}
+                stroke={isHovered ? fg : 'none'}
                 strokeWidth={2}
                 onMouseEnter={() => setHoveredWord(w.word)}
                 onMouseLeave={() => setHoveredWord(null)}
@@ -6216,19 +6244,19 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
               />
             );
           })}
-          
+
           {/* Labels */}
           {showLabels && computedLabels.map(label => {
             const isHovered = hoveredWord === label.word;
             const color = getColor(label.dataX, label.dataY);
-            
+
             return (
               <text
                 key={`label-${label.word}`}
                 x={label.x}
                 y={label.y}
                 textAnchor="middle"
-                fill={isHovered ? 'oklch(1.000 0 0)' : color}
+                fill={isHovered ? fg : color}
                 fontSize={isHovered ? 12 : 9}
                 fontWeight={isHovered ? 700 : 400}
                 opacity={hoveredWord ? (isHovered ? 1 : 0.2) : 0.85}
@@ -6239,15 +6267,15 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
             );
           })}
         </g>
-        
+
         {/* Rich Tooltip */}
         {hoveredData && (
           <g transform={`translate(${width - 190}, ${height - 90})`}>
-            <rect x={0} y={0} width={180} height={80} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke={getColor(hoveredData.x, hoveredData.y)} strokeWidth={1} />
+            <rect x={0} y={0} width={180} height={80} rx={8} fill={tooltipBg} stroke={getColor(hoveredData.x, hoveredData.y)} strokeWidth={1} />
             <text x={10} y={18} fill={getColor(hoveredData.x, hoveredData.y)} fontSize={13} fontWeight={600}>{hoveredData.word}</text>
-            <text x={10} y={36} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Frequência: {hoveredData.count} | {getQuadrantName(hoveredData.x, hoveredData.y)}</text>
-            <text x={10} y={52} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Coord: ({hoveredData.x.toFixed(2)}, {hoveredData.y.toFixed(2)})</text>
-            <text x={10} y={68} fill="oklch(0.551 0.023 264.36)" fontSize={9}>Dist. centro: {Math.sqrt(hoveredData.x*hoveredData.x + hoveredData.y*hoveredData.y).toFixed(2)}</text>
+            <text x={10} y={36} fill={muted} fontSize={10}>Frequência: {hoveredData.count} | {getQuadrantName(hoveredData.x, hoveredData.y)}</text>
+            <text x={10} y={52} fill={muted} fontSize={10}>Coord: ({hoveredData.x.toFixed(2)}, {hoveredData.y.toFixed(2)})</text>
+            <text x={10} y={68} fill={muted} fontSize={9}>Dist. centro: {Math.sqrt(hoveredData.x*hoveredData.x + hoveredData.y*hoveredData.y).toFixed(2)}</text>
           </g>
         )}
       </svg>
@@ -10378,13 +10406,10 @@ export default function TextAnalysisApp() {
             <p className={`text-sm mb-6 text-muted-foreground`}>
               💡 <strong>Clique em qualquer palavra</strong> para ver análise detalhada de todas as incidências
             </p>
-            <div data-viz="wordcloud" className={`flex justify-center overflow-hidden rounded-xl p-4 bg-muted`}>
-              <WordCloudComponent 
-                words={analysisResults.wordFrequency} 
-                width={Math.min(800, (typeof window !== "undefined" ? window.innerWidth : 800) - 60)} 
-                height={500} 
-                onWordClick={handleWordClick}
-              />
+            <div data-viz="wordcloud" className={`overflow-hidden rounded-xl p-4 bg-muted`}>
+              <ResponsiveViz minHeight={400}>
+                {(w, h) => <WordCloudComponent words={analysisResults.wordFrequency} width={w} height={h} onWordClick={handleWordClick} />}
+              </ResponsiveViz>
             </div>
           </div>
         )}
@@ -10402,13 +10427,10 @@ export default function TextAnalysisApp() {
                 }))}
               />
             } />
-            <div data-viz="termsberry" className={`flex justify-center overflow-hidden rounded-xl p-4 bg-muted`}>
-              <TermsBerryVisualization 
-                words={analysisResults.wordFrequency} 
-                width={Math.min(700, (typeof window !== "undefined" ? window.innerWidth : 700) - 60)} 
-                height={700} 
-                onWordClick={handleWordClick}
-              />
+            <div data-viz="termsberry" className={`overflow-hidden rounded-xl p-4 bg-muted`}>
+              <ResponsiveViz minHeight={500} aspectRatio={1}>
+                {(w, h) => <TermsBerryVisualization words={analysisResults.wordFrequency} width={w} height={h} onWordClick={handleWordClick} />}
+              </ResponsiveViz>
             </div>
           </div>
         )}
@@ -10428,8 +10450,10 @@ export default function TextAnalysisApp() {
                 }))}
               />
             } />
-            <div data-viz="afc" className={`flex justify-center overflow-hidden rounded-xl p-4 bg-muted`}>
-              <AFCVisualization afcData={afcData} width={850} height={650} />
+            <div data-viz="afc" className={`overflow-hidden rounded-xl p-4 bg-muted`}>
+              <ResponsiveViz minHeight={450}>
+                {(w, h) => <AFCVisualization afcData={afcData} width={w} height={h} isDarkMode={isDarkMode} />}
+              </ResponsiveViz>
             </div>
           </div>
         )}
@@ -10447,13 +10471,10 @@ export default function TextAnalysisApp() {
                 }))}
               />
             } />
-            <div data-viz="treemap" className={`flex justify-center overflow-hidden rounded-xl p-4 bg-muted`}>
-              <TreemapVisualization 
-                words={analysisResults.wordFrequency} 
-                width={Math.min(800, (typeof window !== "undefined" ? window.innerWidth : 800) - 60)} 
-                height={500} 
-                onWordClick={handleWordClick}
-              />
+            <div data-viz="treemap" className={`overflow-hidden rounded-xl p-4 bg-muted`}>
+              <ResponsiveViz minHeight={400}>
+                {(w, h) => <TreemapVisualization words={analysisResults.wordFrequency} width={w} height={h} onWordClick={handleWordClick} />}
+              </ResponsiveViz>
             </div>
           </div>
         )}
@@ -10472,8 +10493,10 @@ export default function TextAnalysisApp() {
                 }))}
               />
             } />
-            <div data-viz="network" className={`flex justify-center overflow-hidden rounded-xl p-4 bg-muted`}>
-              <NetworkGraph cooccurrences={analysisResults.cooccurrences} width={Math.min(800, (typeof window !== "undefined" ? window.innerWidth : 800) - 60)} height={550} isDarkMode={isDarkMode} />
+            <div data-viz="network" className={`overflow-hidden rounded-xl p-4 bg-muted`}>
+              <ResponsiveViz minHeight={400}>
+                {(w, h) => <NetworkGraph cooccurrences={analysisResults.cooccurrences} width={w} height={h} isDarkMode={isDarkMode} />}
+              </ResponsiveViz>
             </div>
           </div>
         )}
@@ -10494,8 +10517,10 @@ export default function TextAnalysisApp() {
                   }))}
                 />
               } />
-              <div data-viz="bigrams" className={`flex justify-center overflow-hidden rounded-xl p-4 bg-muted`}>
-                <BigramNetworkVisualization bigramNetwork={bigramAnalysis.network} width={Math.min(800, (typeof window !== "undefined" ? window.innerWidth : 800) - 60)} height={550} />
+              <div data-viz="bigrams" className={`overflow-hidden rounded-xl p-4 bg-muted`}>
+                <ResponsiveViz minHeight={400}>
+                  {(w, h) => <BigramNetworkVisualization bigramNetwork={bigramAnalysis.network} width={w} height={h} />}
+                </ResponsiveViz>
               </div>
             </div>
             
@@ -10583,7 +10608,9 @@ export default function TextAnalysisApp() {
             
             {/* Visualização */}
             <div data-viz="wordtree" className="bg-muted rounded-xl p-4 overflow-x-auto">
-              <WordTreeVisualization wordTree={wordTreeData} width={900} height={500} />
+              <ResponsiveViz minHeight={400}>
+                {(w, h) => <WordTreeVisualization wordTree={wordTreeData} width={w} height={h} />}
+              </ResponsiveViz>
             </div>
             
             {wordTreeData && (
@@ -10611,7 +10638,9 @@ export default function TextAnalysisApp() {
               />
             } />
             <div data-viz="sentiment">
-              <SentimentVisualization sentiment={sentimentAnalysis} width={Math.min(700, (typeof window !== "undefined" ? window.innerWidth : 700) - 60)} height={400} />
+              <ResponsiveViz minHeight={350}>
+                {(w, h) => <SentimentVisualization sentiment={sentimentAnalysis} width={w} height={h} />}
+              </ResponsiveViz>
             </div>
           </div>
         )}
@@ -10630,13 +10659,10 @@ export default function TextAnalysisApp() {
                 }))}
               />
             } />
-            <div data-viz="heatmap" className={`flex justify-center overflow-hidden rounded-xl p-4 bg-muted`}>
-              <HeatmapVisualization 
-                cooccurrences={analysisResults.cooccurrences} 
-                words={analysisResults.wordFrequency}
-                width={Math.min(700, (typeof window !== "undefined" ? window.innerWidth : 700) - 60)} 
-                height={500} 
-              />
+            <div data-viz="heatmap" className={`overflow-hidden rounded-xl p-4 bg-muted`}>
+              <ResponsiveViz minHeight={400}>
+                {(w, h) => <HeatmapVisualization cooccurrences={analysisResults.cooccurrences} words={analysisResults.wordFrequency} width={w} height={h} />}
+              </ResponsiveViz>
             </div>
           </div>
         )}
@@ -11390,13 +11416,10 @@ export default function TextAnalysisApp() {
                 }))}
               />
             </div>
-            <div data-viz="radar" className="flex justify-center overflow-hidden bg-muted rounded-xl p-4">
-              <RadarVisualization 
-                codedSegments={codedSegments} 
-                codebook={capacityCodebook}
-                width={500} 
-                height={500} 
-              />
+            <div data-viz="radar" className="overflow-hidden bg-muted rounded-xl p-4">
+              <ResponsiveViz minHeight={400} aspectRatio={1}>
+                {(w, h) => <RadarVisualization codedSegments={codedSegments} codebook={capacityCodebook} width={Math.min(w, h)} height={Math.min(w, h)} />}
+              </ResponsiveViz>
             </div>
             <p className="text-sm text-muted-foreground mt-4">
               Perfil de distribuição da codificação por categoria. Quanto maior a área, mais equilibrada a codificação.
@@ -11422,13 +11445,10 @@ export default function TextAnalysisApp() {
                 })))}
               />
             </div>
-            <div data-viz="sunburst" className="flex justify-center overflow-hidden bg-muted rounded-xl p-4">
-              <SunburstVisualization 
-                codedSegments={codedSegments} 
-                codebook={capacityCodebook}
-                width={500} 
-                height={500} 
-              />
+            <div data-viz="sunburst" className="overflow-hidden bg-muted rounded-xl p-4">
+              <ResponsiveViz minHeight={400} aspectRatio={1}>
+                {(w, h) => <SunburstVisualization codedSegments={codedSegments} codebook={capacityCodebook} width={Math.min(w, h)} height={Math.min(w, h)} />}
+              </ResponsiveViz>
             </div>
             <p className="text-sm text-muted-foreground mt-4">
               Hierarquia de categorias e códigos. Anel interno = categorias, anel externo = códigos. Tamanho proporcional ao uso.
@@ -11510,13 +11530,9 @@ export default function TextAnalysisApp() {
               <div className="space-y-6">
                 {/* Visualização do Dendrograma */}
                 <div data-viz="dendrogram" className="bg-muted rounded-xl p-4 overflow-hidden">
-                  <DendrogramVisualization 
-                    words={dendrogramData.words}
-                    frequencies={dendrogramData.frequencies}
-                    linkageMatrix={dendrogramData.linkageMatrix}
-                    width={Math.min(750, window.innerWidth - 100)}
-                    height={480}
-                  />
+                  <ResponsiveViz minHeight={400}>
+                    {(w, h) => <DendrogramVisualization words={dendrogramData.words} frequencies={dendrogramData.frequencies} linkageMatrix={dendrogramData.linkageMatrix} width={w} height={h} />}
+                  </ResponsiveViz>
                 </div>
                 
                 {/* Informações da Análise */}
