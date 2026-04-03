@@ -3119,7 +3119,7 @@ const StatisticsPanel = ({ stats }) => {
             className="bg-gradient-to-br from-card to-background rounded-xl p-4 border border-border hover:border-input transition-all duration-300"
           >
             <item.icon className={`w-5 h-5 ${item.color || 'text-indigo-500 dark:text-indigo-400'} mb-2`} />
-            <div className="text-2xl font-bold text-white mb-1">{item.value}</div>
+            <div className="text-2xl font-bold text-foreground mb-1">{item.value}</div>
             <div className={`text-xs text-muted-foreground`}>{item.label}</div>
           </div>
         ))}
@@ -3263,9 +3263,9 @@ const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500,
     <div className="relative">
       {/* Controls */}
       <div className="absolute top-2 right-2 z-10 flex gap-1">
-        <button onClick={() => setZoomLevel(z => Math.min(3, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">+</button>
-        <button onClick={() => setZoomLevel(z => Math.max(0.5, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">−</button>
-        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">⟲</button>
+        <button onClick={() => setZoomLevel(z => Math.min(3, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">+</button>
+        <button onClick={() => setZoomLevel(z => Math.max(0.5, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">−</button>
+        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">⟲</button>
       </div>
       
       <svg 
@@ -3475,9 +3475,9 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
     <div className="relative">
       {/* Controls */}
       <div className="absolute top-2 right-2 z-10 flex gap-1">
-        <button onClick={() => setZoomLevel(z => Math.min(3, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">+</button>
-        <button onClick={() => setZoomLevel(z => Math.max(0.5, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">−</button>
-        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">⟲</button>
+        <button onClick={() => setZoomLevel(z => Math.min(3, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">+</button>
+        <button onClick={() => setZoomLevel(z => Math.max(0.5, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">−</button>
+        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">⟲</button>
       </div>
       <div className="absolute bottom-2 left-2 z-10 text-xs text-muted-foreground">
         {treemapData.length} termos
@@ -4930,7 +4930,7 @@ const LexicalDiversityPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
     { key: 'simpsonD', label: 'Simpson D', value: ld.simpsonD, desc: 'Índice de Simpson: probabilidade de repetição', color: 'rose' }
   ];
   
-  const colorClasses = isDarkMode ? {
+  const colorClasses = false ? {
     cyan: 'text-indigo-500 dark:text-indigo-400 border-indigo-500/30 bg-cyan-900/20',
     purple: 'text-violet-500 dark:text-violet-400 border-violet-300 dark:border-violet-700 bg-violet-900/20',
     blue: 'text-blue-400 border-blue-500/30 bg-blue-900/20',
@@ -5026,10 +5026,10 @@ const TFIDFPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
                 key={term.word}
                 className="px-2 py-1 rounded text-sm"
                 style={{
-                  backgroundColor: isDarkMode 
+                  backgroundColor: false 
                     ? `rgba(34, 211, 238, ${0.1 + (term.avgTfidf * 2)})` 
                     : `rgba(8, 145, 178, ${0.1 + (term.avgTfidf * 2)})`,
-                  color: isDarkMode 
+                  color: false 
                     ? (idx < 10 ? '#22d3ee' : idx < 20 ? '#a78bfa' : '#94a3b8')
                     : (idx < 10 ? '#0891b2' : idx < 20 ? '#7c3aed' : '#475569')
                 }}
@@ -5238,9 +5238,9 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
     <div className="relative">
       {/* Controls */}
       <div className="absolute top-2 right-2 z-10 flex gap-1">
-        <button onClick={() => setZoomLevel(z => Math.min(4, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">+</button>
-        <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">−</button>
-        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">⟲</button>
+        <button onClick={() => setZoomLevel(z => Math.min(4, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">+</button>
+        <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">−</button>
+        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">⟲</button>
       </div>
       <div className="absolute bottom-2 left-2 z-10 text-xs text-muted-foreground">
         Zoom: {Math.round(zoomLevel * 100)}% | {left.length} ramos à esquerda, {right.length} à direita
@@ -5594,9 +5594,9 @@ const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600, 
     <div className="relative">
       {/* Controls */}
       <div className="absolute top-2 right-2 z-10 flex gap-1">
-        <button onClick={() => setZoomLevel(z => Math.min(4, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">+</button>
-        <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">−</button>
-        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">⟲</button>
+        <button onClick={() => setZoomLevel(z => Math.min(4, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">+</button>
+        <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">−</button>
+        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">⟲</button>
       </div>
       <div className="absolute bottom-2 left-2 z-10 text-xs text-muted-foreground">
         Zoom: {Math.round(zoomLevel * 100)}%
@@ -5836,9 +5836,9 @@ const TermsBerryVisualization = ({ words, width = 700, height = 700, onWordClick
     <div className="relative">
       {/* Controls */}
       <div className="absolute top-2 right-2 z-10 flex gap-1">
-        <button onClick={() => setZoomLevel(z => Math.min(4, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">+</button>
-        <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">−</button>
-        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">⟲</button>
+        <button onClick={() => setZoomLevel(z => Math.min(4, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">+</button>
+        <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">−</button>
+        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">⟲</button>
       </div>
       <div className="absolute bottom-2 left-2 z-10 text-xs text-muted-foreground">
         Zoom: {Math.round(zoomLevel * 100)}% | {packedCircles.length} termos
@@ -6134,9 +6134,9 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
     <div className="relative">
       {/* Controls */}
       <div className="absolute top-2 right-2 z-10 flex gap-1">
-        <button onClick={() => setZoomLevel(z => Math.min(4, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">+</button>
-        <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">−</button>
-        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs">⟲</button>
+        <button onClick={() => setZoomLevel(z => Math.min(4, z * 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">+</button>
+        <button onClick={() => setZoomLevel(z => Math.max(0.3, z / 1.2))} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">−</button>
+        <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs">⟲</button>
       </div>
       
       {/* Label density slider */}
@@ -6853,11 +6853,11 @@ const CodeSelectionTooltip = ({
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Tag className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-            <span className="text-lg font-semibold text-white">Codificar Seleção</span>
+            <span className="text-lg font-semibold text-foreground">Codificar Seleção</span>
           </div>
           <button 
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center bg-red-500/30 hover:bg-red-600 text-red-300 hover:text-white rounded-xl transition-all border border-red-500/50"
+            className="w-10 h-10 flex items-center justify-center bg-red-500/30 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/50"
             title="Fechar (ESC)"
           >
             <X className="w-6 h-6" />
@@ -6880,7 +6880,7 @@ const CodeSelectionTooltip = ({
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar código..."
-            className="w-full pl-12 pr-4 py-3 bg-card border-2 border-input rounded-xl text-base focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-muted-foreground"
+            className="w-full pl-12 pr-4 py-3 bg-card border-2 border-input rounded-xl text-base text-foreground focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-muted-foreground"
             autoFocus
           />
         </div>
@@ -6898,7 +6898,7 @@ const CodeSelectionTooltip = ({
                 style={{ backgroundColor: code.color }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-base text-white truncate font-medium">{code.name}</p>
+                <p className="text-base text-foreground truncate font-medium">{code.name}</p>
                 <p className="text-sm text-muted-foreground truncate">{code.categoryName}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-indigo-500 dark:text-indigo-400 transition-colors" />
@@ -6931,7 +6931,7 @@ const CodeSelectionTooltip = ({
                 value={newCodeName}
                 onChange={(e) => onNewCodeNameChange(e.target.value)}
                 placeholder="Nome do novo código..."
-                className="w-full px-4 py-3 bg-card border-2 border-indigo-500 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-cyan-500/30 text-white"
+                className="w-full px-4 py-3 bg-card border-2 border-indigo-500 rounded-xl text-base text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newCodeName.trim()) onCreateNew();
                   if (e.key === 'Escape') onToggleCreator();
@@ -6948,7 +6948,7 @@ const CodeSelectionTooltip = ({
                 <button
                   onClick={onCreateNew}
                   disabled={!newCodeName.trim()}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-600 to-violet-600 rounded-xl text-base text-white font-semibold hover:from-indigo-500 hover:to-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl text-base text-white font-semibold hover:from-indigo-500 hover:to-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Criar e Aplicar
                 </button>
@@ -7005,6 +7005,7 @@ export default function TextAnalysisApp() {
   ]);
   const [activeCorpus, setActiveCorpus] = useState('default');
   const [showCorpusManager, setShowCorpusManager] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [newCorpusName, setNewCorpusName] = useState('');
   const [corpusFilter, setCorpusFilter] = useState('all'); // 'all' ou id do corpus
   
@@ -9526,6 +9527,32 @@ export default function TextAnalysisApp() {
     }
   }, [analysisResults, documents, codedSegments, arrayToCSV]);
   
+  // ========== HELP CONTENT FOR EACH TAB ==========
+  const tabHelpContent = {
+    upload: { title: "Importar Documentos", description: "Importe seus arquivos de texto para análise. Gerencie seu corpus, aplique limpeza de dados e prepare o texto para as análises.", steps: ["Arraste arquivos ou clique para selecionar", "Configure as opções de limpeza (stopwords, pontuação, etc.)", "Organize documentos em corpus diferentes", "Clique em 'Processar Corpus' na barra lateral"], tips: ["Formatos aceitos: PDF, DOCX, TXT, CSV e mais", "Use múltiplos corpus para análises comparativas"] },
+    stats: { title: "Estatísticas", description: "Estatísticas descritivas do corpus: contagem de palavras, tokens únicos, densidade lexical e distribuição de frequências.", steps: ["Processe o corpus primeiro", "Visualize o resumo estatístico", "Explore a tabela de frequências e distribuição"], tips: ["Compare estatísticas antes e depois da limpeza", "Exporte para documentar sua metodologia"] },
+    wordcloud: { title: "Nuvem de Palavras", description: "Visualização onde o tamanho das palavras representa sua frequência. Clique em qualquer palavra para ver análise detalhada de incidências.", steps: ["Processe o corpus", "Clique em palavras para análise de incidência", "Exporte como PNG, SVG ou dados"], tips: ["50-100 palavras oferecem melhor legibilidade"] },
+    termsberry: { title: "TermsBerry", description: "Visualização circular de co-ocorrências de termos. A proximidade indica relação no texto.", steps: ["Selecione a palavra central", "Explore clusters de termos relacionados", "Clique em palavras para recentrar"], tips: ["Ideal para estudar campos semânticos de um conceito"] },
+    wordtree: { title: "Árvore de Palavras", description: "Mostra como uma palavra-chave aparece no contexto antes e depois dela, revelando padrões de uso e coocorrência.", steps: ["Digite a palavra-chave ou clique em uma sugestão", "Visualize a árvore com contextos esquerdo/direito", "Use zoom e pan para explorar"], tips: ["Palavras frequentes oferecem árvores mais completas", "Use para validar hipóteses sobre uso de termos"] },
+    treemap: { title: "Treemap", description: "Mapa de retângulos proporcionais onde o tamanho representa frequência. Visão hierárquica e compacta da distribuição.", steps: ["Processe o corpus", "Passe o mouse para ver detalhes", "Clique para análise de incidência"], tips: ["Excelente para comparar frequências simultaneamente"] },
+    network: { title: "Rede de Co-ocorrência", description: "Grafo onde nós são palavras e arestas representam co-ocorrências. Revela associações e estrutura temática.", steps: ["Configure o limiar mínimo de co-ocorrência", "Use zoom e pan para navegar", "Clique nos nós para ver conexões"], tips: ["Hubs (muito conectados) são conceitos centrais"] },
+    bigrams: { title: "Bigramas", description: "Análise de pares de palavras consecutivas e sua frequência. Revela expressões comuns e padrões linguísticos.", steps: ["Visualize os bigramas mais frequentes", "Explore a rede de bigramas", "Filtre por frequência mínima"], tips: ["Revela expressões idiomáticas e colocações"] },
+    netadvanced: { title: "Centralidade de Rede", description: "Métricas avançadas: degree, betweenness e closeness. Identifica palavras mais importantes e influentes.", steps: ["Gere a rede de co-ocorrência primeiro", "Compare métricas de centralidade", "Identifique palavras-ponte e hubs"], tips: ["Betweenness identifica pontes entre tópicos"] },
+    heatmap: { title: "Heatmap", description: "Matriz de co-ocorrência com cores representando frequências. Identifica pares de palavras mais associados.", steps: ["Processe o corpus", "Use a escala de cores para identificar associações", "Passe o mouse para ver valores"], tips: ["Combine com análise de rede para confirmar padrões"] },
+    afc: { title: "Análise Fatorial de Correspondência", description: "Técnica multivariada para visualizar associações entre palavras e documentos em espaço bidimensional.", steps: ["Prepare corpus com documentos bem definidos", "Execute a AFC", "Interprete o mapa fatorial"], tips: ["Eixos representam dimensões conceituais interpretáveis"] },
+    associations: { title: "Associações de Palavras", description: "Palavras estatisticamente associadas usando testes como chi-quadrado. Coocorrências significativas além do acaso.", steps: ["Selecione palavras-alvo", "Visualize associações estatísticas", "Interprete força e direção"], tips: ["Testes evitam interpretações baseadas só em frequência"] },
+    sentiment: { title: "Análise de Sentimentos", description: "Classifique trechos por polaridade (positivo, negativo, neutro) e intensidade emocional.", steps: ["Execute a análise sobre o corpus", "Visualize distribuição de sentimentos", "Analise palavras por sentimento"], tips: ["Revise manualmente para validar resultados"] },
+    tfidf: { title: "TF-IDF", description: "Importância relativa de palavras ponderando frequência no documento vs. no corpus. Identifica termos distintivos.", steps: ["Execute o cálculo de TF-IDF", "Visualize palavras mais relevantes por documento", "Compare perfis entre documentos"], tips: ["Ideal para identificar termos especializados por documento"] },
+    diversity: { title: "Diversidade Léxical", description: "Riqueza vocabular através de índices como Type-Token Ratio, Herdan e Maas.", steps: ["Calcule os índices automaticamente", "Compare diversidade entre documentos", "Interprete em relação ao tipo de corpus"], tips: ["Alta diversidade sugere discurso mais elaborado"] },
+    chd: { title: "CHD/Reinert", description: "Classificação Hierárquica Descendente: segmenta o texto e identifica classes temáticas com vocabulário similar.", steps: ["Configure número de classes (3-5)", "Execute o algoritmo", "Interprete vocabulário de cada classe"], tips: ["Descobre classes emergentes sem categorização prévia"] },
+    coding: { title: "Codificação Qualitativa", description: "Aplique códigos a segmentos de texto selecionados. Essencial para pesquisa qualitativa.", steps: ["Selecione trechos no texto", "Atribua códigos aos segmentos", "Organize hierarquicamente se necessário"], tips: ["Crie um livro de códigos antes para consistência"] },
+    radar: { title: "Gráfico Radar", description: "Distribuição de códigos em gráfico radar, mostrando múltiplas dimensões simultaneamente.", steps: ["Aplique códigos aos segmentos primeiro", "Selecione códigos para visualizar", "Compare padrões entre documentos"], tips: ["Excelente para comparar múltiplos códigos de uma vez"] },
+    sunburst: { title: "Gráfico Sunburst", description: "Códigos hierárquicos em gráfico sunburst interativo com camadas representando níveis.", steps: ["Organize códigos em hierarquia", "Visualize em círculos concêntricos", "Clique para expandir/colapsar"], tips: ["Visualmente atraente para apresentações e relatórios"] },
+    dendrogram: { title: "Dendrograma", description: "Hierarquia de agrupamento entre palavras/documentos em diagrama de árvore. Mostra clusters naturais.", steps: ["Selecione método de agrupamento", "Execute a análise", "Interprete a hierarquia de clusters"], tips: ["Cortar em diferentes alturas define número de clusters"] },
+    kwic: { title: "KWIC (Palavra-chave em Contexto)", description: "Palavra-chave com contexto imediato em linhas de concordância. Análise detalhada de uso.", steps: ["Insira a palavra-chave", "Visualize as concordâncias", "Exporte contextos para análise"], tips: ["Ordene por contexto para identificar padrões sintáticos"] },
+    export: { title: "Exportar Resultados", description: "Exporte análises em múltiplos formatos: CSV, Excel, imagens, DOCX para relatórios.", steps: ["Selecione a análise", "Escolha o formato", "Baixe o arquivo"], tips: ["Use CSV para R/Python, imagens para apresentações"] },
+  };
+
   const tabs = [
     { id: 'upload', label: 'Importar', icon: Upload },
     { id: 'stats', label: 'Estatísticas', icon: BarChart3, disabled: !analysisResults },
@@ -9733,8 +9760,61 @@ export default function TextAnalysisApp() {
       
       {/* Main Content */}
       <main className={`flex-1 overflow-y-auto min-h-screen transition-all duration-300 ${sidebarOpen ? 'lg:ml-0' : ''}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative">
+
+        {/* Help Button - Fixed */}
+        {tabHelpContent[activeTab] && (
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className={cn(
+              "fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-lg font-bold transition-all",
+              showHelp
+                ? "bg-primary text-primary-foreground"
+                : "bg-card border border-border text-foreground hover:bg-accent"
+            )}
+            title="Ajuda"
+          >
+            ?
+          </button>
+        )}
+
+        {/* Help Drawer */}
+        {showHelp && tabHelpContent[activeTab] && (
+          <div className="fixed bottom-20 right-6 z-40 w-80 max-h-[70vh] overflow-y-auto bg-card border border-border rounded-xl shadow-xl p-5 animate-in slide-in-from-bottom-2">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-foreground">{tabHelpContent[activeTab].title}</h3>
+              <button onClick={() => setShowHelp(false)} className="p-1 hover:bg-accent rounded">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">{tabHelpContent[activeTab].description}</p>
+
+            <div className="mb-4">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Como usar</h4>
+              <ol className="space-y-1.5">
+                {tabHelpContent[activeTab].steps.map((step, i) => (
+                  <li key={i} className="text-sm text-foreground/80 flex gap-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">{i+1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Dicas</h4>
+              <ul className="space-y-1.5">
+                {tabHelpContent[activeTab].tips.map((tip, i) => (
+                  <li key={i} className="text-sm text-foreground/70 flex gap-2">
+                    <span className="text-primary flex-shrink-0">•</span>
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {/* Upload Tab */}
         {activeTab === 'upload' && (
           <div className="space-y-8">
@@ -9919,7 +9999,7 @@ export default function TextAnalysisApp() {
             )}
             
             {/* ========== GERENCIADOR DE STOPWORDS ========== */}
-            <div className={`bg-gradient-to-br from-white to-amber-50 border-amber-200 dark:bg-gradient-to-br from-card to-amber-900/20 border-amber-500/30 rounded-xl p-4 sm:p-6 border`}>
+            <div className={`bg-gradient-to-br from-white to-amber-50 border-amber-200 rounded-xl p-4 sm:p-6 border`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Filter className="w-5 h-5 text-amber-400" />
@@ -10065,7 +10145,7 @@ export default function TextAnalysisApp() {
                       type="checkbox"
                       checked={cleaningOptions[opt.key]}
                       onChange={(e) => setCleaningOptions(prev => ({ ...prev, [opt.key]: e.target.checked }))}
-                      className={`w-4 h-4 rounded border-input bg-white dark:border-input bg-secondary text-indigo-600 dark:text-indigo-400 focus:ring-cyan-500`}
+                      className={`w-4 h-4 rounded border-input bg-white dark:border-input bg-secondary text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500`}
                     />
                     <span className={`text-sm ${theme.textSecondary}`}>{opt.label}</span>
                   </label>
@@ -10092,7 +10172,7 @@ export default function TextAnalysisApp() {
                     type="checkbox"
                     checked={cleaningOptions.groupVariations}
                     onChange={(e) => setCleaningOptions(prev => ({ ...prev, groupVariations: e.target.checked }))}
-                    className={`w-5 h-5 mt-0.5 rounded border-input bg-white dark:border-input bg-secondary text-violet-600 dark:text-violet-400 focus:ring-purple-500`}
+                    className={`w-5 h-5 mt-0.5 rounded border-input bg-white dark:border-input bg-secondary text-violet-600 dark:text-violet-400 focus:ring-violet-500`}
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -10492,7 +10572,7 @@ export default function TextAnalysisApp() {
                   onChange={(e) => setWordTreeKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && buildWordTreeFromKeyword()}
                   placeholder="Digite a palavra central (ex: comunicação)"
-                  className="w-full px-4 py-3 bg-muted border border-input rounded-xl text-white placeholder-muted-foreground focus:outline-none focus:border-indigo-500"
+                  className="w-full px-4 py-3 bg-muted border border-input rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:border-indigo-500"
                 />
               </div>
               <button
@@ -10533,7 +10613,7 @@ export default function TextAnalysisApp() {
             
             {wordTreeData && (
               <div className="mt-4 text-sm text-muted-foreground">
-                Total de ocorrências encontradas: <span className="text-white font-medium">{wordTreeData.totalOccurrences || 0}</span>
+                Total de ocorrências encontradas: <span className="text-foreground font-medium">{wordTreeData.totalOccurrences || 0}</span>
                 {' • '}Contextos à esquerda: <span className="text-indigo-500 dark:text-indigo-400">{wordTreeData.left?.length || 0}</span>
                 {' • '}Contextos à direita: <span className="text-violet-500 dark:text-violet-400">{wordTreeData.right?.length || 0}</span>
               </div>
@@ -11021,7 +11101,7 @@ export default function TextAnalysisApp() {
                             <textarea
                               value={editingDocumentContent}
                               onChange={(e) => setEditingDocumentContent(e.target.value)}
-                              className={`w-full p-3 rounded-lg text-sm border resize-none min-h-[200px] bg-white border-input text-foreground dark:bg-background border-input text-white focus:outline-none focus:border-indigo-500`}
+                              className={`w-full p-3 rounded-lg text-sm border resize-none min-h-[200px] bg-white border-input text-foreground focus:outline-none focus:border-indigo-500`}
                               rows={10}
                             />
                             <div className="flex gap-2">
@@ -11070,7 +11150,7 @@ export default function TextAnalysisApp() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setCodingFilter('all')}
-                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'all' ? 'bg-secondary text-white' : 'text-muted-foreground hover:bg-accent'}`}
+                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:bg-accent'}`}
                     >
                       Todos
                     </button>
@@ -11139,7 +11219,7 @@ export default function TextAnalysisApp() {
                           <textarea
                             value={editingSegmentText}
                             onChange={(e) => setEditingSegmentText(e.target.value)}
-                            className={`w-full p-3 rounded-lg text-sm border resize-none bg-white border-input text-foreground dark:bg-card border-input text-white focus:outline-none focus:border-indigo-500`}
+                            className={`w-full p-3 rounded-lg text-sm border resize-none bg-white border-input text-foreground focus:outline-none focus:border-indigo-500`}
                             rows={4}
                             autoFocus
                           />
@@ -11262,11 +11342,11 @@ export default function TextAnalysisApp() {
                   <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
                     <div className="flex items-center gap-2">
                       <Plus className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
-                      <span className="text-lg font-semibold text-white">Adicionar Código</span>
+                      <span className="text-lg font-semibold text-foreground">Adicionar Código</span>
                     </div>
                     <button 
                       onClick={() => setAddingCodeToSegment(null)}
-                      className="w-10 h-10 flex items-center justify-center bg-red-500/30 hover:bg-red-600 text-red-300 hover:text-white rounded-xl transition-all"
+                      className="w-10 h-10 flex items-center justify-center bg-red-500/30 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
@@ -11279,7 +11359,7 @@ export default function TextAnalysisApp() {
                       value={codeSearchTerm}
                       onChange={(e) => setCodeSearchTerm(e.target.value)}
                       placeholder="Buscar código..."
-                      className="w-full pl-12 pr-4 py-3 bg-card border-2 border-input rounded-xl text-base focus:outline-none focus:border-indigo-500 text-white placeholder-muted-foreground"
+                      className="w-full pl-12 pr-4 py-3 bg-card border-2 border-input rounded-xl text-base text-foreground focus:outline-none focus:border-indigo-500 placeholder-muted-foreground"
                       autoFocus
                     />
                   </div>
@@ -11300,7 +11380,7 @@ export default function TextAnalysisApp() {
                             style={{ backgroundColor: code.color }}
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-base text-white truncate font-medium">{code.name}</p>
+                            <p className="text-base text-foreground truncate font-medium">{code.name}</p>
                             <p className="text-sm text-muted-foreground truncate">{code.categoryName}</p>
                           </div>
                           {alreadyHasCode ? (
@@ -11506,7 +11586,7 @@ export default function TextAnalysisApp() {
                         {dendrogramData.wordStats.slice(0, 10).map((stat) => (
                           <tr key={stat.word} className="border-b border-border/50 hover:bg-accent/30">
                             <td className="py-2 pr-4 text-muted-foreground">{stat.rank}</td>
-                            <td className="py-2 pr-4 font-medium text-white">{stat.word}</td>
+                            <td className="py-2 pr-4 font-medium text-foreground">{stat.word}</td>
                             <td className="py-2 pr-4 text-indigo-500 dark:text-indigo-400">{stat.frequency}</td>
                             <td className="py-2 pr-4 text-violet-500 dark:text-violet-400">{stat.cooccurrenceSum}</td>
                             <td className="py-2 pr-4">
@@ -11947,7 +12027,7 @@ export default function TextAnalysisApp() {
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-white font-bold">{v.count}x</span>
+                            <span className="text-foreground font-bold">{v.count}x</span>
                             <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">{v.percentage}</span>
                           </div>
                         </div>
@@ -11965,11 +12045,11 @@ export default function TextAnalysisApp() {
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Método de busca:</span>
-                      <span className="text-white ml-2">{incidenceAnalysis.methodology.searchMethod}</span>
+                      <span className="text-foreground ml-2">{incidenceAnalysis.methodology.searchMethod}</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Janela de contexto:</span>
-                      <span className="text-white ml-2">{incidenceAnalysis.methodology.contextWindow}</span>
+                      <span className="text-foreground ml-2">{incidenceAnalysis.methodology.contextWindow}</span>
                     </div>
                   </div>
                   {incidenceAnalysis.variationsSearched && incidenceAnalysis.variationsSearched.length > 1 && (
@@ -12062,7 +12142,7 @@ export default function TextAnalysisApp() {
                   </button>
                   <button
                     onClick={exportScientificReport}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 rounded-lg transition-colors font-medium text-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 rounded-lg transition-colors font-medium text-sm"
                   >
                     <FileText className="w-4 h-4" />
                     Relatório Científico
