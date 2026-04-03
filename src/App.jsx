@@ -2915,7 +2915,7 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
                 key={`link-${idx}`}
                 d={createCurvedPath(source, target, idx)}
                 fill="none"
-                stroke={isHighlighted ? "oklch(0.585 0.204 277.12)" : "url(#networkLinkGradient)"}
+                stroke={isHighlighted ? "oklch(0.585 0.204 277.12)" : "oklch(0.585 0.204 277.12 / 0.3)"}
                 strokeWidth={1.5 + (link.weight / graphData.maxWeight) * 3}
                 opacity={hoveredNode ? (isHighlighted ? 0.9 : 0.08) : 0.4}
                 style={{ transition: 'opacity 0.2s' }}
@@ -2949,7 +2949,7 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
                   x={node.x}
                   y={node.y - node.radius - 6}
                   textAnchor="middle"
-                  fill={isDarkMode ? "oklch(0.280 0.037 260.03)" : "oklch(0.984 0.003 247.86)"}
+                  fill={isDarkMode ? "oklch(0.929 0.013 255.51)" : "oklch(0.280 0.037 260.03)"}
                   fontSize={Math.max(9, 10 + node.radius / 4)}
                   fontWeight={isHovered ? 600 : 400}
                   style={{ fontFamily: "'JetBrains Mono', monospace", pointerEvents: 'none' }}
@@ -3487,7 +3487,7 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
                     width={w}
                     height={h}
                     fill={getColor(leaf.value, idx)}
-                    stroke={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.208 0.040 265.75 / 0.8)'}
+                    stroke={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.280 0.037 260.03 / 0.3)'}
                     strokeWidth={isHovered ? 3 : 1}
                     rx={4}
                     opacity={hoveredRect !== null ? (isHovered ? 1 : 0.35) : 0.9}
@@ -3501,7 +3501,7 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
                       x={leaf.x0 + w / 2}
                       y={leaf.y0 + h / 2}
                       fontSize={Math.min(14, Math.max(9, w / 6))}
-                      fill={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.984 0.003 247.86)'}
+                      fill="oklch(1.000 0 0)"
                       fontWeight={isHovered ? 700 : 600}
                       textAnchor="middle"
                       dominantBaseline="middle"
@@ -3516,7 +3516,7 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
                       x={leaf.x0 + w / 2}
                       y={leaf.y0 + h / 2 + 12}
                       fontSize={9}
-                      fill="oklch(0.208 0.040 265.75 / 0.7)"
+                      fill="oklch(1.000 0 0 / 0.7)"
                       textAnchor="middle"
                       opacity={hoveredRect !== null ? (isHovered ? 1 : 0.3) : 0.8}
                       style={{ pointerEvents: 'none', transition: 'opacity 0.2s' }}
@@ -4259,7 +4259,49 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
       leaves = leaves.sort((a, b) => a.angle - b.angle);
     }
     
-    return { root, nodes, edges, leaves, margin, maxDist, centerX, centerY, maxRadius };
+    // Build a set of leaf descendants for each edge (internal node)
+    // so hover on a leaf can highlight all ancestor edges
+    const edgeLeafDescendants = new Map();
+    const getLeafDescendants = (node) => {
+      if (node.isLeaf) return new Set([node.id]);
+      const leftLeaves = getLeafDescendants(node.left);
+      const rightLeaves = getLeafDescendants(node.right);
+      const allLeaves = new Set([...leftLeaves, ...rightLeaves]);
+      return allLeaves;
+    };
+    // Tag each edge with the set of leaf IDs it connects
+    const tagEdges = (node) => {
+      if (node.isLeaf) return new Set([node.id]);
+      const leftLeaves = tagEdges(node.left);
+      const rightLeaves = tagEdges(node.right);
+      const allLeaves = new Set([...leftLeaves, ...rightLeaves]);
+      // Find edges that belong to this internal node and tag them
+      // Edges are added in order: for horizontal, 3 edges per node (bar + 2 arms)
+      // For circular, 1 edge (arc) per node
+      return allLeaves;
+    };
+    // Simpler approach: tag edges with their node's leaf descendants during collection
+    let edgeIndex = 0;
+    const edgeDescendants = [];
+    const collectEdgeDescendants = (node) => {
+      if (!node.isLeaf) {
+        const leftLeaves = getLeafDescendants(node.left);
+        const rightLeaves = getLeafDescendants(node.right);
+        const allLeaves = new Set([...leftLeaves, ...rightLeaves]);
+        if (layout === 'circular') {
+          edgeDescendants.push(allLeaves); // 1 edge per node
+        } else {
+          edgeDescendants.push(allLeaves); // bar
+          edgeDescendants.push(allLeaves); // left arm
+          edgeDescendants.push(allLeaves); // right arm
+        }
+        collectEdgeDescendants(node.left);
+        collectEdgeDescendants(node.right);
+      }
+    };
+    collectEdgeDescendants(root);
+
+    return { root, nodes, edges, edgeDescendants, leaves, margin, maxDist, centerX, centerY, maxRadius };
   }, [words, frequencies, linkageMatrix, width, height, layout]);
   
   // Apply collision avoidance to leaves
@@ -4279,7 +4321,7 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
     );
   }
   
-  const { edges, margin, maxDist, centerX, centerY, maxRadius } = dendrogramData;
+  const { edges, edgeDescendants, margin, maxDist, centerX, centerY, maxRadius } = dendrogramData;
   
   // Color scale based on distance
   const getEdgeColor = (dist) => {
@@ -4379,11 +4421,7 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
           {/* Edges */}
           {edges.map((edge, i) => {
             const color = getEdgeColor(edge.distance);
-            const isHighlighted = hoveredNode && (
-              layout === 'circular' 
-                ? (Math.abs(edge.leftAngle - hoveredNode.angle) < 0.1 || Math.abs(edge.rightAngle - hoveredNode.angle) < 0.1)
-                : (Math.abs(edge.y1 - hoveredNode.y) < 1 || Math.abs(edge.y2 - hoveredNode.y) < 1)
-            );
+            const isHighlighted = hoveredNode && edgeDescendants[i]?.has(hoveredNode.id);
             
             if (edge.type === 'arc') {
               const paths = createArcPath(edge);
@@ -5340,25 +5378,36 @@ const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600, 
   
   useEffect(() => {
     if (!bigramNetwork?.nodes?.length) return;
-    
+
     const { nodes, edges = [] } = bigramNetwork;
-    
-    // Initialize with circle layout
+    const maxW = Math.max(...nodes.map(n => n.totalWeight), 1);
+    const padding = 60;
+
+    // Compute visual radius for each node (matches render logic)
+    const getNodeRadius = (weight) => 6 + (weight / maxW) * 20;
+
+    // Initialize positions using a grid-based approach to avoid initial overlap
+    const cols = Math.ceil(Math.sqrt(nodes.length * (width / height)));
+    const rows = Math.ceil(nodes.length / cols);
+    const cellW = (width - padding * 2) / cols;
+    const cellH = (height - padding * 2) / rows;
+
     const initialPositions = nodes.map((node, idx) => {
-      const angle = (idx / nodes.length) * 2 * Math.PI;
-      const radius = Math.min(width, height) / 3;
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
       return {
         id: node.id,
-        x: width / 2 + Math.cos(angle) * radius,
-        y: height / 2 + Math.sin(angle) * radius,
+        x: padding + cellW * (col + 0.5) + (Math.random() - 0.5) * cellW * 0.3,
+        y: padding + cellH * (row + 0.5) + (Math.random() - 0.5) * cellH * 0.3,
         vx: 0,
         vy: 0,
         degree: node.degree,
         weight: node.totalWeight,
+        radius: getNodeRadius(node.totalWeight),
         connections: []
       };
     });
-    
+
     // Build connections
     const posMap = new Map(initialPositions.map(p => [p.id, p]));
     edges.forEach(edge => {
@@ -5369,29 +5418,32 @@ const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600, 
         p2.connections.push({ id: edge.source, weight: edge.weight });
       }
     });
-    
-    // Enhanced force-directed simulation (150 iterations)
-    const repulsion = 3000;
-    const attraction = 0.008;
-    const centerGravity = 0.012;
-    const minNodeDistance = 50;
-    
-    for (let iter = 0; iter < 150; iter++) {
-      const alpha = 1 - iter / 150;
-      
-      // Repulsion
+
+    // Force-directed layout with radius-aware collision avoidance
+    const labelPadding = 30; // extra space for text labels above nodes
+
+    for (let iter = 0; iter < 300; iter++) {
+      const alpha = Math.max(0.01, 1 - iter / 300);
+      const cooling = 0.8 + 0.15 * (1 - alpha);
+
+      // Repulsion between all pairs (radius-aware)
       for (let i = 0; i < initialPositions.length; i++) {
         for (let j = i + 1; j < initialPositions.length; j++) {
           const p1 = initialPositions[i];
           const p2 = initialPositions[j];
           const dx = p2.x - p1.x;
           const dy = p2.y - p1.y;
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          
-          if (dist < 200) {
-            const force = (repulsion * alpha) / (dist * dist);
-            const fx = (dx / dist) * force;
-            const fy = (dy / dist) * force;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+          const safeDistance = p1.radius + p2.radius + labelPadding + 20;
+
+          // Always repel if closer than safe distance, weaker repulsion beyond
+          const repStrength = dist < safeDistance
+            ? 15000 * alpha / (dist * dist + 1)
+            : 5000 * alpha / (dist * dist);
+
+          if (dist < 500) {
+            const fx = (dx / dist) * repStrength;
+            const fy = (dy / dist) * repStrength;
             p1.vx -= fx;
             p1.vy -= fy;
             p2.vx += fx;
@@ -5399,65 +5451,85 @@ const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600, 
           }
         }
       }
-      
-      // Attraction along edges
+
+      // Attraction along edges (gentle)
       edges.forEach(edge => {
         const p1 = posMap.get(edge.source);
         const p2 = posMap.get(edge.target);
         if (!p1 || !p2) return;
-        
+
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const force = dist * attraction * alpha * (1 + edge.weight * 0.3);
-        
-        p1.vx += (dx / dist) * force;
-        p1.vy += (dy / dist) * force;
-        p2.vx -= (dx / dist) * force;
-        p2.vy -= (dy / dist) * force;
+        const idealDist = p1.radius + p2.radius + labelPadding + 40;
+
+        // Only attract if nodes are farther than ideal distance
+        if (dist > idealDist) {
+          const force = (dist - idealDist) * 0.003 * alpha;
+          p1.vx += (dx / dist) * force;
+          p1.vy += (dy / dist) * force;
+          p2.vx -= (dx / dist) * force;
+          p2.vy -= (dy / dist) * force;
+        }
       });
-      
-      // Center gravity
+
+      // Gentle center gravity
       initialPositions.forEach(p => {
-        p.vx += (width / 2 - p.x) * centerGravity * alpha;
-        p.vy += (height / 2 - p.y) * centerGravity * alpha;
+        p.vx += (width / 2 - p.x) * 0.005 * alpha;
+        p.vy += (height / 2 - p.y) * 0.005 * alpha;
       });
-      
-      // Apply velocities
+
+      // Apply velocities with damping and soft boundary
       initialPositions.forEach(p => {
-        p.x += p.vx * 0.85;
-        p.y += p.vy * 0.85;
-        p.vx *= 0.9;
-        p.vy *= 0.9;
-        p.x = Math.max(80, Math.min(width - 80, p.x));
-        p.y = Math.max(50, Math.min(height - 50, p.y));
+        p.x += p.vx * cooling;
+        p.y += p.vy * cooling;
+        p.vx *= 0.85;
+        p.vy *= 0.85;
+
+        // Soft boundary - push back smoothly instead of hard clamp
+        const margin = padding + p.radius;
+        if (p.x < margin) { p.vx += (margin - p.x) * 0.3; p.x = margin; }
+        if (p.x > width - margin) { p.vx -= (p.x - (width - margin)) * 0.3; p.x = width - margin; }
+        if (p.y < margin) { p.vy += (margin - p.y) * 0.3; p.y = margin; }
+        if (p.y > height - margin) { p.vy -= (p.y - (height - margin)) * 0.3; p.y = height - margin; }
       });
     }
-    
-    // Final collision resolution
-    for (let pass = 0; pass < 10; pass++) {
+
+    // Final hard collision resolution - guarantee zero overlap
+    for (let pass = 0; pass < 50; pass++) {
+      let anyOverlap = false;
       for (let i = 0; i < initialPositions.length; i++) {
         for (let j = i + 1; j < initialPositions.length; j++) {
           const p1 = initialPositions[i];
           const p2 = initialPositions[j];
           const dx = p2.x - p1.x;
           const dy = p2.y - p1.y;
-          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const minDist = minNodeDistance;
-          
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+          const minDist = p1.radius + p2.radius + labelPadding + 8;
+
           if (dist < minDist) {
-            const overlap = (minDist - dist) / 2;
+            anyOverlap = true;
+            const overlap = (minDist - dist) / 2 + 1;
             const nx = dx / dist;
             const ny = dy / dist;
             p1.x -= nx * overlap;
             p1.y -= ny * overlap;
             p2.x += nx * overlap;
             p2.y += ny * overlap;
+
+            // Re-enforce boundaries
+            const m1 = padding + p1.radius;
+            const m2 = padding + p2.radius;
+            p1.x = Math.max(m1, Math.min(width - m1, p1.x));
+            p1.y = Math.max(m1, Math.min(height - m1, p1.y));
+            p2.x = Math.max(m2, Math.min(width - m2, p2.x));
+            p2.y = Math.max(m2, Math.min(height - m2, p2.y));
           }
         }
       }
+      if (!anyOverlap) break;
     }
-    
+
     setPositions(initialPositions);
   }, [bigramNetwork, width, height]);
   
@@ -5810,7 +5882,7 @@ const TermsBerryVisualization = ({ words, width = 700, height = 700, onWordClick
                     y={circle.y}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill={isHovered ? 'oklch(1.000 0 0)' : (intensity > 0.3 ? 'oklch(1.000 0 0)' : 'oklch(0.280 0.037 260.03)')}
+                    fill="oklch(1.000 0 0)"
                     fontSize={Math.min(circle.r / 3, 14)}
                     fontWeight={isHovered ? 700 : 500}
                     opacity={hoveredWord ? (isHovered ? 1 : 0.2) : 0.9}
@@ -9502,11 +9574,6 @@ export default function TextAnalysisApp() {
   
   return (
     <div className={cn("min-h-screen bg-background text-foreground flex", isDarkMode && "dark")}>
-      {/* Subtle ambient background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 dark:bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/50/5 dark:bg-primary/50/10 rounded-full blur-3xl" />
-      </div>
       
       {/* Sidebar */}
       <aside className={cn("fixed lg:relative z-50 h-screen bg-sidebar backdrop-blur-xl border-r border-sidebar-border flex flex-col transition-all duration-300 overflow-hidden", sidebarOpen ? 'w-72' : 'w-0 lg:w-20')}>
@@ -9619,9 +9686,6 @@ export default function TextAnalysisApp() {
         {sidebarOpen && (
           <div className={`p-4 border-t border-sidebar-border`}>
             <div className="text-center space-y-2">
-              <div className={`text-xs text-muted-foreground`}>
-                CHD/Reinert • Similitude • KWIC
-              </div>
               <div className="text-xs">
                 <span className={theme.muted}>Por </span>
                 <span className="text-primary">Lucas O. Teixeira</span>
