@@ -2793,12 +2793,22 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
     return map;
   }, [graphData.nodes]);
   
+  // All connected node IDs for hover highlighting
+  const connectedNodeIds = useMemo(() => {
+    if (!hoveredNode) return new Set();
+    return new Set(
+      graphData.links
+        .filter(l => l.source === hoveredNode || l.target === hoveredNode)
+        .map(l => l.source === hoveredNode ? l.target : l.source)
+    );
+  }, [hoveredNode, graphData.links]);
+
   // Get hovered node data for tooltip
   const hoveredNodeData = useMemo(() => {
     if (!hoveredNode) return null;
     const node = nodeMap.get(hoveredNode);
     if (!node) return null;
-    
+
     const connections = graphData.links
       .filter(l => l.source === hoveredNode || l.target === hoveredNode)
       .map(l => ({
@@ -2807,9 +2817,9 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
       }))
       .sort((a, b) => b.weight - a.weight)
       .slice(0, 5);
-    
+
     const percentile = Math.round(node.hubScore * 100);
-    
+
     return { ...node, connections, percentile };
   }, [hoveredNode, nodeMap, graphData.links]);
   
@@ -2926,7 +2936,7 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
           {/* Nodes */}
           {graphData.nodes.map((node, idx) => {
             const isHovered = hoveredNode === node.id;
-            const isConnected = hoveredNode && hoveredNodeData?.connections.some(c => c.word === node.id);
+            const isConnected = hoveredNode && connectedNodeIds.has(node.id);
             
             return (
               <g 
@@ -2942,7 +2952,7 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
                   fill={isHovered ? 'oklch(0.680 0.158 276.93)' : 'oklch(0.585 0.204 277.12)'}
                   stroke={isHovered ? "oklch(0.585 0.204 277.12)" : "oklch(1.000 0 0)"}
                   strokeWidth={isHovered ? 3 : 2}
-                  opacity={hoveredNode ? (isHovered ? 1 : (isConnected ? 0.85 : 0.12)) : 0.85}
+                  opacity={hoveredNode ? (isHovered ? 1 : (isConnected ? 0.9 : 0.15)) : 0.85}
                   style={{ transition: 'opacity 0.2s, fill 0.2s' }}
                 />
                 <text
@@ -2951,9 +2961,9 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
                   textAnchor="middle"
                   fill={isDarkMode ? "oklch(0.929 0.013 255.51)" : "oklch(0.280 0.037 260.03)"}
                   fontSize={Math.max(9, 10 + node.radius / 4)}
-                  fontWeight={isHovered ? 600 : 400}
+                  fontWeight={isHovered ? 600 : (isConnected ? 500 : 400)}
                   style={{ fontFamily: "'JetBrains Mono', monospace", pointerEvents: 'none' }}
-                  opacity={hoveredNode ? (isHovered || isConnected ? 1 : 0.2) : 0.85}
+                  opacity={hoveredNode ? (isHovered || isConnected ? 1 : 0.25) : 0.85}
                 >
                   {node.id}
                 </text>
@@ -2969,23 +2979,23 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
               x={0} y={0}
               width={185} height={hoveredNodeData.connections.length > 0 ? 90 + hoveredNodeData.connections.length * 16 : 70}
               rx={8}
-              fill="oklch(0.208 0.040 265.75 / 0.95)"
+              fill={isDarkMode ? "oklch(0.208 0.040 265.75 / 0.95)" : "oklch(1.000 0 0 / 0.95)"}
               stroke="oklch(0.585 0.204 277.12)"
               strokeWidth={1}
             />
             <text x={10} y={22} fill="oklch(0.585 0.204 277.12)" fontSize={13} fontWeight={600}>{hoveredNodeData.id}</text>
-            <text x={10} y={42} fill="oklch(0.551 0.023 264.36)" fontSize={10}>
+            <text x={10} y={42} fill={isDarkMode ? "oklch(0.714 0.019 261.32)" : "oklch(0.551 0.023 264.36)"} fontSize={10}>
               Hub Score: {(hoveredNodeData.hubScore * 100).toFixed(0)}% (top {100 - hoveredNodeData.percentile}%)
             </text>
-            <text x={10} y={58} fill="oklch(0.551 0.023 264.36)" fontSize={10}>
+            <text x={10} y={58} fill={isDarkMode ? "oklch(0.714 0.019 261.32)" : "oklch(0.551 0.023 264.36)"} fontSize={10}>
               Conexões: {hoveredNodeData.connections.length} | Peso: {hoveredNodeData.weight}
             </text>
             {hoveredNodeData.connections.length > 0 && (
               <>
-                <line x1={10} y1={68} x2={175} y2={68} stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} />
-                <text x={10} y={82} fill="oklch(0.551 0.023 264.36)" fontSize={9}>Top conexões:</text>
+                <line x1={10} y1={68} x2={175} y2={68} stroke={isDarkMode ? "oklch(0.446 0.026 256.80)" : "oklch(0.872 0.009 258.34)"} strokeWidth={1} />
+                <text x={10} y={82} fill={isDarkMode ? "oklch(0.714 0.019 261.32)" : "oklch(0.551 0.023 264.36)"} fontSize={9}>Top conexões:</text>
                 {hoveredNodeData.connections.map((conn, i) => (
-                  <text key={i} x={15} y={96 + i * 16} fill="oklch(0.280 0.037 260.03)" fontSize={10}>
+                  <text key={i} x={15} y={96 + i * 16} fill={isDarkMode ? "oklch(0.929 0.013 255.51)" : "oklch(0.280 0.037 260.03)"} fontSize={10}>
                     • {conn.word} ({conn.weight})
                   </text>
                 ))}
@@ -5165,19 +5175,42 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [tooltipData, setTooltipData] = useState(null);
   const svgRef = React.useRef(null);
-  
+
+  // Zoom/Pan handlers - must be before any early returns
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoomLevel(prev => Math.max(0.3, Math.min(4, prev * delta)));
+  }, []);
+
+  const handleMouseDown = useCallback((e) => {
+    if (e.button === 0 && !hoveredBranch) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    }
+  }, [hoveredBranch, panOffset]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (isDragging) {
+      setPanOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    }
+  }, [isDragging, dragStart]);
+
+  const handleMouseUp = useCallback(() => setIsDragging(false), []);
+  const resetView = useCallback(() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }, []);
+
   if (!wordTree || !wordTree.center) {
     return <div className="text-muted-foreground text-center py-8">Digite uma palavra para visualizar a árvore</div>;
   }
-  
+
   const { center, left = [], right = [] } = wordTree;
   const centerX = width / 2;
   const centerY = height / 2;
-  
+
   const maxCount = Math.max(...left.map(b => b.count), ...right.map(b => b.count), 1);
   const leftSpacing = Math.min(28, (height - 100) / Math.max(left.length, 1));
   const rightSpacing = Math.min(28, (height - 100) / Math.max(right.length, 1));
-  
+
   // Create cubic Bezier curve
   const createCurve = (startX, startY, endX, endY, side) => {
     const dx = endX - startX;
@@ -5187,29 +5220,6 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
     const ctrl2Y = endY;
     return `M ${startX} ${startY} C ${ctrl1X} ${ctrl1Y}, ${ctrl2X} ${ctrl2Y}, ${endX} ${endY}`;
   };
-  
-  // Zoom/Pan handlers
-  const handleWheel = useCallback((e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoomLevel(prev => Math.max(0.3, Math.min(4, prev * delta)));
-  }, []);
-  
-  const handleMouseDown = useCallback((e) => {
-    if (e.button === 0 && !hoveredBranch) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-    }
-  }, [hoveredBranch, panOffset]);
-  
-  const handleMouseMove = useCallback((e) => {
-    if (isDragging) {
-      setPanOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
-    }
-  }, [isDragging, dragStart]);
-  
-  const handleMouseUp = useCallback(() => setIsDragging(false), []);
-  const resetView = useCallback(() => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }, []);
   
   return (
     <div className="relative">
@@ -10463,7 +10473,7 @@ export default function TextAnalysisApp() {
               />
             } />
             <div data-viz="network" className={`flex justify-center overflow-hidden rounded-xl p-4 bg-muted`}>
-              <NetworkGraph cooccurrences={analysisResults.cooccurrences} width={Math.min(800, (typeof window !== "undefined" ? window.innerWidth : 800) - 60)} height={550} />
+              <NetworkGraph cooccurrences={analysisResults.cooccurrences} width={Math.min(800, (typeof window !== "undefined" ? window.innerWidth : 800) - 60)} height={550} isDarkMode={isDarkMode} />
             </div>
           </div>
         )}
