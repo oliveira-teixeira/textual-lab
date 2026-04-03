@@ -11,6 +11,25 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 
+// ==================== VISUALIZATION PALETTE ====================
+// Theme-aware 3-color palette for all SVG visualizations (flat, no shadows)
+const getVizPalette = (isDarkMode) => ({
+  // 3 main colors (purple shades from theme)
+  c1: isDarkMode ? 'oklch(0.680 0.158 276.93)' : 'oklch(0.585 0.204 277.12)',
+  c2: isDarkMode ? 'oklch(0.511 0.230 276.97)' : 'oklch(0.457 0.215 277.02)',
+  c3: isDarkMode ? 'oklch(0.398 0.177 277.37)' : 'oklch(0.359 0.135 278.70)',
+  // Text / UI
+  fg: isDarkMode ? 'oklch(0.929 0.013 255.51)' : 'oklch(0.280 0.037 260.03)',
+  muted: isDarkMode ? 'oklch(0.714 0.019 261.32)' : 'oklch(0.551 0.023 264.36)',
+  border: isDarkMode ? 'oklch(0.446 0.026 256.80)' : 'oklch(0.872 0.009 258.34)',
+  bg: isDarkMode ? 'oklch(0.208 0.040 265.75)' : 'oklch(0.984 0.003 247.86)',
+  card: isDarkMode ? 'oklch(0.280 0.037 260.03)' : 'oklch(1.000 0 0)',
+  // Opacity helpers for SVG
+  c1_20: isDarkMode ? 'oklch(0.680 0.158 276.93 / 0.2)' : 'oklch(0.585 0.204 277.12 / 0.2)',
+  c1_40: isDarkMode ? 'oklch(0.680 0.158 276.93 / 0.4)' : 'oklch(0.585 0.204 277.12 / 0.4)',
+  c1_60: isDarkMode ? 'oklch(0.680 0.158 276.93 / 0.6)' : 'oklch(0.585 0.204 277.12 / 0.6)',
+  tooltip: isDarkMode ? 'oklch(0.208 0.040 265.75 / 0.95)' : 'oklch(1.000 0 0 / 0.95)' });
+
 // ==================== GLOBAL THEME UTILITY ====================
 // Função utilitária para gerar classes baseadas no modo escuro/claro
 const getThemeClasses = (isDarkMode) => ({
@@ -29,7 +48,7 @@ const getThemeClasses = (isDarkMode) => ({
   textDimmed: 'text-muted-foreground/70',
   // Interactive
   button: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  buttonActive: 'bg-indigo-600 text-white',
+  buttonActive: 'bg-primary text-primary-foreground',
   input: 'bg-background border-input',
   hover: 'hover:bg-accent',
   hoverRow: 'hover:bg-muted/50',
@@ -45,8 +64,7 @@ const getThemeClasses = (isDarkMode) => ({
   controlBg: 'bg-card/90 border border-border',
   controlHover: 'hover:bg-accent',
   // Checkbox
-  checkbox: 'border-input bg-background',
-});
+  checkbox: 'border-input bg-background' });
 
 // ==================== UTILITY FUNCTIONS ====================
 
@@ -354,13 +372,13 @@ const HelpTooltip = ({ info }) => {
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         onClick={() => setShowTooltip(!showTooltip)}
-        className="w-5 h-5 rounded-full bg-secondary hover:bg-indigo-700 text-muted-foreground hover:text-white flex items-center justify-center text-xs font-bold transition-colors"
+        className="w-5 h-5 rounded-full bg-secondary hover:bg-primary text-muted-foreground hover:text-white flex items-center justify-center text-xs font-bold transition-colors"
       >
         ?
       </button>
       {showTooltip && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-background border border-indigo-500/50 rounded-lg shadow-xl text-xs text-foreground/80 leading-relaxed">
-          <div className="font-semibold text-indigo-500 dark:text-indigo-400 mb-1">Como funciona:</div>
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-background border border-primary/50 rounded-lg shadow-xl text-xs text-foreground/80 leading-relaxed">
+          <div className="font-semibold text-primary mb-1">Como funciona:</div>
           {info}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-background" />
         </div>
@@ -377,7 +395,7 @@ const VisualizationHeader = ({ vizKey, icon: Icon, extraContent }) => {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-2">
-        {Icon && <Icon className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />}
+        {Icon && <Icon className="w-6 h-6 text-primary" />}
         <h3 className="text-xl font-semibold">{info.title}</h3>
         <HelpTooltip info={info.tooltip} />
         {extraContent}
@@ -425,17 +443,16 @@ const sentimentLexicon = {
   ])
 };
 
-// Paleta de cores para corpus
+// Paleta de cores para corpus (3-color theme palette)
 const corpusColors = [
-  '#22d3ee', '#a78bfa', '#f472b6', '#fb923c', '#4ade80', 
-  '#facc15', '#f87171', '#38bdf8', '#c084fc', '#34d399'
+  'oklch(0.585 0.204 277.12)', 'oklch(0.457 0.215 277.02)', 'oklch(0.359 0.135 278.70)'
 ];
 
 // ==================== CÓDIGOS DE CAPACIDADES COM KEYWORDS ====================
 const capacityCodebook = {
   '1': {
     name: 'Analítica – Individual',
-    color: '#3b82f6', // blue
+    color: 'oklch(0.585 0.204 277.12)',
     codes: {
       '1.1': { 
         name: 'Formação técnica dos profissionais',
@@ -457,7 +474,7 @@ const capacityCodebook = {
   },
   '2': {
     name: 'Analítica – Organizacional',
-    color: '#6366f1', // indigo
+    color: 'oklch(0.457 0.215 277.02)',
     codes: {
       '2.1': { 
         name: 'Sistemas de informação',
@@ -483,7 +500,7 @@ const capacityCodebook = {
   },
   '3': {
     name: 'Analítica – Sistêmica',
-    color: '#8b5cf6', // violet
+    color: 'oklch(0.359 0.135 278.70)',
     codes: {
       '3.1': { 
         name: 'Parcerias com universidades',
@@ -505,7 +522,7 @@ const capacityCodebook = {
   },
   '4': {
     name: 'Operacional – Individual',
-    color: '#10b981', // emerald
+    color: 'oklch(0.585 0.204 277.12)',
     codes: {
       '4.1': { 
         name: 'Gestão de equipes',
@@ -523,7 +540,7 @@ const capacityCodebook = {
   },
   '5': {
     name: 'Operacional – Organizacional',
-    color: '#14b8a6', // teal
+    color: 'oklch(0.457 0.215 277.02)',
     codes: {
       '5.1': { 
         name: 'Recursos financeiros',
@@ -549,7 +566,7 @@ const capacityCodebook = {
   },
   '6': {
     name: 'Operacional – Sistêmica',
-    color: '#06b6d4', // cyan
+    color: 'oklch(0.359 0.135 278.70)',
     codes: {
       '6.1': { 
         name: 'Coordenação federativa',
@@ -571,7 +588,7 @@ const capacityCodebook = {
   },
   '7': {
     name: 'Política – Individual',
-    color: '#f59e0b', // amber
+    color: 'oklch(0.585 0.204 277.12)',
     codes: {
       '7.1': { 
         name: 'Habilidade política',
@@ -593,7 +610,7 @@ const capacityCodebook = {
   },
   '8': {
     name: 'Política – Organizacional',
-    color: '#f97316', // orange
+    color: 'oklch(0.457 0.215 277.02)',
     codes: {
       '8.1': { 
         name: 'Relação com outras secretarias',
@@ -615,7 +632,7 @@ const capacityCodebook = {
   },
   '9': {
     name: 'Política – Sistêmica',
-    color: '#ef4444', // red
+    color: 'oklch(0.359 0.135 278.70)',
     codes: {
       '9.1': { 
         name: 'Participação social',
@@ -641,7 +658,7 @@ const capacityCodebook = {
   },
   '10': {
     name: 'Capacidade Transversal',
-    color: '#ec4899', // pink
+    color: 'oklch(0.585 0.204 277.12)',
     codes: {
       '10.1': { 
         name: 'Financiamento',
@@ -783,12 +800,9 @@ const autoCodeAllDocuments = (documents, allCodes) => {
   return results;
 };
 
-// Paleta de cores para códigos personalizados
+// Paleta de cores para códigos personalizados (3-color theme palette)
 const codeColorPalette = [
-  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
-  '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
-  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
-  '#ec4899', '#f43f5e', '#78716c', '#71717a', '#64748b'
+  'oklch(0.585 0.204 277.12)', 'oklch(0.457 0.215 277.02)', 'oklch(0.359 0.135 278.70)'
 ];
 
 const cleanText = (text, options = {}, customStopwords = null) => {
@@ -1385,11 +1399,9 @@ const detectCommunities = (graph) => {
     modularity /= totalWeight;
   }
   
-  // Cores para comunidades
+  // Cores para comunidades (3-color theme palette)
   const communityColors = [
-    '#22d3ee', '#a78bfa', '#f472b6', '#fb923c', '#4ade80',
-    '#facc15', '#f87171', '#38bdf8', '#c084fc', '#34d399',
-    '#fbbf24', '#a3e635', '#2dd4bf', '#818cf8', '#fb7185'
+    'oklch(0.585 0.204 277.12)', 'oklch(0.457 0.215 277.02)', 'oklch(0.359 0.135 278.70)'
   ];
   
   // Atribuir cores aos nós
@@ -2434,7 +2446,7 @@ const performCHD = (segments, numClasses = 5, options = {}, stopwords = null) =>
       id: i,
       segments: [],
       topWords: [],
-      color: `hsl(${(i * 360) / numClasses}, 70%, 50%)`
+      color: ['oklch(0.585 0.204 277.12)', 'oklch(0.457 0.215 277.02)', 'oklch(0.359 0.135 278.70)'][i % 3]
     };
   }
   
@@ -2552,11 +2564,9 @@ const WordCloudComponent = ({ words, width = 700, height = 500, onWordClick }) =
   // Cores gradiente baseadas na frequência
   const getWordColor = (word, maxCount) => {
     const ratio = word.count / maxCount;
-    if (ratio > 0.7) return '#22d3ee'; // cyan-400
-    if (ratio > 0.5) return '#38bdf8'; // sky-400
-    if (ratio > 0.3) return '#60a5fa'; // blue-400
-    if (ratio > 0.15) return '#818cf8'; // indigo-400
-    return '#a78bfa'; // violet-400
+    if (ratio > 0.5) return 'oklch(0.585 0.204 277.12)';
+    if (ratio > 0.2) return 'oklch(0.457 0.215 277.02)';
+    return 'oklch(0.359 0.135 278.70)';
   };
   
   const maxCount = words.length > 0 ? Math.max(...words.map(w => w.count)) : 1;
@@ -2565,7 +2575,7 @@ const WordCloudComponent = ({ words, width = 700, height = 500, onWordClick }) =
     return (
       <div className="flex items-center justify-center" style={{ width, height }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-muted-foreground">Gerando nuvem de palavras...</p>
         </div>
       </div>
@@ -2578,16 +2588,9 @@ const WordCloudComponent = ({ words, width = 700, height = 500, onWordClick }) =
         width={width} 
         height={height} 
         className="word-cloud rounded-xl"
-        style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.8) 0%, rgba(30,41,59,0.6) 100%)' }}
+        style={{ background: 'none' }}
       >
         <defs>
-          <filter id="wordGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
-            <feMerge>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
         </defs>
         
         <g transform={`translate(${width / 2}, ${height / 2})`}>
@@ -2597,33 +2600,12 @@ const WordCloudComponent = ({ words, width = 700, height = 500, onWordClick }) =
             const isTopWord = word.count > maxCount * 0.5;
             
             return (
-              <g key={idx}>
-                {/* Glow para palavras grandes */}
-                {isTopWord && (
-                  <text
-                    x={word.x}
-                    y={word.y}
-                    fontSize={word.size}
-                    fill={color}
-                    opacity={0.3}
-                    transform={`rotate(${word.rotate || 0}, ${word.x}, ${word.y})`}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    style={{ 
-                      fontFamily: word.font || "'Inter', sans-serif",
-                      fontWeight: 700,
-                      filter: 'blur(8px)'
-                    }}
-                  >
-                    {word.text}
-                  </text>
-                )}
-                {/* Palavra principal */}
+              <g key={idx}>{/* Palavra principal */}
                 <text
                   x={word.x}
                   y={word.y}
                   fontSize={isHovered ? word.size * 1.15 : word.size}
-                  fill={isHovered ? '#fff' : color}
+                  fill={isHovered ? 'oklch(1.000 0 0)' : color}
                   opacity={isHovered ? 1 : word.opacity}
                   transform={`rotate(${word.rotate || 0}, ${word.x}, ${word.y})`}
                   textAnchor="middle"
@@ -2633,7 +2615,7 @@ const WordCloudComponent = ({ words, width = 700, height = 500, onWordClick }) =
                     fontWeight: word.count > maxCount * 0.3 ? 700 : 500,
                     cursor: 'pointer',
                     transition: 'all 0.2s ease-out',
-                    textShadow: isHovered ? '0 0 20px rgba(34,211,238,0.8)' : 'none'
+                    textShadow: isHovered ? 'none' : 'none'
                   }}
                   onMouseEnter={() => setHoveredWord(word.text)}
                   onMouseLeave={() => setHoveredWord(null)}
@@ -2649,10 +2631,10 @@ const WordCloudComponent = ({ words, width = 700, height = 500, onWordClick }) =
       
       {/* Tooltip flutuante */}
       {hoveredWord && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 bg-background/95 border border-indigo-500/40 rounded-xl shadow-2xl shadow-indigo-500/20 z-10 backdrop-blur-sm">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 bg-background/95 border border-primary/40 rounded-xl shadow-lg z-10 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <span className="text-cyan-300 font-bold text-lg">{hoveredWord}</span>
-            <span className="px-2 py-1 bg-indigo-600/20 text-cyan-300 rounded-lg text-sm font-medium">
+            <span className="text-primary font-bold text-lg">{hoveredWord}</span>
+            <span className="px-2 py-1 bg-primary/20 text-primary rounded-lg text-sm font-medium">
               {positionedWords.find(w => w.text === hoveredWord)?.count || 0}x
             </span>
           </div>
@@ -2917,15 +2899,6 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
         onMouseLeave={handleMouseUp}
       >
         <defs>
-          <linearGradient id="networkLinkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.4"/>
-            <stop offset="50%" stopColor="#a78bfa" stopOpacity="0.7"/>
-            <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.4"/>
-          </linearGradient>
-          <filter id="networkGlow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
@@ -2942,7 +2915,7 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
                 key={`link-${idx}`}
                 d={createCurvedPath(source, target, idx)}
                 fill="none"
-                stroke={isHighlighted ? "#22d3ee" : "url(#networkLinkGradient)"}
+                stroke={isHighlighted ? "oklch(0.585 0.204 277.12)" : "url(#networkLinkGradient)"}
                 strokeWidth={1.5 + (link.weight / graphData.maxWeight) * 3}
                 opacity={hoveredNode ? (isHighlighted ? 0.9 : 0.08) : 0.4}
                 style={{ transition: 'opacity 0.2s' }}
@@ -2966,18 +2939,17 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
                   cx={node.x}
                   cy={node.y}
                   r={node.radius}
-                  fill={`hsl(${200 + node.hubScore * 60}, 75%, ${isHovered ? 65 : 50}%)`}
-                  stroke={isHovered ? "#22d3ee" : "#fff"}
+                  fill={isHovered ? 'oklch(0.680 0.158 276.93)' : 'oklch(0.585 0.204 277.12)'}
+                  stroke={isHovered ? "oklch(0.585 0.204 277.12)" : "oklch(1.000 0 0)"}
                   strokeWidth={isHovered ? 3 : 2}
                   opacity={hoveredNode ? (isHovered ? 1 : (isConnected ? 0.85 : 0.12)) : 0.85}
-                  filter={isHovered ? "url(#networkGlow)" : undefined}
                   style={{ transition: 'opacity 0.2s, fill 0.2s' }}
                 />
                 <text
                   x={node.x}
                   y={node.y - node.radius - 6}
                   textAnchor="middle"
-                  fill={isDarkMode ? "#e2e8f0" : "#1e293b"}
+                  fill={isDarkMode ? "oklch(0.280 0.037 260.03)" : "oklch(0.984 0.003 247.86)"}
                   fontSize={Math.max(9, 10 + node.radius / 4)}
                   fontWeight={isHovered ? 600 : 400}
                   style={{ fontFamily: "'JetBrains Mono', monospace", pointerEvents: 'none' }}
@@ -2997,23 +2969,23 @@ const NetworkGraph = ({ cooccurrences, width = 700, height = 500, isDarkMode = t
               x={0} y={0}
               width={185} height={hoveredNodeData.connections.length > 0 ? 90 + hoveredNodeData.connections.length * 16 : 70}
               rx={8}
-              fill="rgba(15, 23, 42, 0.95)"
-              stroke="#22d3ee"
+              fill="oklch(0.208 0.040 265.75 / 0.95)"
+              stroke="oklch(0.585 0.204 277.12)"
               strokeWidth={1}
             />
-            <text x={10} y={22} fill="#22d3ee" fontSize={13} fontWeight={600}>{hoveredNodeData.id}</text>
-            <text x={10} y={42} fill="#94a3b8" fontSize={10}>
+            <text x={10} y={22} fill="oklch(0.585 0.204 277.12)" fontSize={13} fontWeight={600}>{hoveredNodeData.id}</text>
+            <text x={10} y={42} fill="oklch(0.551 0.023 264.36)" fontSize={10}>
               Hub Score: {(hoveredNodeData.hubScore * 100).toFixed(0)}% (top {100 - hoveredNodeData.percentile}%)
             </text>
-            <text x={10} y={58} fill="#94a3b8" fontSize={10}>
+            <text x={10} y={58} fill="oklch(0.551 0.023 264.36)" fontSize={10}>
               Conexões: {hoveredNodeData.connections.length} | Peso: {hoveredNodeData.weight}
             </text>
             {hoveredNodeData.connections.length > 0 && (
               <>
-                <line x1={10} y1={68} x2={175} y2={68} stroke="#334155" strokeWidth={1} />
-                <text x={10} y={82} fill="#64748b" fontSize={9}>Top conexões:</text>
+                <line x1={10} y1={68} x2={175} y2={68} stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} />
+                <text x={10} y={82} fill="oklch(0.551 0.023 264.36)" fontSize={9}>Top conexões:</text>
                 {hoveredNodeData.connections.map((conn, i) => (
-                  <text key={i} x={15} y={96 + i * 16} fill="#cbd5e1" fontSize={10}>
+                  <text key={i} x={15} y={96 + i * 16} fill="oklch(0.280 0.037 260.03)" fontSize={10}>
                     • {conn.word} ({conn.weight})
                   </text>
                 ))}
@@ -3108,8 +3080,8 @@ const StatisticsPanel = ({ stats }) => {
     { label: 'Documentos', value: stats.documentCount, icon: FileText },
     { label: 'Palavras Totais', value: stats.totalWords.toLocaleString(), icon: Hash },
     { label: 'Formas Únicas (raw)', value: (stats.uniqueWordsRaw || stats.uniqueWords).toLocaleString(), icon: Activity, color: 'text-muted-foreground' },
-    { label: 'Lemas (agrupados)', value: stats.uniqueWords.toLocaleString(), icon: Layers, color: 'text-violet-500 dark:text-violet-400' },
-    { label: 'Grupos c/ Variações', value: (stats.groupedWords || 0).toLocaleString(), icon: GitBranch, color: 'text-indigo-500 dark:text-indigo-400' },
+    { label: 'Lemas (agrupados)', value: stats.uniqueWords.toLocaleString(), icon: Layers, color: 'text-primary' },
+    { label: 'Grupos c/ Variações', value: (stats.groupedWords || 0).toLocaleString(), icon: GitBranch, color: 'text-primary' },
     { label: 'Riqueza Léxica', value: `${stats.lexicalRichness}%`, icon: TrendingUp },
   ] : [
     { label: 'Documentos', value: stats.documentCount, icon: FileText },
@@ -3128,7 +3100,7 @@ const StatisticsPanel = ({ stats }) => {
             key={idx}
             className="bg-gradient-to-br from-card to-background rounded-xl p-4 border border-border hover:border-input transition-all duration-300"
           >
-            <item.icon className={`w-5 h-5 ${item.color || 'text-indigo-500 dark:text-indigo-400'} mb-2`} />
+            <item.icon className={`w-5 h-5 ${item.color || 'text-primary'} mb-2`} />
             <div className="text-2xl font-bold text-foreground mb-1">{item.value}</div>
             <div className={`text-xs text-muted-foreground`}>{item.label}</div>
           </div>
@@ -3137,11 +3109,11 @@ const StatisticsPanel = ({ stats }) => {
       
       {/* Info sobre agrupamento - só mostra se estiver ativo */}
       {stats.groupingEnabled ? (
-        <div className="bg-violet-900/20 border border-violet-300 dark:border-violet-700 rounded-xl p-4">
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <Layers className="w-5 h-5 text-violet-500 dark:text-violet-400 mt-0.5" />
+            <Layers className="w-5 h-5 text-primary mt-0.5" />
             <div>
-              <h4 className="text-sm font-medium text-violet-400">Agrupamento Morfológico Ativo</h4>
+              <h4 className="text-sm font-medium text-primary">Agrupamento Morfológico Ativo</h4>
               <p className="text-xs text-muted-foreground mt-1">
                 Variações de gênero (ministro/ministra), número (singular/plural), linguagem neutra (x, @) e possíveis typos 
                 são automaticamente agrupados na mesma contagem. Clique em qualquer palavra na nuvem para ver todas as variações.
@@ -3245,7 +3217,7 @@ const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500,
     return (
       <div className="flex items-center justify-center" style={{ width, height }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-muted-foreground">Gerando heatmap...</p>
         </div>
       </div>
@@ -3261,12 +3233,10 @@ const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500,
   const hoveredData = hoveredCell !== null ? heatmapData.matrix[hoveredCell] : null;
   
   const getColor = (value) => {
-    if (value === 0) return 'rgba(30, 41, 59, 0.5)';
+    if (value === 0) return 'oklch(0.872 0.009 258.34 / 0.2)';
     const intensity = value / maxValue;
-    if (intensity > 0.7) return `rgba(34, 211, 238, ${0.3 + intensity * 0.7})`;
-    if (intensity > 0.4) return `rgba(56, 189, 248, ${0.3 + intensity * 0.7})`;
-    if (intensity > 0.2) return `rgba(96, 165, 250, ${0.3 + intensity * 0.7})`;
-    return `rgba(129, 140, 248, ${0.3 + intensity * 0.7})`;
+    const opacity = 0.3 + intensity * 0.7;
+    return `oklch(0.585 0.204 277.12 / ${opacity})`;
   };
   
   return (
@@ -3291,10 +3261,6 @@ const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500,
         onMouseLeave={handleMouseUp}
       >
         <defs>
-          <filter id="heatmapGlow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
@@ -3313,11 +3279,10 @@ const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500,
                   width={cellSize - 1}
                   height={cellSize - 1}
                   fill={getColor(cell.value)}
-                  stroke={isHovered ? '#22d3ee' : (isInRow || isInCol) ? '#475569' : 'transparent'}
+                  stroke={isHovered ? 'oklch(0.585 0.204 277.12)' : (isInRow || isInCol) ? 'oklch(0.872 0.009 258.34)' : 'transparent'}
                   strokeWidth={isHovered ? 2 : 1}
                   rx={2}
                   opacity={hoveredCell !== null ? (isHovered ? 1 : (isInRow || isInCol ? 0.7 : 0.25)) : 0.9}
-                  filter={isHovered ? "url(#heatmapGlow)" : undefined}
                   style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
                   onMouseEnter={() => setHoveredCell(idx)}
                   onMouseLeave={() => setHoveredCell(null)}
@@ -3332,7 +3297,7 @@ const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500,
                 x={i * cellSize + cellSize / 2}
                 y={-8}
                 fontSize={9}
-                fill={hoveredData && hoveredData.x === i ? '#22d3ee' : '#94a3b8'}
+                fill={hoveredData && hoveredData.x === i ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.551 0.023 264.36)'}
                 fontWeight={hoveredData && hoveredData.x === i ? 600 : 400}
                 textAnchor="end"
                 transform={`rotate(-45, ${i * cellSize + cellSize / 2}, -8)`}
@@ -3348,7 +3313,7 @@ const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500,
                 x={-8}
                 y={i * cellSize + cellSize / 2 + 4}
                 fontSize={9}
-                fill={hoveredData && hoveredData.y === i ? '#22d3ee' : '#94a3b8'}
+                fill={hoveredData && hoveredData.y === i ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.551 0.023 264.36)'}
                 fontWeight={hoveredData && hoveredData.y === i ? 600 : 400}
                 textAnchor="end"
               >
@@ -3361,10 +3326,10 @@ const HeatmapVisualization = ({ cooccurrences, words, width = 700, height = 500,
         {/* Rich Tooltip */}
         {hoveredData && (
           <g transform={`translate(${width - 200}, 20)`}>
-            <rect x={0} y={0} width={190} height={75} rx={8} fill="rgba(15, 23, 42, 0.95)" stroke="#22d3ee" strokeWidth={1} />
-            <text x={10} y={20} fill="#22d3ee" fontSize={12} fontWeight={600}>Coocorrência</text>
-            <text x={10} y={40} fill="#e2e8f0" fontSize={11}>{hoveredData.word1} ↔ {hoveredData.word2}</text>
-            <text x={10} y={58} fill="#94a3b8" fontSize={10}>
+            <rect x={0} y={0} width={190} height={75} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke="oklch(0.585 0.204 277.12)" strokeWidth={1} />
+            <text x={10} y={20} fill="oklch(0.585 0.204 277.12)" fontSize={12} fontWeight={600}>Coocorrência</text>
+            <text x={10} y={40} fill="oklch(0.280 0.037 260.03)" fontSize={11}>{hoveredData.word1} ↔ {hoveredData.word2}</text>
+            <text x={10} y={58} fill="oklch(0.551 0.023 264.36)" fontSize={10}>
               Frequência: {hoveredData.value} ({((hoveredData.value / maxValue) * 100).toFixed(0)}% do máx)
             </text>
           </g>
@@ -3465,7 +3430,7 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
     return (
       <div className="flex items-center justify-center" style={{ width, height }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-muted-foreground">Gerando treemap...</p>
         </div>
       </div>
@@ -3476,9 +3441,8 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
   const hoveredData = hoveredRect !== null ? treemapData[hoveredRect] : null;
   
   const getColor = (value, idx) => {
-    const hue = 200 + (idx * 7) % 60;
-    const lightness = 45 + (value / maxValue) * 20;
-    return `hsl(${hue}, 70%, ${lightness}%)`;
+    const opacity = 0.5 + (value / maxValue) * 0.5;
+    return `oklch(0.585 0.204 277.12 / ${opacity})`;
   };
   
   return (
@@ -3506,10 +3470,6 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
         onMouseLeave={handleMouseUp}
       >
         <defs>
-          <filter id="treemapGlow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
@@ -3527,11 +3487,10 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
                     width={w}
                     height={h}
                     fill={getColor(leaf.value, idx)}
-                    stroke={isHovered ? '#fff' : 'rgba(15, 23, 42, 0.8)'}
+                    stroke={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.208 0.040 265.75 / 0.8)'}
                     strokeWidth={isHovered ? 3 : 1}
                     rx={4}
                     opacity={hoveredRect !== null ? (isHovered ? 1 : 0.35) : 0.9}
-                    filter={isHovered ? "url(#treemapGlow)" : undefined}
                     style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
                     onMouseEnter={() => setHoveredRect(idx)}
                     onMouseLeave={() => setHoveredRect(null)}
@@ -3542,7 +3501,7 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
                       x={leaf.x0 + w / 2}
                       y={leaf.y0 + h / 2}
                       fontSize={Math.min(14, Math.max(9, w / 6))}
-                      fill={isHovered ? '#fff' : '#0f172a'}
+                      fill={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.984 0.003 247.86)'}
                       fontWeight={isHovered ? 700 : 600}
                       textAnchor="middle"
                       dominantBaseline="middle"
@@ -3557,7 +3516,7 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
                       x={leaf.x0 + w / 2}
                       y={leaf.y0 + h / 2 + 12}
                       fontSize={9}
-                      fill="rgba(15, 23, 42, 0.7)"
+                      fill="oklch(0.208 0.040 265.75 / 0.7)"
                       textAnchor="middle"
                       opacity={hoveredRect !== null ? (isHovered ? 1 : 0.3) : 0.8}
                       style={{ pointerEvents: 'none', transition: 'opacity 0.2s' }}
@@ -3574,10 +3533,10 @@ const TreemapVisualization = ({ words, width = 700, height = 500, onWordClick, i
         {/* Rich Tooltip */}
         {hoveredData && (
           <g transform={`translate(${width - 180}, 20)`}>
-            <rect x={0} y={0} width={170} height={70} rx={8} fill="rgba(15, 23, 42, 0.95)" stroke="#a78bfa" strokeWidth={1} />
-            <text x={10} y={18} fill="#a78bfa" fontSize={13} fontWeight={600}>{hoveredData.data.name}</text>
-            <text x={10} y={38} fill="#94a3b8" fontSize={10}>Frequência: {hoveredData.value}</text>
-            <text x={10} y={54} fill="#94a3b8" fontSize={10}>Rank: #{hoveredData.data.rank} | {((hoveredData.value / maxValue) * 100).toFixed(0)}% do máx</text>
+            <rect x={0} y={0} width={170} height={70} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke="oklch(0.457 0.215 277.02)" strokeWidth={1} />
+            <text x={10} y={18} fill="oklch(0.457 0.215 277.02)" fontSize={13} fontWeight={600}>{hoveredData.data.name}</text>
+            <text x={10} y={38} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Frequência: {hoveredData.value}</text>
+            <text x={10} y={54} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Rank: #{hoveredData.data.rank} | {((hoveredData.value / maxValue) * 100).toFixed(0)}% do máx</text>
           </g>
         )}
       </svg>
@@ -3678,10 +3637,6 @@ const RadarVisualization = ({ codedSegments, codebook, width = 500, height = 500
     <div className="relative">
       <svg width={width} height={height}>
         <defs>
-          <filter id="radarGlow">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         {/* Grid circular */}
@@ -3692,7 +3647,7 @@ const RadarVisualization = ({ codedSegments, codebook, width = 500, height = 500
             cy={centerY}
             r={(radius / levels) * (i + 1)}
             fill="none"
-            stroke="rgba(148, 163, 184, 0.2)"
+            stroke="oklch(0.551 0.023 264.36 / 0.2)"
             strokeWidth={1}
           />
         ))}
@@ -3711,14 +3666,14 @@ const RadarVisualization = ({ codedSegments, codebook, width = 500, height = 500
                 y1={centerY}
                 x2={x2}
                 y2={y2}
-                stroke={isHovered ? d.color || '#22d3ee' : 'rgba(148, 163, 184, 0.3)'}
+                stroke={isHovered ? d.color || 'oklch(0.585 0.204 277.12)' : 'oklch(0.551 0.023 264.36 / 0.3)'}
                 strokeWidth={isHovered ? 2 : 1}
               />
               <text
                 x={points[i].labelX}
                 y={points[i].labelY}
                 fontSize={isHovered ? 12 : 10}
-                fill={isHovered ? d.color || '#22d3ee' : '#94a3b8'}
+                fill={isHovered ? d.color || 'oklch(0.585 0.204 277.12)' : 'oklch(0.551 0.023 264.36)'}
                 fontWeight={isHovered ? 600 : 400}
                 textAnchor="middle"
                 dominantBaseline="middle"
@@ -3732,8 +3687,8 @@ const RadarVisualization = ({ codedSegments, codebook, width = 500, height = 500
         {/* Área preenchida */}
         <path
           d={pathData}
-          fill="rgba(34, 211, 238, 0.25)"
-          stroke="#22d3ee"
+          fill="oklch(0.585 0.204 277.12 / 0.25)"
+          stroke="oklch(0.585 0.204 277.12)"
           strokeWidth={2}
           opacity={hoveredAxis !== null ? 0.5 : 1}
         />
@@ -3752,10 +3707,9 @@ const RadarVisualization = ({ codedSegments, codebook, width = 500, height = 500
                 cx={p.x}
                 cy={p.y}
                 r={isHovered ? 10 : 6}
-                fill={p.color || '#22d3ee'}
-                stroke="#fff"
+                fill={p.color || 'oklch(0.585 0.204 277.12)'}
+                stroke="oklch(1.000 0 0)"
                 strokeWidth={2}
-                filter={isHovered ? "url(#radarGlow)" : undefined}
                 style={{ transition: 'r 0.2s' }}
               />
             </g>
@@ -3765,12 +3719,12 @@ const RadarVisualization = ({ codedSegments, codebook, width = 500, height = 500
         {/* Tooltip */}
         {hoveredData && (
           <g transform={`translate(${width - 170}, 20)`}>
-            <rect x={0} y={0} width={160} height={75 + Math.min(hoveredData.codes.length, 3) * 12} rx={8} fill="rgba(15, 23, 42, 0.95)" stroke={hoveredData.color || '#22d3ee'} strokeWidth={1} />
-            <text x={10} y={18} fill={hoveredData.color || '#22d3ee'} fontSize={12} fontWeight={600}>{hoveredData.axis}</text>
-            <text x={10} y={38} fill="#94a3b8" fontSize={10}>Segmentos: {hoveredData.value}</text>
-            <text x={10} y={54} fill="#94a3b8" fontSize={10}>{((hoveredData.value / totalSegments) * 100).toFixed(1)}% do total</text>
+            <rect x={0} y={0} width={160} height={75 + Math.min(hoveredData.codes.length, 3) * 12} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke={hoveredData.color || 'oklch(0.585 0.204 277.12)'} strokeWidth={1} />
+            <text x={10} y={18} fill={hoveredData.color || 'oklch(0.585 0.204 277.12)'} fontSize={12} fontWeight={600}>{hoveredData.axis}</text>
+            <text x={10} y={38} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Segmentos: {hoveredData.value}</text>
+            <text x={10} y={54} fill="oklch(0.551 0.023 264.36)" fontSize={10}>{((hoveredData.value / totalSegments) * 100).toFixed(1)}% do total</text>
             {hoveredData.codes.slice(0, 3).map((code, i) => (
-              <text key={i} x={15} y={72 + i * 12} fill="#64748b" fontSize={9}>• {code}</text>
+              <text key={i} x={15} y={72 + i * 12} fill="oklch(0.551 0.023 264.36)" fontSize={9}>• {code}</text>
             ))}
           </g>
         )}
@@ -3908,7 +3862,7 @@ const SunburstVisualization = ({ codedSegments, codebook, width = 500, height = 
     return (
       <div className="flex items-center justify-center" style={{ width, height }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-muted-foreground">Gerando sunburst...</p>
         </div>
       </div>
@@ -3928,7 +3882,7 @@ const SunburstVisualization = ({ codedSegments, codebook, width = 500, height = 
   
   const centerX = width / 2;
   const centerY = height / 2;
-  const colors = ['#22d3ee', '#38bdf8', '#818cf8', '#a78bfa', '#f472b6', '#fb923c', '#4ade80', '#facc15'];
+  const colors = ['oklch(0.585 0.204 277.12)', 'oklch(0.585 0.204 277.12)', 'oklch(0.457 0.215 277.02)', 'oklch(0.457 0.215 277.02)', 'oklch(0.359 0.135 278.70)', 'oklch(0.457 0.215 277.02)', 'oklch(0.585 0.204 277.12)', 'oklch(0.457 0.215 277.02)'];
   
   const arc = (d) => {
     if (d.depth === 0) return '';
@@ -3963,7 +3917,7 @@ const SunburstVisualization = ({ codedSegments, codebook, width = 500, height = 
   
   // Tooltip data
   const hoveredData = hoveredArc !== null && sunburstData[hoveredArc] ? sunburstData[hoveredArc] : null;
-  const hoveredColor = hoveredData ? colors[(hoveredData.depth === 1 ? hoveredArc : (hoveredData.parent?.data?.name?.charCodeAt(0) || 0)) % colors.length] : '#22d3ee';
+  const hoveredColor = hoveredData ? colors[(hoveredData.depth === 1 ? hoveredArc : (hoveredData.parent?.data?.name?.charCodeAt(0) || 0)) % colors.length] : 'oklch(0.585 0.204 277.12)';
   
   return (
     <div className="relative">
@@ -3998,22 +3952,10 @@ const SunburstVisualization = ({ codedSegments, codebook, width = 500, height = 
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <defs>
-          <filter id="sunburstGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <radialGradient id="sunburstCenterGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
-          </radialGradient>
         </defs>
         
         <g transform={`translate(${centerX + panOffset.x}, ${centerY + panOffset.y}) scale(${zoomLevel})`}>
           {/* Center glow */}
-          <circle cx={0} cy={0} r={sunburstData[0]?.y1 * 0.3 || 30} fill="url(#sunburstCenterGlow)" />
           
           {/* Arcs */}
           {sunburstData.map((d, idx) => {
@@ -4037,10 +3979,9 @@ const SunburstVisualization = ({ codedSegments, codebook, width = 500, height = 
                 key={idx}
                 d={arc(d)}
                 fill={colors[colorIdx % colors.length]}
-                stroke={isHovered ? '#fff' : '#0f172a'}
+                stroke={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.984 0.003 247.86)'}
                 strokeWidth={isHovered ? 2 : 1}
                 opacity={opacity}
-                filter={isHovered ? "url(#sunburstGlow)" : undefined}
                 style={{ cursor: 'pointer', transition: 'opacity 0.2s, stroke-width 0.15s' }}
                 onMouseEnter={(e) => {
                   e.stopPropagation();
@@ -4052,7 +3993,7 @@ const SunburstVisualization = ({ codedSegments, codebook, width = 500, height = 
           })}
           
           {/* Center label */}
-          <text x={0} y={4} textAnchor="middle" fill="#fbbf24" fontSize={12} fontWeight={600}>
+          <text x={0} y={4} textAnchor="middle" fill="oklch(0.585 0.204 277.12)" fontSize={12} fontWeight={600}>
             {Math.floor(totalValue)} segs
           </text>
         </g>
@@ -4065,21 +4006,21 @@ const SunburstVisualization = ({ codedSegments, codebook, width = 500, height = 
               width={165} 
               height={hoveredData.depth > 1 ? 78 : 60} 
               rx={8} 
-              fill="rgba(15, 23, 42, 0.95)" 
+              fill="oklch(0.208 0.040 265.75 / 0.95)" 
               stroke={hoveredColor} 
               strokeWidth={1.5} 
             />
             <text x={10} y={20} fill={hoveredColor} fontSize={12} fontWeight={600}>
               {hoveredData.data.name.length > 18 ? hoveredData.data.name.slice(0, 18) + '…' : hoveredData.data.name}
             </text>
-            <text x={10} y={38} fill="#e2e8f0" fontSize={11}>
+            <text x={10} y={38} fill="oklch(0.280 0.037 260.03)" fontSize={11}>
               Segmentos: <tspan fontWeight={600}>{Math.floor(hoveredData.value)}</tspan>
             </text>
-            <text x={10} y={54} fill="#94a3b8" fontSize={10}>
+            <text x={10} y={54} fill="oklch(0.551 0.023 264.36)" fontSize={10}>
               {totalValue > 0 ? ((hoveredData.value / totalValue) * 100).toFixed(1) : 0}% do total
             </text>
             {hoveredData.depth > 1 && hoveredData.parent && (
-              <text x={10} y={70} fill="#64748b" fontSize={9}>
+              <text x={10} y={70} fill="oklch(0.551 0.023 264.36)" fontSize={9}>
                 Cat: {hoveredData.parent.data.name}
               </text>
             )}
@@ -4343,9 +4284,9 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
   // Color scale based on distance
   const getEdgeColor = (dist) => {
     const t = dist / maxDist;
-    if (t < 0.33) return '#22d3ee';
-    if (t < 0.66) return '#a78bfa';
-    return '#f472b6';
+    if (t < 0.33) return 'oklch(0.585 0.204 277.12)';
+    if (t < 0.66) return 'oklch(0.457 0.215 277.02)';
+    return 'oklch(0.359 0.135 278.70)';
   };
   
   // Create arc path for circular layout
@@ -4422,27 +4363,16 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <defs>
-          <filter id="dendroGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <radialGradient id="circularBg" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.05" />
-            <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
-          </radialGradient>
         </defs>
         
         <g transform={getTransform()}>
           {/* Circular background rings */}
           {layout === 'circular' && (
             <>
-              <circle cx={0} cy={0} r={maxRadius} fill="none" stroke="#334155" strokeWidth={1} strokeDasharray="4,4" opacity={0.5} />
-              <circle cx={0} cy={0} r={maxRadius * 0.66} fill="none" stroke="#334155" strokeWidth={1} strokeDasharray="4,4" opacity={0.3} />
-              <circle cx={0} cy={0} r={maxRadius * 0.33} fill="none" stroke="#334155" strokeWidth={1} strokeDasharray="4,4" opacity={0.2} />
-              <circle cx={0} cy={0} r={maxRadius * 0.15} fill="url(#circularBg)" />
+              <circle cx={0} cy={0} r={maxRadius} fill="none" stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} strokeDasharray="4,4" opacity={0.5} />
+              <circle cx={0} cy={0} r={maxRadius * 0.66} fill="none" stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} strokeDasharray="4,4" opacity={0.3} />
+              <circle cx={0} cy={0} r={maxRadius * 0.33} fill="none" stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} strokeDasharray="4,4" opacity={0.2} />
+              <circle cx={0} cy={0} r={maxRadius * 0.15} fill="transparent" />
             </>
           )}
           
@@ -4543,7 +4473,7 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
                     y1={leaf.y}
                     x2={leaf.labelX}
                     y2={leaf.labelY}
-                    stroke="#475569"
+                    stroke="oklch(0.872 0.009 258.34)"
                     strokeWidth={1}
                     strokeDasharray="2,2"
                     opacity={0.5}
@@ -4554,20 +4484,19 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
                   cx={leaf.x}
                   cy={leaf.y}
                   r={isHovered ? 8 : 5 + freqNorm * 3}
-                  fill={`hsl(${180 + freqNorm * 60}, 70%, ${55 + freqNorm * 15}%)`}
-                  stroke={isHovered ? '#fff' : '#0f172a'}
+                  fill={isHovered ? 'oklch(0.680 0.158 276.93)' : 'oklch(0.585 0.204 277.12)'}
+                  stroke={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.984 0.003 247.86)'}
                   strokeWidth={isHovered ? 2 : 1.5}
-                  filter={isHovered ? "url(#dendroGlow)" : undefined}
                   style={{ transition: 'r 0.15s, stroke-width 0.15s' }}
                 />
                 <text
                   x={labelX}
                   y={labelY}
-                  fill={isHovered ? '#22d3ee' : '#e2e8f0'}
+                  fill={isHovered ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.280 0.037 260.03)'}
                   fontSize={isHovered ? 12 : 11}
                   fontWeight={isHovered ? 600 : 400}
                   textAnchor={textAnchor}
-                  style={{ transition: 'fill 0.15s', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
+                  style={{ transition: 'fill 0.15s' }}
                 >
                   {leaf.label}
                 </text>
@@ -4577,35 +4506,35 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
           
           {/* Center dot for circular */}
           {layout === 'circular' && (
-            <circle cx={0} cy={0} r={4} fill="#22d3ee" opacity={0.6} />
+            <circle cx={0} cy={0} r={4} fill="oklch(0.585 0.204 277.12)" opacity={0.6} />
           )}
         </g>
         
         {/* Distance scale */}
         {layout !== 'circular' && (
           <g transform={`translate(${margin.left}, ${height - 25})`}>
-            <text x={0} y={0} fill="#64748b" fontSize={10}>0</text>
-            <line x1={20} y1={-4} x2={120} y2={-4} stroke="#475569" strokeWidth={1} />
-            <text x={125} y={0} fill="#64748b" fontSize={10}>{maxDist.toFixed(2)}</text>
-            <text x={70} y={12} fill="#64748b" fontSize={9} textAnchor="middle">Distância</text>
+            <text x={0} y={0} fill="oklch(0.551 0.023 264.36)" fontSize={10}>0</text>
+            <line x1={20} y1={-4} x2={120} y2={-4} stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} />
+            <text x={125} y={0} fill="oklch(0.551 0.023 264.36)" fontSize={10}>{maxDist.toFixed(2)}</text>
+            <text x={70} y={12} fill="oklch(0.551 0.023 264.36)" fontSize={9} textAnchor="middle">Distância</text>
           </g>
         )}
         
         {/* Circular legend */}
         {layout === 'circular' && (
           <g transform={`translate(20, ${height - 50})`}>
-            <text x={0} y={0} fill="#64748b" fontSize={10}>Centro = Alta similaridade</text>
-            <text x={0} y={14} fill="#64748b" fontSize={10}>Borda = Baixa similaridade</text>
+            <text x={0} y={0} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Centro = Alta similaridade</text>
+            <text x={0} y={14} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Borda = Baixa similaridade</text>
           </g>
         )}
         
         {/* Tooltip */}
         {hoveredNode && (
           <g transform={`translate(${Math.min(mousePos.x + 15, width - 160)}, ${Math.max(mousePos.y - 10, 10)})`}>
-            <rect x={0} y={0} width={150} height={65} rx={8} fill="rgba(15, 23, 42, 0.95)" stroke="#22d3ee" strokeWidth={1.5} />
-            <text x={10} y={20} fill="#22d3ee" fontSize={12} fontWeight={600}>{hoveredNode.label}</text>
-            <text x={10} y={38} fill="#e2e8f0" fontSize={11}>Frequência: {hoveredNode.freq}</text>
-            <text x={10} y={54} fill="#94a3b8" fontSize={10}>
+            <rect x={0} y={0} width={150} height={65} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke="oklch(0.585 0.204 277.12)" strokeWidth={1.5} />
+            <text x={10} y={20} fill="oklch(0.585 0.204 277.12)" fontSize={12} fontWeight={600}>{hoveredNode.label}</text>
+            <text x={10} y={38} fill="oklch(0.280 0.037 260.03)" fontSize={11}>Frequência: {hoveredNode.freq}</text>
+            <text x={10} y={54} fill="oklch(0.551 0.023 264.36)" fontSize={10}>
               {layout === 'circular' ? `Ângulo: ${(hoveredNode.angle * 180 / Math.PI).toFixed(0)}°` : `Posição: ${hoveredNode.y?.toFixed(0) || 0}`}
             </text>
           </g>
@@ -4616,7 +4545,7 @@ const DendrogramVisualization = ({ words, frequencies, linkageMatrix, width = 70
       <div className="absolute bottom-2 left-2 text-xs text-muted-foreground bg-background/70 px-2 py-1 rounded flex items-center gap-2">
         <span>{Math.round(zoomLevel * 100)}%</span>
         <span className="text-muted-foreground">|</span>
-        <span className="text-emerald-400">{layoutLabel}</span>
+        <span className="text-primary">{layoutLabel}</span>
       </div>
     </div>
   );
@@ -4650,19 +4579,19 @@ const CentralityMetricsPanel = ({ networkAnalysis, onNodeClick, isDarkMode = tru
       {/* Métricas Globais */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
-          <div className="text-3xl font-bold text-indigo-500 dark:text-indigo-400">{metrics.nodeCount}</div>
+          <div className="text-3xl font-bold text-primary">{metrics.nodeCount}</div>
           <div className={`text-sm ${t.textMuted}`}>Nós</div>
         </div>
         <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
-          <div className="text-3xl font-bold text-violet-500 dark:text-violet-400">{metrics.edgeCount}</div>
+          <div className="text-3xl font-bold text-primary">{metrics.edgeCount}</div>
           <div className={`text-sm ${t.textMuted}`}>Arestas</div>
         </div>
         <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
-          <div className="text-3xl font-bold text-green-400">{metrics.density}</div>
+          <div className="text-3xl font-bold text-primary">{metrics.density}</div>
           <div className={`text-sm ${t.textMuted}`}>Densidade</div>
         </div>
         <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
-          <div className="text-3xl font-bold text-amber-400">{metrics.avgDegree}</div>
+          <div className="text-3xl font-bold text-muted-foreground">{metrics.avgDegree}</div>
           <div className={`text-sm ${t.textMuted}`}>Grau Médio</div>
         </div>
       </div>
@@ -4681,7 +4610,7 @@ const CentralityMetricsPanel = ({ networkAnalysis, onNodeClick, isDarkMode = tru
             onClick={() => setSortBy(opt.key)}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               sortBy === opt.key 
-                ? 'bg-indigo-700 text-white' 
+                ? 'bg-primary text-white' 
                 : t.button
             }`}
             title={opt.desc}
@@ -4716,16 +4645,16 @@ const CentralityMetricsPanel = ({ networkAnalysis, onNodeClick, isDarkMode = tru
                   <td className={`px-4 py-2 ${t.textDimmed}`}>{idx + 1}</td>
                   <td className={`px-4 py-2 font-medium ${t.text}`}>{node.id}</td>
                   <td className="px-4 py-2 text-right">
-                    <span className="text-indigo-500 dark:text-indigo-400">{node.degree}</span>
+                    <span className="text-primary">{node.degree}</span>
                     <span className={`${t.textDimmed} text-xs ml-1`}>({(node.degreeCentrality * 100).toFixed(1)}%)</span>
                   </td>
-                  <td className="px-4 py-2 text-right text-violet-500 dark:text-violet-400">{(node.betweennessCentrality * 100).toFixed(2)}%</td>
-                  <td className="px-4 py-2 text-right text-green-400">{(node.closenessCentrality * 100).toFixed(2)}%</td>
-                  <td className="px-4 py-2 text-right text-amber-400">{(node.eigenvectorCentrality * 100).toFixed(2)}%</td>
+                  <td className="px-4 py-2 text-right text-primary">{(node.betweennessCentrality * 100).toFixed(2)}%</td>
+                  <td className="px-4 py-2 text-right text-primary">{(node.closenessCentrality * 100).toFixed(2)}%</td>
+                  <td className="px-4 py-2 text-right text-muted-foreground">{(node.eigenvectorCentrality * 100).toFixed(2)}%</td>
                   <td className="px-4 py-2 text-center">
                     <span 
                       className="inline-block w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold"
-                      style={{ backgroundColor: node.communityColor || '#6366f1' }}
+                      style={{ backgroundColor: node.communityColor || 'oklch(0.457 0.215 277.02)' }}
                     >
                       {node.community + 1}
                     </span>
@@ -4739,7 +4668,7 @@ const CentralityMetricsPanel = ({ networkAnalysis, onNodeClick, isDarkMode = tru
           <div className={`p-3 border-t ${t.divider} text-center`}>
             <button
               onClick={() => setShowCount(prev => prev + 20)}
-              className="text-sm text-indigo-500 dark:text-indigo-400 hover:text-indigo-400"
+              className="text-sm text-primary hover:text-primary"
             >
               Mostrar mais ({nodes.length - showCount} restantes)
             </button>
@@ -4764,12 +4693,12 @@ const CommunitiesPanel = ({ networkAnalysis, isDarkMode = true }) => {
     <div className="space-y-6">
       {/* Resumo */}
       <div className="grid grid-cols-2 gap-4">
-        <div className={`bg-gradient-to-br from-purple-100 to-indigo-100 dark:bg-gradient-to-br from-purple-900/30 to-indigo-900/30 rounded-xl p-4 border border-purple-300 dark:border-violet-300 dark:border-violet-700`}>
-          <div className="text-3xl font-bold text-violet-500 dark:text-violet-400">{communityCount}</div>
+        <div className={`bg-primary/10 rounded-xl p-4 border border-primary/30 dark:border-primary/30`}>
+          <div className="text-3xl font-bold text-primary">{communityCount}</div>
           <div className={`text-sm ${t.textMuted}`}>Comunidades Detectadas</div>
         </div>
-        <div className={`bg-gradient-to-br from-indigo-100 to-blue-100 dark:bg-gradient-to-br from-indigo-900/30 to-blue-900/30 rounded-xl p-4 border border-indigo-300 dark:border-indigo-500/30`}>
-          <div className="text-3xl font-bold text-indigo-400">{modularity}</div>
+        <div className={`bg-primary/10 rounded-xl p-4 border border-primary/30 dark:border-primary/30`}>
+          <div className="text-3xl font-bold text-primary">{modularity}</div>
           <div className={`text-sm ${t.textMuted}`}>Modularidade (Q)</div>
           <div className={`text-xs ${t.textDimmed} mt-1`}>
             {parseFloat(modularity) > 0.3 ? 'Estrutura comunitária forte' : 
@@ -4868,7 +4797,7 @@ const AssociationsPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
             onClick={() => setSortBy(opt.key)}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               sortBy === opt.key 
-                ? 'bg-amber-600 text-white' 
+                ? 'bg-secondary text-white' 
                 : t.button
             }`}
             title={opt.desc}
@@ -4897,15 +4826,15 @@ const AssociationsPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
               {sortedAssociations.slice(0, 50).map((assoc, idx) => (
                 <tr key={idx} className={t.hoverRow}>
                   <td className="px-3 py-2">
-                    <span className="text-indigo-500 dark:text-indigo-400">{assoc.source}</span>
+                    <span className="text-primary">{assoc.source}</span>
                     <span className={`${t.textDimmed} mx-1`}>↔</span>
-                    <span className="text-violet-500 dark:text-violet-400">{assoc.target}</span>
+                    <span className="text-primary">{assoc.target}</span>
                   </td>
                   <td className={`px-3 py-2 text-right font-medium ${t.text}`}>{assoc.cooccurrence}</td>
                   <td className={`px-3 py-2 text-right ${t.textMuted}`}>{assoc.expected}</td>
-                  <td className="px-3 py-2 text-right text-amber-400">{assoc.chiSquare}</td>
-                  <td className="px-3 py-2 text-right text-green-400">{assoc.pmi}</td>
-                  <td className="px-3 py-2 text-right text-blue-400">{assoc.dice}</td>
+                  <td className="px-3 py-2 text-right text-muted-foreground">{assoc.chiSquare}</td>
+                  <td className="px-3 py-2 text-right text-primary">{assoc.pmi}</td>
+                  <td className="px-3 py-2 text-right text-primary">{assoc.dice}</td>
                   <td className="px-3 py-2 text-right text-rose-400">{assoc.jaccard}</td>
                 </tr>
               ))}
@@ -4941,18 +4870,18 @@ const LexicalDiversityPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
   ];
   
   const colorClasses = false ? {
-    cyan: 'text-indigo-500 dark:text-indigo-400 border-indigo-500/30 bg-cyan-900/20',
-    purple: 'text-violet-500 dark:text-violet-400 border-violet-300 dark:border-violet-700 bg-violet-900/20',
-    blue: 'text-blue-400 border-blue-500/30 bg-blue-900/20',
-    green: 'text-green-400 border-green-500/30 bg-green-900/20',
-    amber: 'text-amber-400 border-amber-500/30 bg-amber-900/20',
+    cyan: 'text-primary border-primary/30 bg-primary/10',
+    purple: 'text-primary border-primary/30 bg-primary/10',
+    blue: 'text-primary border-primary/30 bg-primary/10',
+    green: 'text-primary border-primary/30 bg-primary/10',
+    amber: 'text-muted-foreground border-border bg-muted',
     rose: 'text-rose-400 border-rose-500/30 bg-rose-900/20'
   } : {
-    cyan: 'text-indigo-600 border-cyan-300 bg-cyan-50',
-    purple: 'text-violet-600 border-purple-300 bg-violet-50',
-    blue: 'text-blue-600 border-blue-300 bg-blue-50',
-    green: 'text-green-600 border-green-300 bg-green-50',
-    amber: 'text-amber-600 border-amber-300 bg-amber-50',
+    cyan: 'text-primary border-primary/30 bg-primary/5',
+    purple: 'text-primary border-primary/30 bg-primary/5',
+    blue: 'text-primary border-primary/30 bg-primary/5',
+    green: 'text-primary border-primary/30 bg-primary/5',
+    amber: 'text-muted-foreground border-border bg-muted',
     rose: 'text-rose-600 border-rose-300 bg-rose-50'
   };
   
@@ -4965,11 +4894,11 @@ const LexicalDiversityPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
           <div className={`text-sm ${t.textMuted}`}>Total de Tokens</div>
         </div>
         <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
-          <div className="text-2xl font-bold text-indigo-500 dark:text-indigo-400">{ld.uniqueWords.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-primary">{ld.uniqueWords.toLocaleString()}</div>
           <div className={`text-sm ${t.textMuted}`}>Palavras Únicas</div>
         </div>
         <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
-          <div className="text-2xl font-bold text-violet-500 dark:text-violet-400">{ld.hapaxCount.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-primary">{ld.hapaxCount.toLocaleString()}</div>
           <div className={`text-sm ${t.textMuted}`}>Hapax Legomena ({ld.hapaxRatio}%)</div>
         </div>
       </div>
@@ -5026,7 +4955,7 @@ const TFIDFPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
       {/* TF-IDF Global */}
       <div>
         <h4 className="font-medium mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+          <TrendingUp className="w-4 h-4 text-primary" />
           Termos mais Discriminantes (TF-IDF Global)
         </h4>
         <div className={`${t.cardInner} rounded-xl p-4 border ${t.cardInnerBorder}`}>
@@ -5037,11 +4966,11 @@ const TFIDFPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
                 className="px-2 py-1 rounded text-sm"
                 style={{
                   backgroundColor: false 
-                    ? `rgba(34, 211, 238, ${0.1 + (term.avgTfidf * 2)})` 
-                    : `rgba(8, 145, 178, ${0.1 + (term.avgTfidf * 2)})`,
+                    ? `oklch(0.585 0.204 277.12 / ${0.1 + (term.avgTfidf * 2)})` 
+                    : `oklch(0.457 0.215 277.02 / ${0.1 + (term.avgTfidf * 2)})`,
                   color: false 
-                    ? (idx < 10 ? '#22d3ee' : idx < 20 ? '#a78bfa' : '#94a3b8')
-                    : (idx < 10 ? '#0891b2' : idx < 20 ? '#7c3aed' : '#475569')
+                    ? (idx < 10 ? 'oklch(0.585 0.204 277.12)' : idx < 20 ? 'oklch(0.457 0.215 277.02)' : 'oklch(0.551 0.023 264.36)')
+                    : (idx < 10 ? 'oklch(0.585 0.204 277.12)' : idx < 20 ? 'oklch(0.457 0.215 277.02)' : 'oklch(0.872 0.009 258.34)')
                 }}
                 title={`TF-IDF médio: ${term.avgTfidf.toFixed(4)}, Documentos: ${term.docCount}`}
               >
@@ -5055,7 +4984,7 @@ const TFIDFPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
       {/* TF-IDF por Documento */}
       <div>
         <h4 className="font-medium mb-3 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+          <FileText className="w-4 h-4 text-primary" />
           TF-IDF por Documento
         </h4>
         <div className="space-y-2">
@@ -5090,9 +5019,9 @@ const TFIDFPanel = ({ statisticalAnalysis, isDarkMode = true }) => {
                       <tbody className={`divide-y ${t.tableDivide}`}>
                         {doc.topTerms.slice(0, 15).map(term => (
                           <tr key={term.word}>
-                            <td className="px-2 py-1 text-indigo-500 dark:text-indigo-400">{term.word}</td>
+                            <td className="px-2 py-1 text-primary">{term.word}</td>
                             <td className={`px-2 py-1 text-right ${t.textMuted}`}>{term.tf.toFixed(4)}</td>
-                            <td className="px-2 py-1 text-right text-violet-500 dark:text-violet-400">{term.idf.toFixed(2)}</td>
+                            <td className="px-2 py-1 text-right text-primary">{term.idf.toFixed(2)}</td>
                             <td className={`px-2 py-1 text-right font-medium ${t.text}`}>{term.tfidf.toFixed(4)}</td>
                           </tr>
                         ))}
@@ -5148,7 +5077,7 @@ const SpecificitiesPanel = ({ statisticalAnalysis }) => {
           <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
             {/* Termos Específicos (positivos) */}
             <div className="p-4">
-              <h5 className="text-sm font-medium text-green-400 mb-3">
+              <h5 className="text-sm font-medium text-primary mb-3">
                 ↑ Termos Específicos (acima do esperado)
               </h5>
               <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -5157,7 +5086,7 @@ const SpecificitiesPanel = ({ statisticalAnalysis }) => {
                     <span className="text-white">{term.word}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">{term.observed}x</span>
-                      <span className="text-green-400 text-xs">+{term.ratio}x</span>
+                      <span className="text-primary text-xs">+{term.ratio}x</span>
                     </div>
                   </div>
                 ))}
@@ -5269,18 +5198,6 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
         onMouseLeave={handleMouseUp}
       >
         <defs>
-          <linearGradient id="leftBranchGradient" x1="100%" y1="0%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.7"/>
-            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.3"/>
-          </linearGradient>
-          <linearGradient id="rightBranchGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.7"/>
-            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.3"/>
-          </linearGradient>
-          <filter id="treeGlow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
@@ -5301,24 +5218,23 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
                 <path
                   d={createCurve(centerX - 65, centerY, centerX - 65 - lineWidth, y, 'left')}
                   fill="none"
-                  stroke={isHovered ? '#22d3ee' : 'url(#leftBranchGradient)'}
+                  stroke={isHovered ? 'oklch(0.585 0.204 277.12)' : p.c1_40}
                   strokeWidth={isHovered ? 3 : 1.5 + (branch.count / maxCount) * 2.5}
                   opacity={anyHovered ? (isHovered ? 1 : 0.15) : 0.6}
-                  filter={isHovered ? "url(#treeGlow)" : undefined}
                   style={{ transition: 'opacity 0.2s' }}
                 />
                 <circle
                   cx={centerX - 65 - lineWidth}
                   cy={y}
                   r={isHovered ? 5 : 3}
-                  fill={isHovered ? '#22d3ee' : '#06b6d4'}
+                  fill={isHovered ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.585 0.204 277.12)'}
                   opacity={anyHovered ? (isHovered ? 1 : 0.2) : 0.7}
                 />
                 <text
                   x={centerX - 75 - lineWidth}
                   y={y + 4}
                   textAnchor="end"
-                  fill={isDarkMode ? (isHovered ? '#22d3ee' : '#94a3b8') : (isHovered ? '#0891b2' : '#475569')}
+                  fill={isDarkMode ? (isHovered ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.551 0.023 264.36)') : (isHovered ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.872 0.009 258.34)')}
                   fontSize={isHovered ? 13 : 11}
                   fontWeight={isHovered ? 600 : 400}
                   opacity={anyHovered ? (isHovered ? 1 : 0.25) : 0.9}
@@ -5327,7 +5243,7 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
                   {branch.path}
                 </text>
                 {isHovered && (
-                  <text x={centerX - 75 - lineWidth} y={y + 17} textAnchor="end" fill="#64748b" fontSize={9}>
+                  <text x={centerX - 75 - lineWidth} y={y + 17} textAnchor="end" fill="oklch(0.551 0.023 264.36)" fontSize={9}>
                     {branch.count}x ocorrências
                   </text>
                 )}
@@ -5336,9 +5252,9 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
           })}
           
           {/* Center word */}
-          <rect x={centerX - 85} y={centerY - 22} width={170} height={44} rx={10} fill="#22d3ee" opacity={0.15} />
-          <rect x={centerX - 85} y={centerY - 22} width={170} height={44} rx={10} fill="none" stroke="#22d3ee" strokeWidth={2} opacity={0.5} />
-          <text x={centerX} y={centerY + 7} textAnchor="middle" fill="#22d3ee" fontSize={20} fontWeight={700}>
+          <rect x={centerX - 85} y={centerY - 22} width={170} height={44} rx={10} fill="oklch(0.585 0.204 277.12)" opacity={0.15} />
+          <rect x={centerX - 85} y={centerY - 22} width={170} height={44} rx={10} fill="none" stroke="oklch(0.585 0.204 277.12)" strokeWidth={2} opacity={0.5} />
+          <text x={centerX} y={centerY + 7} textAnchor="middle" fill="oklch(0.585 0.204 277.12)" fontSize={20} fontWeight={700}>
             {center}
           </text>
           
@@ -5359,24 +5275,23 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
                 <path
                   d={createCurve(centerX + 65, centerY, centerX + 65 + lineWidth, y, 'right')}
                   fill="none"
-                  stroke={isHovered ? '#a78bfa' : 'url(#rightBranchGradient)'}
+                  stroke={isHovered ? 'oklch(0.457 0.215 277.02)' : p.c2_40}
                   strokeWidth={isHovered ? 3 : 1.5 + (branch.count / maxCount) * 2.5}
                   opacity={anyHovered ? (isHovered ? 1 : 0.15) : 0.6}
-                  filter={isHovered ? "url(#treeGlow)" : undefined}
                   style={{ transition: 'opacity 0.2s' }}
                 />
                 <circle
                   cx={centerX + 65 + lineWidth}
                   cy={y}
                   r={isHovered ? 5 : 3}
-                  fill={isHovered ? '#a78bfa' : '#8b5cf6'}
+                  fill={isHovered ? 'oklch(0.457 0.215 277.02)' : 'oklch(0.457 0.215 277.02)'}
                   opacity={anyHovered ? (isHovered ? 1 : 0.2) : 0.7}
                 />
                 <text
                   x={centerX + 75 + lineWidth}
                   y={y + 4}
                   textAnchor="start"
-                  fill={isDarkMode ? (isHovered ? '#a78bfa' : '#94a3b8') : (isHovered ? '#7c3aed' : '#475569')}
+                  fill={isDarkMode ? (isHovered ? 'oklch(0.457 0.215 277.02)' : 'oklch(0.551 0.023 264.36)') : (isHovered ? 'oklch(0.457 0.215 277.02)' : 'oklch(0.872 0.009 258.34)')}
                   fontSize={isHovered ? 13 : 11}
                   fontWeight={isHovered ? 600 : 400}
                   opacity={anyHovered ? (isHovered ? 1 : 0.25) : 0.9}
@@ -5385,7 +5300,7 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
                   {branch.path}
                 </text>
                 {isHovered && (
-                  <text x={centerX + 75 + lineWidth} y={y + 17} textAnchor="start" fill="#64748b" fontSize={9}>
+                  <text x={centerX + 75 + lineWidth} y={y + 17} textAnchor="start" fill="oklch(0.551 0.023 264.36)" fontSize={9}>
                     {branch.count}x ocorrências
                   </text>
                 )}
@@ -5397,11 +5312,11 @@ const WordTreeVisualization = ({ wordTree, width = 900, height = 500, isDarkMode
         {/* Tooltip */}
         {tooltipData && (
           <g transform={`translate(${width / 2 + (tooltipData.side === 'left' ? -180 : 20)}, ${height - 60})`}>
-            <rect x={0} y={0} width={160} height={50} rx={6} fill="rgba(15, 23, 42, 0.95)" stroke={tooltipData.side === 'left' ? '#22d3ee' : '#a78bfa'} strokeWidth={1} />
-            <text x={10} y={18} fill={tooltipData.side === 'left' ? '#22d3ee' : '#a78bfa'} fontSize={11} fontWeight={600}>
+            <rect x={0} y={0} width={160} height={50} rx={6} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke={tooltipData.side === 'left' ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.457 0.215 277.02)'} strokeWidth={1} />
+            <text x={10} y={18} fill={tooltipData.side === 'left' ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.457 0.215 277.02)'} fontSize={11} fontWeight={600}>
               {tooltipData.branch.path}
             </text>
-            <text x={10} y={36} fill="#94a3b8" fontSize={10}>
+            <text x={10} y={36} fill="oklch(0.551 0.023 264.36)" fontSize={10}>
               Frequência: {tooltipData.branch.count} ({((tooltipData.branch.count / maxCount) * 100).toFixed(0)}%)
             </text>
           </g>
@@ -5626,15 +5541,11 @@ const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600, 
       >
         <defs>
           <marker id="bigramArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6 Z" fill="#64748b" />
+            <path d="M0,0 L6,3 L0,6 Z" fill="oklch(0.551 0.023 264.36)" />
           </marker>
           <marker id="bigramArrowHighlight" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6 Z" fill="#22d3ee" />
+            <path d="M0,0 L6,3 L0,6 Z" fill="oklch(0.585 0.204 277.12)" />
           </marker>
-          <filter id="bigramGlow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
@@ -5651,7 +5562,7 @@ const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600, 
                 key={`edge-${idx}`}
                 d={createCurvedPath(p1, p2, idx)}
                 fill="none"
-                stroke={isHighlighted ? '#22d3ee' : '#475569'}
+                stroke={isHighlighted ? 'oklch(0.585 0.204 277.12)' : 'oklch(0.872 0.009 258.34)'}
                 strokeWidth={1 + (edge.weight / maxEdgeWeight) * 3}
                 opacity={hoveredNode ? (isHighlighted ? 0.9 : 0.08) : 0.4}
                 markerEnd={isHighlighted ? "url(#bigramArrowHighlight)" : "url(#bigramArrow)"}
@@ -5677,11 +5588,10 @@ const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600, 
                   cx={node.x}
                   cy={node.y}
                   r={isHovered ? size + 3 : size}
-                  fill={`hsl(${210 + (node.degree || 0) * 5}, 70%, ${isHovered ? 60 : 50}%)`}
-                  stroke={isHovered ? '#fff' : 'transparent'}
+                  fill={isHovered ? 'oklch(0.680 0.158 276.93)' : 'oklch(0.585 0.204 277.12)'}
+                  stroke={isHovered ? 'oklch(1.000 0 0)' : 'transparent'}
                   strokeWidth={2}
                   opacity={hoveredNode ? (isHovered ? 1 : (isConnected ? 0.85 : 0.1)) : 0.85}
-                  filter={isHovered ? "url(#bigramGlow)" : undefined}
                   style={{ transition: 'opacity 0.2s' }}
                 />
                 <text
@@ -5704,12 +5614,12 @@ const BigramNetworkVisualization = ({ bigramNetwork, width = 800, height = 600, 
         {/* Tooltip */}
         {hoveredNodeData && (
           <g transform={`translate(${Math.min(tooltipPos.x * zoomLevel + panOffset.x + 20, width - 180)}, ${Math.max(tooltipPos.y * zoomLevel + panOffset.y - 10, 10)})`}>
-            <rect x={0} y={0} width={165} height={70 + Math.min(hoveredNodeData.connections.length, 4) * 14} rx={8} fill="rgba(15, 23, 42, 0.95)" stroke="#22d3ee" strokeWidth={1} />
-            <text x={10} y={20} fill="#22d3ee" fontSize={12} fontWeight={600}>{hoveredNodeData.id}</text>
-            <text x={10} y={38} fill="#94a3b8" fontSize={10}>Grau: {hoveredNodeData.degree} | Peso: {hoveredNodeData.weight}</text>
-            <text x={10} y={54} fill="#94a3b8" fontSize={10}>Conexões: {hoveredNodeData.connections.length}</text>
+            <rect x={0} y={0} width={165} height={70 + Math.min(hoveredNodeData.connections.length, 4) * 14} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke="oklch(0.585 0.204 277.12)" strokeWidth={1} />
+            <text x={10} y={20} fill="oklch(0.585 0.204 277.12)" fontSize={12} fontWeight={600}>{hoveredNodeData.id}</text>
+            <text x={10} y={38} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Grau: {hoveredNodeData.degree} | Peso: {hoveredNodeData.weight}</text>
+            <text x={10} y={54} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Conexões: {hoveredNodeData.connections.length}</text>
             {hoveredNodeData.connections.slice(0, 4).map((conn, i) => (
-              <text key={i} x={15} y={70 + i * 14} fill="#cbd5e1" fontSize={9}>• {conn.id} ({conn.weight})</text>
+              <text key={i} x={15} y={70 + i * 14} fill="oklch(0.280 0.037 260.03)" fontSize={9}>• {conn.id} ({conn.weight})</text>
             ))}
           </g>
         )}
@@ -5801,7 +5711,7 @@ const TermsBerryVisualization = ({ words, width = 700, height = 700, onWordClick
     return (
       <div className="flex items-center justify-center" style={{ width, height }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-muted-foreground">Gerando TermsBerry...</p>
         </div>
       </div>
@@ -5867,18 +5777,14 @@ const TermsBerryVisualization = ({ words, width = 700, height = 700, onWordClick
         onMouseLeave={handleMouseUp}
       >
         <defs>
-          <filter id="termsberryGlow">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
           {packedCircles.map((circle, idx) => {
             const isHovered = hoveredWord === circle.word;
             const intensity = circle.count / maxCount;
-            const hue = 200 + intensity * 40;
-            const fillColor = `hsl(${hue}, 70%, ${45 + intensity * 15}%)`;
+            const opacity = 0.4 + intensity * 0.6;
+            const fillColor = `oklch(0.585 0.204 277.12 / ${opacity})`;
             
             return (
               <g 
@@ -5892,11 +5798,10 @@ const TermsBerryVisualization = ({ words, width = 700, height = 700, onWordClick
                   cx={circle.x}
                   cy={circle.y}
                   r={isHovered ? circle.r + 3 : circle.r}
-                  fill={isHovered ? '#22d3ee' : fillColor}
+                  fill={isHovered ? 'oklch(0.585 0.204 277.12)' : fillColor}
                   fillOpacity={hoveredWord ? (isHovered ? 0.95 : 0.15) : (0.5 + intensity * 0.4)}
-                  stroke={isHovered ? '#fff' : '#475569'}
+                  stroke={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.872 0.009 258.34)'}
                   strokeWidth={isHovered ? 2.5 : 0.5}
-                  filter={isHovered ? "url(#termsberryGlow)" : undefined}
                   style={{ transition: 'opacity 0.2s, fill-opacity 0.2s' }}
                 />
                 {circle.r > 15 && (
@@ -5905,7 +5810,7 @@ const TermsBerryVisualization = ({ words, width = 700, height = 700, onWordClick
                     y={circle.y}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill={isHovered ? '#fff' : (intensity > 0.3 ? '#fff' : '#e2e8f0')}
+                    fill={isHovered ? 'oklch(1.000 0 0)' : (intensity > 0.3 ? 'oklch(1.000 0 0)' : 'oklch(0.280 0.037 260.03)')}
                     fontSize={Math.min(circle.r / 3, 14)}
                     fontWeight={isHovered ? 700 : 500}
                     opacity={hoveredWord ? (isHovered ? 1 : 0.2) : 0.9}
@@ -5925,10 +5830,10 @@ const TermsBerryVisualization = ({ words, width = 700, height = 700, onWordClick
         {/* Rich Tooltip */}
         {hoveredCircle && (
           <g transform={`translate(${Math.min(hoveredCircle.x * zoomLevel + panOffset.x + 20, width - 160)}, ${Math.max(hoveredCircle.y * zoomLevel + panOffset.y - 60, 10)})`}>
-            <rect x={0} y={0} width={150} height={65} rx={8} fill="rgba(15, 23, 42, 0.95)" stroke="#22d3ee" strokeWidth={1} />
-            <text x={10} y={18} fill="#22d3ee" fontSize={13} fontWeight={600}>{hoveredCircle.word}</text>
-            <text x={10} y={36} fill="#94a3b8" fontSize={10}>Frequência: {hoveredCircle.count}</text>
-            <text x={10} y={52} fill="#94a3b8" fontSize={10}>Rank: #{hoveredCircle.rank} de {packedCircles.length}</text>
+            <rect x={0} y={0} width={150} height={65} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke="oklch(0.585 0.204 277.12)" strokeWidth={1} />
+            <text x={10} y={18} fill="oklch(0.585 0.204 277.12)" fontSize={13} fontWeight={600}>{hoveredCircle.word}</text>
+            <text x={10} y={36} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Frequência: {hoveredCircle.count}</text>
+            <text x={10} y={52} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Rank: #{hoveredCircle.rank} de {packedCircles.length}</text>
           </g>
         )}
       </svg>
@@ -6050,10 +5955,10 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
   const yScale = (val) => centerY - val * (plotHeight / 4);
   
   const getColor = (x, y) => {
-    if (x > 0 && y > 0) return '#22c55e';
-    if (x < 0 && y > 0) return '#3b82f6';
-    if (x < 0 && y < 0) return '#f97316';
-    return '#ec4899';
+    if (x > 0 && y > 0) return 'oklch(0.585 0.204 277.12)';
+    if (x < 0 && y > 0) return 'oklch(0.585 0.204 277.12)';
+    if (x < 0 && y < 0) return 'oklch(0.457 0.215 277.02)';
+    return 'oklch(0.359 0.135 278.70)';
   };
   
   const getQuadrantName = (x, y) => {
@@ -6173,40 +6078,36 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
         onMouseLeave={handleMouseUp}
       >
         <defs>
-          <filter id="afcGlow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
           {/* Quadrant backgrounds */}
-          <rect x={centerX} y={margin.top} width={plotWidth/2} height={plotHeight/2} fill="#22c55e" opacity={0.05} />
-          <rect x={margin.left} y={margin.top} width={plotWidth/2} height={plotHeight/2} fill="#3b82f6" opacity={0.05} />
-          <rect x={margin.left} y={centerY} width={plotWidth/2} height={plotHeight/2} fill="#f97316" opacity={0.05} />
-          <rect x={centerX} y={centerY} width={plotWidth/2} height={plotHeight/2} fill="#ec4899" opacity={0.05} />
+          <rect x={centerX} y={margin.top} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.585 0.204 277.12)" opacity={0.05} />
+          <rect x={margin.left} y={margin.top} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.585 0.204 277.12)" opacity={0.05} />
+          <rect x={margin.left} y={centerY} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.457 0.215 277.02)" opacity={0.05} />
+          <rect x={centerX} y={centerY} width={plotWidth/2} height={plotHeight/2} fill="oklch(0.359 0.135 278.70)" opacity={0.05} />
           
           {/* Axes */}
-          <line x1={margin.left} y1={centerY} x2={width - margin.right} y2={centerY} stroke="#475569" strokeWidth={1} />
-          <line x1={centerX} y1={margin.top} x2={centerX} y2={height - margin.bottom} stroke="#475569" strokeWidth={1} />
+          <line x1={margin.left} y1={centerY} x2={width - margin.right} y2={centerY} stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} />
+          <line x1={centerX} y1={margin.top} x2={centerX} y2={height - margin.bottom} stroke="oklch(0.872 0.009 258.34)" strokeWidth={1} />
           
           {/* Axis labels */}
-          <text x={width - margin.right + 10} y={centerY + 5} fill="#94a3b8" fontSize={12}>Fator 1 ({variance.dim1}%)</text>
-          <text x={centerX + 5} y={margin.top - 10} fill="#94a3b8" fontSize={12}>Fator 2 ({variance.dim2}%)</text>
+          <text x={width - margin.right + 10} y={centerY + 5} fill="oklch(0.551 0.023 264.36)" fontSize={12}>Fator 1 ({variance.dim1}%)</text>
+          <text x={centerX + 5} y={margin.top - 10} fill="oklch(0.551 0.023 264.36)" fontSize={12}>Fator 2 ({variance.dim2}%)</text>
           
           {/* Grid */}
           {[-2, -1, 1, 2].map(val => (
             <g key={`grid-${val}`}>
-              <line x1={xScale(val)} y1={margin.top} x2={xScale(val)} y2={height - margin.bottom} stroke="#334155" strokeWidth={0.5} strokeDasharray="4" />
-              <line x1={margin.left} y1={yScale(val)} x2={width - margin.right} y2={yScale(val)} stroke="#334155" strokeWidth={0.5} strokeDasharray="4" />
-              <text x={xScale(val)} y={height - margin.bottom + 15} fill="#6b7280" fontSize={9} textAnchor="middle">{val}</text>
-              <text x={margin.left - 10} y={yScale(val) + 3} fill="#6b7280" fontSize={9} textAnchor="end">{val}</text>
+              <line x1={xScale(val)} y1={margin.top} x2={xScale(val)} y2={height - margin.bottom} stroke="oklch(0.872 0.009 258.34)" strokeWidth={0.5} strokeDasharray="4" />
+              <line x1={margin.left} y1={yScale(val)} x2={width - margin.right} y2={yScale(val)} stroke="oklch(0.872 0.009 258.34)" strokeWidth={0.5} strokeDasharray="4" />
+              <text x={xScale(val)} y={height - margin.bottom + 15} fill="oklch(0.551 0.023 264.36)" fontSize={9} textAnchor="middle">{val}</text>
+              <text x={margin.left - 10} y={yScale(val) + 3} fill="oklch(0.551 0.023 264.36)" fontSize={9} textAnchor="end">{val}</text>
             </g>
           ))}
           
           {/* Leader lines for displaced labels */}
           {showLabels && computedLabels.filter(l => l.needsLeader).map(label => (
-            <line key={`leader-${label.word}`} x1={label.origX} y1={label.origY - 5} x2={label.x} y2={label.y + 6} stroke="#64748b" strokeWidth={0.5} strokeDasharray="2" opacity={hoveredWord ? (hoveredWord === label.word ? 1 : 0.2) : 0.5} />
+            <line key={`leader-${label.word}`} x1={label.origX} y1={label.origY - 5} x2={label.x} y2={label.y + 6} stroke="oklch(0.551 0.023 264.36)" strokeWidth={0.5} strokeDasharray="2" opacity={hoveredWord ? (hoveredWord === label.word ? 1 : 0.2) : 0.5} />
           ))}
           
           {/* Points */}
@@ -6225,9 +6126,8 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
                 r={isHovered ? size + 3 : size}
                 fill={color}
                 fillOpacity={hoveredWord ? (isHovered ? 1 : 0.15) : 0.7}
-                stroke={isHovered ? '#fff' : 'none'}
+                stroke={isHovered ? 'oklch(1.000 0 0)' : 'none'}
                 strokeWidth={2}
-                filter={isHovered ? "url(#afcGlow)" : undefined}
                 onMouseEnter={() => setHoveredWord(w.word)}
                 onMouseLeave={() => setHoveredWord(null)}
                 style={{ cursor: 'pointer', transition: 'fill-opacity 0.2s' }}
@@ -6246,7 +6146,7 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
                 x={label.x}
                 y={label.y}
                 textAnchor="middle"
-                fill={isHovered ? '#fff' : color}
+                fill={isHovered ? 'oklch(1.000 0 0)' : color}
                 fontSize={isHovered ? 12 : 9}
                 fontWeight={isHovered ? 700 : 400}
                 opacity={hoveredWord ? (isHovered ? 1 : 0.2) : 0.85}
@@ -6261,11 +6161,11 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
         {/* Rich Tooltip */}
         {hoveredData && (
           <g transform={`translate(${width - 190}, ${height - 90})`}>
-            <rect x={0} y={0} width={180} height={80} rx={8} fill="rgba(15, 23, 42, 0.95)" stroke={getColor(hoveredData.x, hoveredData.y)} strokeWidth={1} />
+            <rect x={0} y={0} width={180} height={80} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke={getColor(hoveredData.x, hoveredData.y)} strokeWidth={1} />
             <text x={10} y={18} fill={getColor(hoveredData.x, hoveredData.y)} fontSize={13} fontWeight={600}>{hoveredData.word}</text>
-            <text x={10} y={36} fill="#94a3b8" fontSize={10}>Frequência: {hoveredData.count} | {getQuadrantName(hoveredData.x, hoveredData.y)}</text>
-            <text x={10} y={52} fill="#94a3b8" fontSize={10}>Coord: ({hoveredData.x.toFixed(2)}, {hoveredData.y.toFixed(2)})</text>
-            <text x={10} y={68} fill="#64748b" fontSize={9}>Dist. centro: {Math.sqrt(hoveredData.x*hoveredData.x + hoveredData.y*hoveredData.y).toFixed(2)}</text>
+            <text x={10} y={36} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Frequência: {hoveredData.count} | {getQuadrantName(hoveredData.x, hoveredData.y)}</text>
+            <text x={10} y={52} fill="oklch(0.551 0.023 264.36)" fontSize={10}>Coord: ({hoveredData.x.toFixed(2)}, {hoveredData.y.toFixed(2)})</text>
+            <text x={10} y={68} fill="oklch(0.551 0.023 264.36)" fontSize={9}>Dist. centro: {Math.sqrt(hoveredData.x*hoveredData.x + hoveredData.y*hoveredData.y).toFixed(2)}</text>
           </g>
         )}
       </svg>
@@ -6287,9 +6187,9 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
   const maxCount = Math.max(positive.count, negative.count, neutral.count, 1);
   
   const bars = [
-    { label: 'Positivo', count: positive.count, percentage: positive.percentage, color: '#22c55e', words: positive.words, x: 150 },
-    { label: 'Negativo', count: negative.count, percentage: negative.percentage, color: '#ef4444', words: negative.words, x: 320 },
-    { label: 'Neutro', count: neutral.count, percentage: neutral.percentage, color: '#9ca3af', words: neutral?.words || [], x: 490 }
+    { label: 'Positivo', count: positive.count, percentage: positive.percentage, color: 'oklch(0.585 0.204 277.12)', words: positive.words, x: 150 },
+    { label: 'Negativo', count: negative.count, percentage: negative.percentage, color: 'oklch(0.359 0.135 278.70)', words: negative.words, x: 320 },
+    { label: 'Neutro', count: neutral.count, percentage: neutral.percentage, color: 'oklch(0.551 0.023 264.36)', words: neutral?.words || [], x: 490 }
   ];
   
   return (
@@ -6297,20 +6197,16 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
       {/* Gráfico de barras */}
       <svg width={width} height={height} className="bg-background/30 rounded-xl">
         <defs>
-          <filter id="sentimentGlow">
-            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
         </defs>
         
         {/* Título */}
-        <text x={width / 2} y={30} textAnchor="middle" fill="#e2e8f0" fontSize={16} fontWeight={600}>
+        <text x={width / 2} y={30} textAnchor="middle" fill="oklch(0.280 0.037 260.03)" fontSize={16} fontWeight={600}>
           Análise de Sentimentos (Léxico)
         </text>
         
         {/* Eixo Y */}
-        <line x1={80} y1={60} x2={80} y2={340} stroke="#475569" />
-        <text x={40} y={200} textAnchor="middle" fill="#94a3b8" fontSize={12} transform="rotate(-90, 40, 200)">
+        <line x1={80} y1={60} x2={80} y2={340} stroke="oklch(0.872 0.009 258.34)" />
+        <text x={40} y={200} textAnchor="middle" fill="oklch(0.551 0.023 264.36)" fontSize={12} transform="rotate(-90, 40, 200)">
           Frequência
         </text>
         
@@ -6335,7 +6231,6 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
                 fill={bar.color}
                 rx={4}
                 opacity={hoveredBar !== null ? (isHovered ? 1 : 0.4) : 0.9}
-                filter={isHovered ? "url(#sentimentGlow)" : undefined}
                 style={{ transition: 'opacity 0.2s' }}
               />
               <text
@@ -6353,7 +6248,7 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
                 x={bar.x}
                 y={365}
                 textAnchor="middle"
-                fill={isHovered ? '#fff' : '#e2e8f0'}
+                fill={isHovered ? 'oklch(1.000 0 0)' : 'oklch(0.280 0.037 260.03)'}
                 fontSize={isHovered ? 14 : 13}
                 fontWeight={isHovered ? 600 : 400}
               >
@@ -6369,8 +6264,8 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
           const val = Math.round(pct * maxCount);
           return (
             <g key={pct}>
-              <line x1={80} y1={y} x2={620} y2={y} stroke="#334155" strokeDasharray="4" />
-              <text x={70} y={y + 4} textAnchor="end" fill="#64748b" fontSize={10}>{val}</text>
+              <line x1={80} y1={y} x2={620} y2={y} stroke="oklch(0.872 0.009 258.34)" strokeDasharray="4" />
+              <text x={70} y={y + 4} textAnchor="end" fill="oklch(0.551 0.023 264.36)" fontSize={10}>{val}</text>
             </g>
           );
         })}
@@ -6378,11 +6273,11 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
         {/* Tooltip */}
         {hoveredBar !== null && (
           <g transform={`translate(${width - 200}, 50)`}>
-            <rect x={0} y={0} width={190} height={100} rx={8} fill="rgba(15, 23, 42, 0.95)" stroke={bars[hoveredBar].color} strokeWidth={1} />
+            <rect x={0} y={0} width={190} height={100} rx={8} fill="oklch(0.208 0.040 265.75 / 0.95)" stroke={bars[hoveredBar].color} strokeWidth={1} />
             <text x={10} y={20} fill={bars[hoveredBar].color} fontSize={14} fontWeight={600}>{bars[hoveredBar].label}</text>
-            <text x={10} y={40} fill="#94a3b8" fontSize={11}>Ocorrências: {bars[hoveredBar].count}</text>
-            <text x={10} y={58} fill="#94a3b8" fontSize={11}>Percentual: {bars[hoveredBar].percentage}%</text>
-            <text x={10} y={78} fill="#64748b" fontSize={9}>
+            <text x={10} y={40} fill="oklch(0.551 0.023 264.36)" fontSize={11}>Ocorrências: {bars[hoveredBar].count}</text>
+            <text x={10} y={58} fill="oklch(0.551 0.023 264.36)" fontSize={11}>Percentual: {bars[hoveredBar].percentage}%</text>
+            <text x={10} y={78} fill="oklch(0.551 0.023 264.36)" fontSize={9}>
               Top: {bars[hoveredBar].words?.slice(0, 3).join(', ') || 'N/A'}
             </text>
           </g>
@@ -6394,13 +6289,13 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
         {/* Score */}
         <div className={`rounded-xl p-4 border ${
           parseFloat(score) > 0 
-            ? 'bg-green-900/20 border-green-500/30' 
+            ? 'bg-primary/10 border-primary/30' 
             : parseFloat(score) < 0 
-              ? 'bg-red-900/20 border-red-500/30'
+              ? 'bg-destructive/10 border-destructive/30'
               : 'bg-card border-border'
         }`}>
           <div className={`text-3xl font-bold ${
-            parseFloat(score) > 0 ? 'text-green-400' : parseFloat(score) < 0 ? 'text-red-400' : 'text-muted-foreground'
+            parseFloat(score) > 0 ? 'text-primary' : parseFloat(score) < 0 ? 'text-destructive' : 'text-muted-foreground'
           }`}>
             {parseFloat(score) > 0 ? '+' : ''}{score}
           </div>
@@ -6413,11 +6308,11 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
         </div>
         
         {/* Palavras positivas */}
-        <div className="bg-green-900/20 rounded-xl p-4 border border-green-500/30">
-          <div className="text-sm font-medium text-green-400 mb-2">Palavras Positivas</div>
+        <div className="bg-primary/10 rounded-xl p-4 border border-primary/30">
+          <div className="text-sm font-medium text-primary mb-2">Palavras Positivas</div>
           <div className="flex flex-wrap gap-1">
             {positive.words.slice(0, 10).map(word => (
-              <span key={word} className="px-2 py-0.5 bg-green-500/20 text-green-300 rounded text-xs">
+              <span key={word} className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs">
                 {word}
               </span>
             ))}
@@ -6425,11 +6320,11 @@ const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMo
         </div>
         
         {/* Palavras negativas */}
-        <div className="bg-red-900/20 rounded-xl p-4 border border-red-500/30">
-          <div className="text-sm font-medium text-red-400 mb-2">Palavras Negativas</div>
+        <div className="bg-destructive/10 rounded-xl p-4 border border-destructive/30">
+          <div className="text-sm font-medium text-destructive mb-2">Palavras Negativas</div>
           <div className="flex flex-wrap gap-1">
             {negative.words.slice(0, 10).map(word => (
-              <span key={word} className="px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-xs">
+              <span key={word} className="px-2 py-0.5 bg-destructive/20 text-destructive rounded text-xs">
                 {word}
               </span>
             ))}
@@ -6673,22 +6568,22 @@ const ExportVisualizationButton = ({ vizId, filename, data }) => {
       {showMenu && (
         <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden min-w-36">
           <button onClick={exportAsPNG} className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2">
-            <span className="text-indigo-500 dark:text-indigo-400">PNG</span> Imagem
+            <span className="text-primary">PNG</span> Imagem
           </button>
           <button onClick={exportAsJPG} className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2">
-            <span className="text-violet-500 dark:text-violet-400">JPG</span> Imagem
+            <span className="text-primary">JPG</span> Imagem
           </button>
           <button onClick={exportAsSVG} className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2">
-            <span className="text-green-400">SVG</span> Vetor
+            <span className="text-primary">SVG</span> Vetor
           </button>
           {data && (
             <>
               <div className="border-t border-border" />
               <button onClick={exportAsCSV} className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2">
-                <span className="text-amber-400">CSV</span> Dados
+                <span className="text-muted-foreground">CSV</span> Dados
               </button>
               <button onClick={exportAsXLSX} className="w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center gap-2">
-                <span className="text-blue-400">XLSX</span> Excel
+                <span className="text-primary">XLSX</span> Excel
               </button>
             </>
           )}
@@ -6732,7 +6627,7 @@ const HighlightedTextViewer = ({
           start: pos,
           end: pos + seg.text.length,
           segment: seg,
-          color: codeInfo?.color || '#6366f1'
+          color: codeInfo?.color || 'oklch(0.457 0.215 277.02)'
         });
         
         pos = text.indexOf(segText, pos + 1);
@@ -6856,18 +6751,18 @@ const CodeSelectionTooltip = ({
       
       {/* Modal centralizado */}
       <div 
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border-2 border-indigo-500 rounded-2xl shadow-2xl p-5 w-[360px] max-h-[90vh] flex flex-col"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border-2 border-primary rounded-2xl shadow-2xl p-5 w-[360px] max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
           <div className="flex items-center gap-2">
-            <Tag className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+            <Tag className="w-5 h-5 text-primary" />
             <span className="text-lg font-semibold text-foreground">Codificar Seleção</span>
           </div>
           <button 
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center bg-red-500/30 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/50"
+            className="w-10 h-10 flex items-center justify-center bg-destructive/30 hover:bg-destructive text-destructive hover:text-white rounded-xl transition-all border border-destructive/50"
             title="Fechar (ESC)"
           >
             <X className="w-6 h-6" />
@@ -6877,7 +6772,7 @@ const CodeSelectionTooltip = ({
         {/* Texto selecionado */}
         <div className="mb-4 p-4 bg-card/80 rounded-xl border border-input">
           <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide font-medium">Texto selecionado:</p>
-          <p className="text-sm text-cyan-300 leading-relaxed max-h-24 overflow-y-auto">
+          <p className="text-sm text-primary leading-relaxed max-h-24 overflow-y-auto">
             "{selectedText?.substring(0, 200)}{selectedText?.length > 200 ? '...' : ''}"
           </p>
         </div>
@@ -6890,7 +6785,7 @@ const CodeSelectionTooltip = ({
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar código..."
-            className="w-full pl-12 pr-4 py-3 bg-card border-2 border-input rounded-xl text-base text-foreground focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-muted-foreground"
+            className="w-full pl-12 pr-4 py-3 bg-card border-2 border-input rounded-xl text-base text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder-muted-foreground"
             autoFocus
           />
         </div>
@@ -6901,17 +6796,17 @@ const CodeSelectionTooltip = ({
             <button
               key={code.id}
               onClick={() => onCodeSelect(code)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent/80 transition-all text-left border-2 border-transparent hover:border-indigo-500/50 group"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-accent/80 transition-all text-left border-2 border-transparent hover:border-primary/50 group"
             >
               <span 
-                className="w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-white/30 group-hover:ring-cyan-400"
+                className="w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-white/30 group-hover:ring-primary"
                 style={{ backgroundColor: code.color }}
               />
               <div className="flex-1 min-w-0">
                 <p className="text-base text-foreground truncate font-medium">{code.name}</p>
                 <p className="text-sm text-muted-foreground truncate">{code.categoryName}</p>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-indigo-500 dark:text-indigo-400 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
             </button>
           ))}
           
@@ -6929,7 +6824,7 @@ const CodeSelectionTooltip = ({
           {!showCreator ? (
             <button
               onClick={onToggleCreator}
-              className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-gradient-to-r from-cyan-600/30 to-violet-600/30 border-2 border-indigo-500/50 rounded-xl text-indigo-500 dark:text-indigo-400 hover:from-cyan-600/40 hover:to-violet-600/40 hover:border-indigo-400 transition-all"
+              className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-primary/20 border-2 border-primary/50 rounded-xl text-primary hover:bg-primary/30 hover:border-primary transition-all"
             >
               <Plus className="w-6 h-6" />
               <span className="text-base font-semibold">Criar novo código</span>
@@ -6941,7 +6836,7 @@ const CodeSelectionTooltip = ({
                 value={newCodeName}
                 onChange={(e) => onNewCodeNameChange(e.target.value)}
                 placeholder="Nome do novo código..."
-                className="w-full px-4 py-3 bg-card border-2 border-indigo-500 rounded-xl text-base text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                className="w-full px-4 py-3 bg-card border-2 border-primary rounded-xl text-base text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newCodeName.trim()) onCreateNew();
                   if (e.key === 'Escape') onToggleCreator();
@@ -6958,7 +6853,7 @@ const CodeSelectionTooltip = ({
                 <button
                   onClick={onCreateNew}
                   disabled={!newCodeName.trim()}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl text-base text-white font-semibold hover:from-indigo-500 hover:to-violet-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-3 bg-primary rounded-xl text-base text-white font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Criar e Aplicar
                 </button>
@@ -7011,7 +6906,7 @@ export default function TextAnalysisApp() {
   
   // ========== SISTEMA DE CORPUS ==========
   const [corpora, setCorpora] = useState([
-    { id: 'default', name: 'Corpus Principal', color: '#22d3ee', documentIds: [] }
+    { id: 'default', name: 'Corpus Principal', color: 'oklch(0.585 0.204 277.12)', documentIds: [] }
   ]);
   const [activeCorpus, setActiveCorpus] = useState('default');
   const [showCorpusManager, setShowCorpusManager] = useState(false);
@@ -7109,7 +7004,7 @@ export default function TextAnalysisApp() {
                   ...c,
                   id: c.id || 'corpus-' + Date.now(),
                   name: c.name || 'Corpus',
-                  color: c.color || '#22d3ee',
+                  color: c.color || 'oklch(0.585 0.204 277.12)',
                   documentIds: Array.isArray(c.documentIds) ? c.documentIds : []
                 }));
                 setCorpora(normalizedCorpora);
@@ -9010,7 +8905,7 @@ export default function TextAnalysisApp() {
           canvas.width = img.width * 2; // 2x for better quality
           canvas.height = img.height * 2;
           ctx.scale(2, 2);
-          ctx.fillStyle = '#0f172a'; // Dark background
+          ctx.fillStyle = 'oklch(0.984 0.003 247.86)'; // Dark background
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0);
           
@@ -9066,7 +8961,7 @@ export default function TextAnalysisApp() {
             canvas.width = img.width * 2;
             canvas.height = img.height * 2;
             ctx.scale(2, 2);
-            ctx.fillStyle = '#0f172a';
+            ctx.fillStyle = 'oklch(0.984 0.003 247.86)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             
@@ -9560,8 +9455,7 @@ export default function TextAnalysisApp() {
     sunburst: { title: "Gráfico Sunburst", description: "Códigos hierárquicos em gráfico sunburst interativo com camadas representando níveis.", steps: ["Organize códigos em hierarquia", "Visualize em círculos concêntricos", "Clique para expandir/colapsar"], tips: ["Visualmente atraente para apresentações e relatórios"] },
     dendrogram: { title: "Dendrograma", description: "Hierarquia de agrupamento entre palavras/documentos em diagrama de árvore. Mostra clusters naturais.", steps: ["Selecione método de agrupamento", "Execute a análise", "Interprete a hierarquia de clusters"], tips: ["Cortar em diferentes alturas define número de clusters"] },
     kwic: { title: "KWIC (Palavra-chave em Contexto)", description: "Palavra-chave com contexto imediato em linhas de concordância. Análise detalhada de uso.", steps: ["Insira a palavra-chave", "Visualize as concordâncias", "Exporte contextos para análise"], tips: ["Ordene por contexto para identificar padrões sintáticos"] },
-    export: { title: "Exportar Resultados", description: "Exporte análises em múltiplos formatos: CSV, Excel, imagens, DOCX para relatórios.", steps: ["Selecione a análise", "Escolha o formato", "Baixe o arquivo"], tips: ["Use CSV para R/Python, imagens para apresentações"] },
-  };
+    export: { title: "Exportar Resultados", description: "Exporte análises em múltiplos formatos: CSV, Excel, imagens, DOCX para relatórios.", steps: ["Selecione a análise", "Escolha o formato", "Baixe o arquivo"], tips: ["Use CSV para R/Python, imagens para apresentações"] } };
 
   const tabs = [
     { id: 'upload', label: 'Importar', icon: Upload },
@@ -9604,15 +9498,14 @@ export default function TextAnalysisApp() {
     accentBg: 'bg-primary/10',
     hover: 'hover:bg-accent',
     textDimmed: 'text-muted-foreground',
-    divider: 'border-border',
-  };
+    divider: 'border-border' };
   
   return (
     <div className={cn("min-h-screen bg-background text-foreground flex", isDarkMode && "dark")}>
       {/* Subtle ambient background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 dark:bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/50/5 dark:bg-primary/50/10 rounded-full blur-3xl" />
       </div>
       
       {/* Sidebar */}
@@ -9620,7 +9513,7 @@ export default function TextAnalysisApp() {
         {/* Logo/Header */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg flex-shrink-0">
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             {sidebarOpen && (
@@ -9628,7 +9521,7 @@ export default function TextAnalysisApp() {
                 <h1 className="text-sm font-bold tracking-tight text-foreground leading-tight">
                   App para Análise
                 </h1>
-                <h1 className="text-sm font-bold tracking-tight text-indigo-600 dark:text-indigo-400 leading-tight">
+                <h1 className="text-sm font-bold tracking-tight text-primary leading-tight">
                   Textual Gratuito
                 </h1>
               </div>
@@ -9642,7 +9535,7 @@ export default function TextAnalysisApp() {
             <Button
               onClick={processCorpus}
               disabled={isProcessing}
-              className="w-full bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+              className="w-full bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg transition-all duration-300"
               size="lg"
             >
               {isProcessing ? (
@@ -9671,17 +9564,17 @@ export default function TextAnalysisApp() {
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                   activeTab === tab.id
-                    ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                    ? "bg-primary/10 text-primary border border-primary/30"
                     : tab.disabled
                       ? "text-muted-foreground/50 cursor-not-allowed"
-                      : "text-muted-foreground hover:bg-accent hover:text-indigo-600 dark:hover:text-indigo-400"
+                      : "text-muted-foreground hover:bg-accent hover:text-primary dark:hover:text-primary"
                 )}
                 title={!sidebarOpen ? tab.label : undefined}
               >
-                <tab.icon className={cn("w-5 h-5 flex-shrink-0", activeTab === tab.id && "text-indigo-600 dark:text-indigo-400")} />
+                <tab.icon className={cn("w-5 h-5 flex-shrink-0", activeTab === tab.id && "text-primary")} />
                 {sidebarOpen && <span className="truncate">{tab.label}</span>}
                 {activeTab === tab.id && sidebarOpen && (
-                  <ChevronRight className="w-4 h-4 ml-auto text-indigo-500" />
+                  <ChevronRight className="w-4 h-4 ml-auto text-primary" />
                 )}
               </button>
             ))}
@@ -9693,11 +9586,11 @@ export default function TextAnalysisApp() {
           <div className={`p-4 border-t border-sidebar-border bg-muted/50`}>
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className={`bg-card rounded-lg p-2 shadow-sm`}>
-                <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{(documents || []).length}</div>
+                <div className="text-lg font-bold text-primary">{(documents || []).length}</div>
                 <div className={`text-xs text-muted-foreground`}>Docs</div>
               </div>
               <div className={`bg-card rounded-lg p-2 shadow-sm`}>
-                <div className="text-lg font-bold text-violet-600 dark:text-violet-400">{analysisResults.stats?.totalWords?.toLocaleString() || 0}</div>
+                <div className="text-lg font-bold text-primary">{analysisResults.stats?.totalWords?.toLocaleString() || 0}</div>
                 <div className={`text-xs text-muted-foreground`}>Palavras</div>
               </div>
             </div>
@@ -9715,7 +9608,7 @@ export default function TextAnalysisApp() {
                 {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                 {isDarkMode ? 'Modo Escuro' : 'Modo Claro'}
               </span>
-              <div className={`w-10 h-5 rounded-full relative transition-colors bg-muted dark:bg-indigo-600`}>
+              <div className={`w-10 h-5 rounded-full relative transition-colors bg-muted dark:bg-primary`}>
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform left-0.5 dark:left-5`} />
               </div>
             </button>
@@ -9731,11 +9624,11 @@ export default function TextAnalysisApp() {
               </div>
               <div className="text-xs">
                 <span className={theme.muted}>Por </span>
-                <span className="text-indigo-600 dark:text-indigo-400">Lucas O. Teixeira</span>
+                <span className="text-primary">Lucas O. Teixeira</span>
               </div>
               <div className="text-xs">
                 <span className={theme.muted}>com </span>
-                <span className="text-violet-600 dark:text-violet-400">Claude</span>
+                <span className="text-primary">Claude</span>
                 <span className={theme.muted}> para </span>
                 <span className={`font-medium text-foreground`}>UFABC</span>
               </div>
@@ -9829,18 +9722,18 @@ export default function TextAnalysisApp() {
         {activeTab === 'upload' && (
           <div className="space-y-8">
             {/* ========== GERENCIADOR DE CORPUS ========== */}
-            <div className={`bg-gradient-to-br from-white to-purple-50 border-violet-200 dark:bg-gradient-to-br from-card to-violet-900/20 border-violet-300 dark:border-violet-700 rounded-xl p-4 sm:p-6 border`}>
+            <div className={`bg-card border-border rounded-xl p-4 sm:p-6 border`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+                  <Layers className="w-5 h-5 text-primary" />
                   <h3 className="font-semibold">Gerenciador de Corpus</h3>
-                  <span className={`text-xs bg-violet-100 text-violet-600 dark:bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded`}>
+                  <span className={`text-xs bg-primary/10 text-primary dark:bg-primary/50/20 text-primary px-2 py-0.5 rounded`}>
                     {(corpora || []).length} corpus
                   </span>
                 </div>
                 <button
                   onClick={() => setShowCorpusManager(!showCorpusManager)}
-                  className={`text-sm text-violet-600 hover:text-purple-700 dark:text-violet-500 dark:text-violet-400 hover:text-violet-400 flex items-center gap-1`}
+                  className={`text-sm text-primary hover:text-primary dark:text-primary hover:text-primary flex items-center gap-1`}
                 >
                   {showCorpusManager ? 'Ocultar' : 'Expandir'}
                   <ChevronDown className={`w-4 h-4 transition-transform ${showCorpusManager ? 'rotate-180' : ''}`} />
@@ -9859,7 +9752,7 @@ export default function TextAnalysisApp() {
                     onClick={() => setActiveCorpus(corpus.id)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
                       activeCorpus === corpus.id 
-                        ? `bg-violet-50 dark:bg-white/10 border-2` 
+                        ? `bg-primary/5 dark:bg-white/10 border-2` 
                         : `bg-card border-border hover:border-input border`
                     }`}
                     style={{ borderColor: activeCorpus === corpus.id ? corpus.color : undefined }}
@@ -9881,7 +9774,7 @@ export default function TextAnalysisApp() {
                     const name = prompt('Nome do novo corpus:');
                     if (name) createCorpus(name);
                   }}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-violet-100 border-violet-200 text-violet-600 hover:bg-violet-200 dark:bg-violet-100 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-400 hover:bg-violet-200 dark:bg-violet-900/40 border transition-colors`}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm bg-primary/10 border-border text-primary hover:bg-primary/20 dark:bg-primary/10 dark:bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 dark:bg-primary/15 border transition-colors`}
                 >
                   <Plus className="w-4 h-4" />
                   Novo Corpus
@@ -9904,7 +9797,7 @@ export default function TextAnalysisApp() {
                         type="text"
                         value={corpus.name}
                         onChange={(e) => renameCorpus(corpus.id, e.target.value)}
-                        className="flex-1 bg-transparent border-b border-transparent hover:border-input focus:border-indigo-500 focus:outline-none text-sm"
+                        className="flex-1 bg-transparent border-b border-transparent hover:border-input focus:border-primary focus:outline-none text-sm"
                       />
                       <span className="text-xs text-muted-foreground">
                         {corpus.documentIds?.length || 0} documentos
@@ -9916,7 +9809,7 @@ export default function TextAnalysisApp() {
                               deleteCorpus(corpus.id);
                             }
                           }}
-                          className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                          className="p-1 text-destructive hover:bg-destructive/20 rounded"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -9936,9 +9829,9 @@ export default function TextAnalysisApp() {
                 onChange={handleFileUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
-              <div className="border-2 border-dashed border-border rounded-2xl p-12 text-center hover:border-indigo-500/50 hover:bg-card/30 transition-all duration-300">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-600/20 flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
+              <div className="border-2 border-dashed border-border rounded-2xl p-12 text-center hover:border-primary/50 hover:bg-card/30 transition-all duration-300">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Upload className="w-8 h-8 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Arraste arquivos ou clique para selecionar</h3>
                 <p className="text-muted-foreground text-sm mb-2">
@@ -9952,18 +9845,18 @@ export default function TextAnalysisApp() {
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {[
-                    { ext: 'PDF', colorDark: 'bg-red-500/20 text-red-300', colorLight: 'bg-red-100 text-red-600' },
-                    { ext: 'DOCX', colorDark: 'bg-blue-500/20 text-blue-300', colorLight: 'bg-blue-100 text-blue-600' },
-                    { ext: 'DOC', colorDark: 'bg-blue-500/20 text-blue-300', colorLight: 'bg-blue-100 text-blue-600' },
+                    { ext: 'PDF', colorDark: 'bg-destructive/20 text-destructive', colorLight: 'bg-destructive/10 text-destructive' },
+                    { ext: 'DOCX', colorDark: 'bg-primary/20 text-primary', colorLight: 'bg-primary/10 text-primary' },
+                    { ext: 'DOC', colorDark: 'bg-primary/20 text-primary', colorLight: 'bg-primary/10 text-primary' },
                     { ext: 'TXT', colorDark: 'bg-muted/500/20 text-foreground/80', colorLight: 'bg-muted text-muted-foreground' },
-                    { ext: 'CSV', colorDark: 'bg-green-500/20 text-green-300', colorLight: 'bg-green-100 text-green-600' },
-                    { ext: 'XLSX', colorDark: 'bg-emerald-500/20 text-emerald-300', colorLight: 'bg-emerald-100 text-emerald-600' },
-                    { ext: 'RTF', colorDark: 'bg-violet-500/20 text-violet-400', colorLight: 'bg-violet-100 text-violet-600' },
+                    { ext: 'CSV', colorDark: 'bg-primary/20 text-primary', colorLight: 'bg-primary/10 text-primary' },
+                    { ext: 'XLSX', colorDark: 'bg-primary/20 text-primary', colorLight: 'bg-primary/10 text-primary' },
+                    { ext: 'RTF', colorDark: 'bg-primary/50/20 text-primary', colorLight: 'bg-primary/10 text-primary' },
                     { ext: 'MD', colorDark: 'bg-muted/500/20 text-foreground/80', colorLight: 'bg-muted text-muted-foreground' },
-                    { ext: 'HTML', colorDark: 'bg-orange-500/20 text-orange-300', colorLight: 'bg-orange-100 text-orange-600' },
+                    { ext: 'HTML', colorDark: 'bg-muted text-muted-foreground', colorLight: 'bg-muted text-muted-foreground' },
                     { ext: 'JSON', colorDark: 'bg-yellow-500/20 text-yellow-300', colorLight: 'bg-yellow-100 text-yellow-700' },
-                    { ext: 'XML', colorDark: 'bg-indigo-600/20 text-cyan-300', colorLight: 'bg-indigo-100 text-indigo-600' },
-                    { ext: 'ODT', colorDark: 'bg-indigo-500/20 text-indigo-300', colorLight: 'bg-indigo-100 text-indigo-600' },
+                    { ext: 'XML', colorDark: 'bg-primary/20 text-primary', colorLight: 'bg-primary/10 text-primary' },
+                    { ext: 'ODT', colorDark: 'bg-primary/20 text-primary', colorLight: 'bg-primary/10 text-primary' },
                   ].map(format => (
                     <span key={format.ext} className={`text-xs px-2 py-1 rounded ${isDarkMode ? format.colorDark : format.colorLight}`}>
                       .{format.ext.toLowerCase()}
@@ -9980,24 +9873,24 @@ export default function TextAnalysisApp() {
                   <div 
                     key={id} 
                     className={`flex items-center gap-3 p-3 rounded-lg ${
-                      status.status === 'loading' ? 'bg-indigo-600/10 border border-indigo-500/30' :
-                      status.status === 'success' ? 'bg-green-500/10 border border-green-500/30' :
-                      'bg-red-500/10 border border-red-500/30'
+                      status.status === 'loading' ? 'bg-primary/10 border border-primary/30' :
+                      status.status === 'success' ? 'bg-primary/10 border border-primary/30' :
+                      'bg-destructive/10 border border-destructive/30'
                     }`}
                   >
                     {status.status === 'loading' && (
-                      <Loader2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400 animate-spin" />
+                      <Loader2 className="w-4 h-4 text-primary animate-spin" />
                     )}
                     {status.status === 'success' && (
-                      <Check className="w-4 h-4 text-green-400" />
+                      <Check className="w-4 h-4 text-primary" />
                     )}
                     {status.status === 'error' && (
-                      <X className="w-4 h-4 text-red-400" />
+                      <X className="w-4 h-4 text-destructive" />
                     )}
                     <span className={`text-sm ${
-                      status.status === 'loading' ? 'text-cyan-300' :
-                      status.status === 'success' ? 'text-green-300' :
-                      'text-red-300'
+                      status.status === 'loading' ? 'text-primary' :
+                      status.status === 'success' ? 'text-primary' :
+                      'text-destructive'
                     }`}>
                       {status.status === 'loading' && `Processando ${status.name}...`}
                       {status.status === 'success' && `${status.name} carregado com sucesso`}
@@ -10009,18 +9902,18 @@ export default function TextAnalysisApp() {
             )}
             
             {/* ========== GERENCIADOR DE STOPWORDS ========== */}
-            <div className={`bg-gradient-to-br from-white to-amber-50 border-amber-200 rounded-xl p-4 sm:p-6 border`}>
+            <div className={`bg-card border-border rounded-xl p-4 sm:p-6 border`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-amber-400" />
+                  <Filter className="w-5 h-5 text-muted-foreground" />
                   <h3 className="font-semibold">Gerenciador de Stopwords</h3>
-                  <span className={`text-xs bg-amber-100 text-amber-600 dark:bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded`}>
+                  <span className={`text-xs bg-muted text-muted-foreground dark:bg-muted text-muted-foreground px-2 py-0.5 rounded`}>
                     {customStopwordsPT.length + customStopwordsEN.length} palavras
                   </span>
                 </div>
                 <button
                   onClick={() => setShowStopwordsManager(!showStopwordsManager)}
-                  className={`text-sm text-amber-600 hover:text-amber-700 dark:text-amber-400 hover:text-amber-300 flex items-center gap-1`}
+                  className={`text-sm text-muted-foreground hover:text-foreground dark:text-muted-foreground hover:text-muted-foreground flex items-center gap-1`}
                 >
                   {showStopwordsManager ? 'Ocultar' : 'Gerenciar'}
                   <ChevronDown className={`w-4 h-4 transition-transform ${showStopwordsManager ? 'rotate-180' : ''}`} />
@@ -10039,7 +9932,7 @@ export default function TextAnalysisApp() {
                       onClick={() => setStopwordLanguage('pt')}
                       className={`px-4 py-2 rounded-lg text-sm transition-colors ${
                         stopwordLanguage === 'pt' 
-                          ? 'bg-amber-600 text-white' 
+                          ? 'bg-secondary text-white' 
                           : theme.button
                       }`}
                     >
@@ -10049,7 +9942,7 @@ export default function TextAnalysisApp() {
                       onClick={() => setStopwordLanguage('en')}
                       className={`px-4 py-2 rounded-lg text-sm transition-colors ${
                         stopwordLanguage === 'en' 
-                          ? 'bg-amber-600 text-white' 
+                          ? 'bg-secondary text-white' 
                           : theme.button
                       }`}
                     >
@@ -10081,7 +9974,7 @@ export default function TextAnalysisApp() {
                         }
                       }}
                       placeholder="Adicionar nova stopword..."
-                      className={`flex-1 px-4 py-2 bg-background border-input rounded-lg text-sm focus:border-amber-500 focus:outline-none`}
+                      className={`flex-1 px-4 py-2 bg-background border-input rounded-lg text-sm focus:border-input focus:outline-none`}
                     />
                     <button
                       onClick={() => {
@@ -10090,7 +9983,7 @@ export default function TextAnalysisApp() {
                           setNewStopword('');
                         }
                       }}
-                      className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-500 flex items-center gap-1"
+                      className="px-4 py-2 bg-secondary text-white rounded-lg text-sm hover:bg-secondary/80 flex items-center gap-1"
                     >
                       <Plus className="w-4 h-4" />
                       Adicionar
@@ -10105,7 +9998,7 @@ export default function TextAnalysisApp() {
                       value={stopwordSearchTerm}
                       onChange={(e) => setStopwordSearchTerm(e.target.value)}
                       placeholder="Buscar stopword..."
-                      className={`w-full pl-10 pr-4 py-2 bg-background border-input rounded-lg text-sm focus:border-amber-500 focus:outline-none`}
+                      className={`w-full pl-10 pr-4 py-2 bg-background border-input rounded-lg text-sm focus:border-input focus:outline-none`}
                     />
                   </div>
                   
@@ -10115,12 +10008,12 @@ export default function TextAnalysisApp() {
                       {filteredStopwords.slice(0, 100).map(word => (
                         <span
                           key={word}
-                          className={`inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs group hover:bg-red-500/20 transition-colors`}
+                          className={`inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs group hover:bg-destructive/20 transition-colors`}
                         >
                           {word}
                           <button
                             onClick={() => removeStopword(word, stopwordLanguage)}
-                            className={`text-muted-foreground group-hover:text-red-400`}
+                            className={`text-muted-foreground group-hover:text-destructive`}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -10140,7 +10033,7 @@ export default function TextAnalysisApp() {
             {/* Cleaning Options */}
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <div className="flex items-center gap-2 mb-4">
-                <Settings className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <Settings className="w-5 h-5 text-primary" />
                 <h3 className="font-semibold">Opções de Limpeza</h3>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
@@ -10155,7 +10048,7 @@ export default function TextAnalysisApp() {
                       type="checkbox"
                       checked={cleaningOptions[opt.key]}
                       onChange={(e) => setCleaningOptions(prev => ({ ...prev, [opt.key]: e.target.checked }))}
-                      className={`w-4 h-4 rounded border-input bg-white dark:border-input bg-secondary text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500`}
+                      className={`w-4 h-4 rounded border-input bg-white dark:border-input bg-secondary text-primary focus:ring-primary`}
                     />
                     <span className={`text-sm ${theme.textSecondary}`}>{opt.label}</span>
                   </label>
@@ -10175,19 +10068,19 @@ export default function TextAnalysisApp() {
               
               {/* Opção de Agrupamento Morfológico - Destacada */}
               <div className={`mt-4 p-4 rounded-xl border ${cleaningOptions.groupVariations 
-                ? (isDarkMode ? 'bg-violet-900/20 border-violet-300 dark:border-violet-700' : 'bg-violet-50 border-violet-200') 
+                ? (isDarkMode ? 'bg-primary/10 border-primary/30' : 'bg-primary/5 border-border') 
                 : (isDarkMode ? 'bg-muted border-input' : 'bg-muted/50 border-border')} transition-all`}>
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={cleaningOptions.groupVariations}
                     onChange={(e) => setCleaningOptions(prev => ({ ...prev, groupVariations: e.target.checked }))}
-                    className={`w-5 h-5 mt-0.5 rounded border-input bg-white dark:border-input bg-secondary text-violet-600 dark:text-violet-400 focus:ring-violet-500`}
+                    className={`w-5 h-5 mt-0.5 rounded border-input bg-white dark:border-input bg-secondary text-primary focus:ring-primary`}
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-medium text-foreground`}>Agrupar variações morfológicas</span>
-                      <span className={`text-xs bg-violet-100 text-violet-600 dark:bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded`}>Recomendado</span>
+                      <span className={`text-xs bg-primary/10 text-primary dark:bg-primary/50/20 text-primary px-2 py-0.5 rounded`}>Recomendado</span>
                     </div>
                     <p className={`text-xs ${theme.textMuted} mt-1`}>
                       Agrupa automaticamente variações de gênero (ministro/ministra), número (singular/plural), 
@@ -10211,7 +10104,7 @@ export default function TextAnalysisApp() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                    <FileText className="w-5 h-5 text-primary" />
                     Documentos Carregados ({(documents || []).length})
                   </h3>
                   <div className="flex items-center gap-3">
@@ -10219,7 +10112,7 @@ export default function TextAnalysisApp() {
                     <select
                       value={corpusFilter}
                       onChange={(e) => setCorpusFilter(e.target.value)}
-                      className={`px-3 py-1.5 bg-white border-input dark:bg-secondary border-input border rounded-lg text-sm focus:border-indigo-500 focus:outline-none`}
+                      className={`px-3 py-1.5 bg-white border-input dark:bg-secondary border-input border rounded-lg text-sm focus:border-primary focus:outline-none`}
                     >
                       <option value="all">Todos os corpus</option>
                       {(corpora || []).map(c => (
@@ -10227,8 +10120,8 @@ export default function TextAnalysisApp() {
                       ))}
                     </select>
                     <button
-                      onClick={() => { setDocuments([]); setAnalysisResults(null); setCorpora([{ id: 'default', name: 'Corpus Principal', color: '#22d3ee', documentIds: [] }]); }}
-                      className="text-sm text-red-400 hover:text-red-300 flex items-center gap-1"
+                      onClick={() => { setDocuments([]); setAnalysisResults(null); setCorpora([{ id: 'default', name: 'Corpus Principal', color: 'oklch(0.585 0.204 277.12)', documentIds: [] }]); }}
+                      className="text-sm text-destructive hover:text-destructive flex items-center gap-1"
                     >
                       <Trash2 className="w-4 h-4" />
                       Limpar tudo
@@ -10241,43 +10134,41 @@ export default function TextAnalysisApp() {
                     const ext = doc.type || doc.name.split('.').pop().toLowerCase();
                     const docCorpus = getDocumentCorpus(doc.id);
                     const typeColors = isDarkMode ? {
-                      pdf: 'bg-red-500/20 text-red-300',
-                      docx: 'bg-blue-500/20 text-blue-300',
-                      doc: 'bg-blue-500/20 text-blue-300',
-                      xlsx: 'bg-emerald-500/20 text-emerald-300',
-                      xls: 'bg-emerald-500/20 text-emerald-300',
-                      csv: 'bg-green-500/20 text-green-300',
-                      rtf: 'bg-violet-500/20 text-violet-400',
-                      html: 'bg-orange-500/20 text-orange-300',
-                      htm: 'bg-orange-500/20 text-orange-300',
+                      pdf: 'bg-destructive/20 text-destructive',
+                      docx: 'bg-primary/20 text-primary',
+                      doc: 'bg-primary/20 text-primary',
+                      xlsx: 'bg-primary/20 text-primary',
+                      xls: 'bg-primary/20 text-primary',
+                      csv: 'bg-primary/20 text-primary',
+                      rtf: 'bg-primary/50/20 text-primary',
+                      html: 'bg-muted text-muted-foreground',
+                      htm: 'bg-muted text-muted-foreground',
                       json: 'bg-yellow-500/20 text-yellow-300',
-                      xml: 'bg-indigo-600/20 text-cyan-300',
-                      odt: 'bg-indigo-500/20 text-indigo-300',
+                      xml: 'bg-primary/20 text-primary',
+                      odt: 'bg-primary/20 text-primary',
                       txt: 'bg-muted/500/20 text-foreground/80',
-                      md: 'bg-muted/500/20 text-foreground/80',
-                    } : {
-                      pdf: 'bg-red-100 text-red-600',
-                      docx: 'bg-blue-100 text-blue-600',
-                      doc: 'bg-blue-100 text-blue-600',
-                      xlsx: 'bg-emerald-100 text-emerald-600',
-                      xls: 'bg-emerald-100 text-emerald-600',
-                      csv: 'bg-green-100 text-green-600',
-                      rtf: 'bg-violet-100 text-violet-600',
-                      html: 'bg-orange-100 text-orange-600',
-                      htm: 'bg-orange-100 text-orange-600',
+                      md: 'bg-muted/500/20 text-foreground/80' } : {
+                      pdf: 'bg-destructive/10 text-destructive',
+                      docx: 'bg-primary/10 text-primary',
+                      doc: 'bg-primary/10 text-primary',
+                      xlsx: 'bg-primary/10 text-primary',
+                      xls: 'bg-primary/10 text-primary',
+                      csv: 'bg-primary/10 text-primary',
+                      rtf: 'bg-primary/10 text-primary',
+                      html: 'bg-muted text-muted-foreground',
+                      htm: 'bg-muted text-muted-foreground',
                       json: 'bg-yellow-100 text-yellow-700',
-                      xml: 'bg-indigo-100 text-indigo-600',
-                      odt: 'bg-indigo-100 text-indigo-600',
+                      xml: 'bg-primary/10 text-primary',
+                      odt: 'bg-primary/10 text-primary',
                       txt: 'bg-muted text-muted-foreground',
-                      md: 'bg-muted text-muted-foreground',
-                    };
+                      md: 'bg-muted text-muted-foreground' };
                     const colorClass = typeColors[ext] || (isDarkMode ? 'bg-muted/500/20 text-foreground/80' : 'bg-muted text-muted-foreground');
                     
                     return (
                       <div
                         key={doc.id}
                         className={`flex items-center justify-between p-4 bg-white border-border hover:border-input dark:bg-card border-border hover:border-input rounded-xl border transition-all`}
-                        style={{ borderLeftWidth: '3px', borderLeftColor: docCorpus?.color || '#22d3ee' }}
+                        style={{ borderLeftWidth: '3px', borderLeftColor: docCorpus?.color || 'oklch(0.585 0.204 277.12)' }}
                       >
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-lg bg-muted flex items-center justify-center`}>
@@ -10306,7 +10197,7 @@ export default function TextAnalysisApp() {
                           <select
                             value={docCorpus?.id || 'default'}
                             onChange={(e) => moveDocumentToCorpus(doc.id, e.target.value)}
-                            className="px-2 py-1 bg-secondary border border-input rounded text-xs focus:border-indigo-500 focus:outline-none"
+                            className="px-2 py-1 bg-secondary border border-input rounded text-xs focus:border-primary focus:outline-none"
                           >
                             {(corpora || []).map(c => (
                               <option key={c.id} value={c.id}>{c.name}</option>
@@ -10314,7 +10205,7 @@ export default function TextAnalysisApp() {
                           </select>
                           <button
                             onClick={() => removeDocument(doc.id)}
-                            className="p-2 text-muted-foreground hover:text-red-400 transition-colors"
+                            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
                           >
                             <X className="w-5 h-5" />
                           </button>
@@ -10338,7 +10229,7 @@ export default function TextAnalysisApp() {
               {/* Top Words */}
               <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <TrendingUp className="w-5 h-5 text-primary dark:text-primary" />
                   Top 30 Palavras
                 </h3>
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
@@ -10347,7 +10238,7 @@ export default function TextAnalysisApp() {
                       <span className="w-6 text-right text-muted-foreground text-sm">{idx + 1}</span>
                       <div className="flex-1 h-8 bg-muted rounded-lg overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-indigo-500/30 to-violet-500/30 rounded-lg flex items-center px-3"
+                          className="h-full bg-primary/20 rounded-lg flex items-center px-3"
                           style={{ width: `${(word.count / analysisResults.wordFrequency[0].count) * 100}%` }}
                         >
                           <span className="text-sm font-medium truncate">{word.word}</span>
@@ -10362,7 +10253,7 @@ export default function TextAnalysisApp() {
               {/* Frequency Distribution */}
               <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <PieChart className="w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
                   Distribuição de Frequências
                 </h3>
                 <div className="space-y-4">
@@ -10382,7 +10273,7 @@ export default function TextAnalysisApp() {
                             className="h-full rounded-lg"
                             style={{ 
                               width: `${percentage}%`,
-                              backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'][idx] || '#6366f1'
+                              backgroundColor: ['oklch(0.457 0.215 277.02)', 'oklch(0.457 0.215 277.02)', 'oklch(0.359 0.135 278.70)', 'oklch(0.457 0.215 277.02)', 'oklch(0.585 0.204 277.12)'][idx] || 'oklch(0.457 0.215 277.02)'
                             }}
                           />
                         </div>
@@ -10545,9 +10436,9 @@ export default function TextAnalysisApp() {
                   >
                     <span className="text-sm">
                       <span className="text-muted-foreground mr-2">{idx + 1}.</span>
-                      <span className="text-indigo-500 dark:text-indigo-400">{b.word1}</span>
+                      <span className="text-primary">{b.word1}</span>
                       <span className="text-muted-foreground mx-1">+</span>
-                      <span className="text-violet-500 dark:text-violet-400">{b.word2}</span>
+                      <span className="text-primary">{b.word2}</span>
                     </span>
                     <span className="text-sm font-medium text-foreground/80">{b.count}x</span>
                   </div>
@@ -10582,13 +10473,13 @@ export default function TextAnalysisApp() {
                   onChange={(e) => setWordTreeKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && buildWordTreeFromKeyword()}
                   placeholder="Digite a palavra central (ex: comunicação)"
-                  className="w-full px-4 py-3 bg-muted border border-input rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:border-indigo-500"
+                  className="w-full px-4 py-3 bg-muted border border-input rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary"
                 />
               </div>
               <button
                 onClick={buildWordTreeFromKeyword}
                 disabled={!wordTreeKeyword.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-violet-600 rounded-xl font-medium hover:shadow-lg hover:shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-primary rounded-xl font-medium hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Gerar Árvore
               </button>
@@ -10624,8 +10515,8 @@ export default function TextAnalysisApp() {
             {wordTreeData && (
               <div className="mt-4 text-sm text-muted-foreground">
                 Total de ocorrências encontradas: <span className="text-foreground font-medium">{wordTreeData.totalOccurrences || 0}</span>
-                {' • '}Contextos à esquerda: <span className="text-indigo-500 dark:text-indigo-400">{wordTreeData.left?.length || 0}</span>
-                {' • '}Contextos à direita: <span className="text-violet-500 dark:text-violet-400">{wordTreeData.right?.length || 0}</span>
+                {' • '}Contextos à esquerda: <span className="text-primary">{wordTreeData.left?.length || 0}</span>
+                {' • '}Contextos à direita: <span className="text-primary">{wordTreeData.right?.length || 0}</span>
               </div>
             )}
           </div>
@@ -10682,7 +10573,7 @@ export default function TextAnalysisApp() {
             {/* Configurações de Rede */}
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <Settings className="w-5 h-5 text-primary" />
                 Parâmetros da Rede
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -10722,7 +10613,7 @@ export default function TextAnalysisApp() {
                 <div className="flex items-end">
                   <button
                     onClick={processCorpus}
-                    className="w-full px-4 py-2 bg-indigo-700 hover:bg-indigo-600 rounded-lg text-sm transition-colors"
+                    className="w-full px-4 py-2 bg-primary hover:bg-primary rounded-lg text-sm transition-colors"
                   >
                     Recalcular
                   </button>
@@ -10733,7 +10624,7 @@ export default function TextAnalysisApp() {
             {/* Métricas de Centralidade */}
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <GitBranch className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <GitBranch className="w-5 h-5 text-primary" />
                 Métricas de Centralidade
               </h3>
               <CentralityMetricsPanel 
@@ -10746,7 +10637,7 @@ export default function TextAnalysisApp() {
             {/* Comunidades Detectadas */}
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Layers className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+                <Layers className="w-5 h-5 text-primary" />
                 Comunidades Detectadas (Louvain)
               </h3>
               <CommunitiesPanel networkAnalysis={networkAnalysis} isDarkMode={isDarkMode} />
@@ -10758,7 +10649,7 @@ export default function TextAnalysisApp() {
         {activeTab === 'associations' && statisticalAnalysis && (
           <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
             <h3 className="font-semibold mb-6 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-amber-400" />
+              <Activity className="w-5 h-5 text-muted-foreground" />
               Medidas de Associação entre Palavras
             </h3>
             <AssociationsPanel statisticalAnalysis={statisticalAnalysis} isDarkMode={isDarkMode} />
@@ -10769,7 +10660,7 @@ export default function TextAnalysisApp() {
         {activeTab === 'tfidf' && statisticalAnalysis && (
           <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
             <h3 className="font-semibold mb-6 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+              <TrendingUp className="w-5 h-5 text-primary" />
               Análise TF-IDF (Term Frequency - Inverse Document Frequency)
             </h3>
             <p className={`text-sm text-muted-foreground mb-6`}>
@@ -10784,7 +10675,7 @@ export default function TextAnalysisApp() {
           <div className="space-y-8">
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <h3 className="font-semibold mb-6 flex items-center gap-2">
-                <PieChart className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+                <PieChart className="w-5 h-5 text-primary" />
                 Diversidade e Riqueza Léxica
               </h3>
               <LexicalDiversityPanel statisticalAnalysis={statisticalAnalysis} isDarkMode={isDarkMode} />
@@ -10794,7 +10685,7 @@ export default function TextAnalysisApp() {
             {corpora.length >= 2 && (
               <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
                 <h3 className="font-semibold mb-6 flex items-center gap-2">
-                  <Hash className="w-5 h-5 text-green-400" />
+                  <Hash className="w-5 h-5 text-primary" />
                   Especificidades por Corpus
                 </h3>
                 <SpecificitiesPanel statisticalAnalysis={statisticalAnalysis} />
@@ -10808,7 +10699,7 @@ export default function TextAnalysisApp() {
           <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold flex items-center gap-2">
-                <Layers className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <Layers className="w-5 h-5 text-primary" />
                 Classificação Hierárquica Descendente (CHD/Reinert)
               </h3>
               <ExportVisualizationButton 
@@ -10841,7 +10732,7 @@ export default function TextAnalysisApp() {
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                  <Tag className="w-5 h-5 text-primary" />
                   Codificação Qualitativa
                 </h3>
                 <div className="flex items-center gap-3">
@@ -10852,7 +10743,7 @@ export default function TextAnalysisApp() {
                     <button
                       onClick={runAutoCoding}
                       disabled={isAutoCoding}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2 disabled:opacity-50"
+                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50"
                     >
                       {isAutoCoding ? (
                         <>
@@ -10871,7 +10762,7 @@ export default function TextAnalysisApp() {
                     <div className="relative" ref={exportDropdownRef}>
                       <button
                         onClick={() => setShowExportDropdown(!showExportDropdown)}
-                        className={`px-4 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 rounded-lg text-sm transition-colors flex items-center gap-2`}
+                        className={`px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/20 text-primary hover:bg-primary/20 rounded-lg text-sm transition-colors flex items-center gap-2`}
                       >
                         <Download className="w-4 h-4" />
                         Exportar Codificação
@@ -10888,8 +10779,8 @@ export default function TextAnalysisApp() {
                               onClick={() => { exportCodingData(); setShowExportDropdown(false); }}
                               className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent flex items-center gap-3 transition-colors`}
                             >
-                              <span className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                                <FileText className="w-4 h-4 text-green-400" />
+                              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                                <FileText className="w-4 h-4 text-primary" />
                               </span>
                               <div>
                                 <div className="font-medium">CSV</div>
@@ -10900,8 +10791,8 @@ export default function TextAnalysisApp() {
                               onClick={() => { exportCodingXLSX(); setShowExportDropdown(false); }}
                               className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent flex items-center gap-3 transition-colors`}
                             >
-                              <span className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                                <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                                <FileSpreadsheet className="w-4 h-4 text-primary" />
                               </span>
                               <div>
                                 <div className="font-medium">Excel (.xlsx)</div>
@@ -10912,8 +10803,8 @@ export default function TextAnalysisApp() {
                               onClick={() => { exportCodingJSON(); setShowExportDropdown(false); }}
                               className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent flex items-center gap-3 transition-colors`}
                             >
-                              <span className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                                <Code className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+                              <span className="w-8 h-8 rounded-lg bg-primary/50/20 flex items-center justify-center">
+                                <Code className="w-4 h-4 text-primary" />
                               </span>
                               <div>
                                 <div className="font-medium">JSON</div>
@@ -10936,8 +10827,8 @@ export default function TextAnalysisApp() {
                               onClick={() => { exportCodingMarkdown(); setShowExportDropdown(false); }}
                               className={`w-full px-4 py-2.5 text-left text-sm hover:bg-accent flex items-center gap-3 transition-colors`}
                             >
-                              <span className="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center">
-                                <Hash className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                                <Hash className="w-4 h-4 text-primary" />
                               </span>
                               <div>
                                 <div className="font-medium">Markdown (.md)</div>
@@ -11039,7 +10930,7 @@ export default function TextAnalysisApp() {
                   {customCodes.length > 0 && (
                     <div className="rounded-lg overflow-hidden mt-4 pt-4 border-t border-border">
                       <div className="p-3" style={{ borderLeft: '3px solid #a855f7' }}>
-                        <span className="font-medium text-sm text-violet-500 dark:text-violet-400">
+                        <span className="font-medium text-sm text-primary">
                           Códigos Customizados ({(customCodes || []).length})
                         </span>
                       </div>
@@ -11091,13 +10982,13 @@ export default function TextAnalysisApp() {
                           <span className={`text-xs text-muted-foreground`}>
                             {codedSegments.filter(seg => seg.documentId === doc.id).length} segmentos
                           </span>
-                          <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">
+                          <span className="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary">
                             {codedSegments.filter(seg => seg.documentId === doc.id && seg.isAutomatic).length} auto
                           </span>
                           {editingDocument !== doc.id && (
                             <button
                               onClick={() => startEditingDocument(doc)}
-                              className={`p-1.5 rounded transition-colors hover:bg-muted text-muted-foreground hover:text-indigo-600 dark:hover:bg-accent text-muted-foreground hover:text-indigo-500 dark:text-indigo-400`}
+                              className={`p-1.5 rounded transition-colors hover:bg-muted text-muted-foreground hover:text-primary dark:hover:bg-accent text-muted-foreground hover:text-primary`}
                               title="Editar documento"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -11111,13 +11002,13 @@ export default function TextAnalysisApp() {
                             <textarea
                               value={editingDocumentContent}
                               onChange={(e) => setEditingDocumentContent(e.target.value)}
-                              className={`w-full p-3 rounded-lg text-sm border resize-none min-h-[200px] bg-white border-input text-foreground focus:outline-none focus:border-indigo-500`}
+                              className={`w-full p-3 rounded-lg text-sm border resize-none min-h-[200px] bg-white border-input text-foreground focus:outline-none focus:border-primary`}
                               rows={10}
                             />
                             <div className="flex gap-2">
                               <button
                                 onClick={() => updateDocumentContent(doc.id, editingDocumentContent)}
-                                className="px-4 py-2 bg-indigo-700 text-white rounded-lg text-sm hover:bg-indigo-600 transition-colors flex items-center gap-2"
+                                className="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary transition-colors flex items-center gap-2"
                               >
                                 <Check className="w-4 h-4" />
                                 Salvar Alterações
@@ -11154,25 +11045,25 @@ export default function TextAnalysisApp() {
               <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-semibold flex items-center gap-2">
-                    <Check className="w-5 h-5 text-green-400" />
+                    <Check className="w-5 h-5 text-primary" />
                     Segmentos Codificados ({codedSegments.length})
                   </h4>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setCodingFilter('all')}
-                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:bg-accent'}`}
+                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'all' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-accent'}`}
                     >
                       Todos
                     </button>
                     <button
                       onClick={() => setCodingFilter('auto')}
-                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'auto' ? 'bg-green-600 text-white' : 'text-muted-foreground hover:bg-accent'}`}
+                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'auto' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
                     >
                       Automáticos
                     </button>
                     <button
                       onClick={() => setCodingFilter('manual')}
-                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'manual' ? 'bg-indigo-700 text-white' : 'text-muted-foreground hover:bg-accent'}`}
+                      className={`px-3 py-1 rounded-lg text-xs transition-colors ${codingFilter === 'manual' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-accent'}`}
                     >
                       Manuais
                     </button>
@@ -11192,7 +11083,7 @@ export default function TextAnalysisApp() {
                           <span className={`text-xs font-mono px-2 py-1 rounded bg-muted`}>#{idx + 1}</span>
                           <span className={`text-xs text-muted-foreground`}>{segment.documentName}</span>
                           {segment.isAutomatic && (
-                            <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 flex items-center gap-1">
+                            <span className="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary flex items-center gap-1">
                               <Zap className="w-3 h-3" />
                               auto
                             </span>
@@ -11207,7 +11098,7 @@ export default function TextAnalysisApp() {
                           {editingSegment !== segment.id && (
                             <button
                               onClick={() => startEditingSegment(segment)}
-                              className={`p-1.5 rounded transition-colors hover:bg-muted text-muted-foreground hover:text-indigo-600 dark:hover:bg-accent text-muted-foreground hover:text-indigo-500 dark:text-indigo-400`}
+                              className={`p-1.5 rounded transition-colors hover:bg-muted text-muted-foreground hover:text-primary dark:hover:bg-accent text-muted-foreground hover:text-primary`}
                               title="Editar texto"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -11215,7 +11106,7 @@ export default function TextAnalysisApp() {
                           )}
                           <button
                             onClick={() => removeCodedSegment(segment.id)}
-                            className="p-1.5 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors"
+                            className="p-1.5 hover:bg-destructive/20 rounded text-destructive hover:text-destructive transition-colors"
                             title="Remover segmento"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -11229,14 +11120,14 @@ export default function TextAnalysisApp() {
                           <textarea
                             value={editingSegmentText}
                             onChange={(e) => setEditingSegmentText(e.target.value)}
-                            className={`w-full p-3 rounded-lg text-sm border resize-none bg-white border-input text-foreground focus:outline-none focus:border-indigo-500`}
+                            className={`w-full p-3 rounded-lg text-sm border resize-none bg-white border-input text-foreground focus:outline-none focus:border-primary`}
                             rows={4}
                             autoFocus
                           />
                           <div className="flex gap-2 mt-2">
                             <button
                               onClick={() => updateSegmentText(segment.id, editingSegmentText)}
-                              className="px-3 py-1.5 bg-indigo-700 text-white rounded-lg text-sm hover:bg-indigo-600 transition-colors flex items-center gap-1"
+                              className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm hover:bg-primary transition-colors flex items-center gap-1"
                             >
                               <Check className="w-3 h-3" />
                               Salvar
@@ -11303,7 +11194,7 @@ export default function TextAnalysisApp() {
                             setAddingCodeToSegment(segment.id);
                             setCodeSearchTerm('');
                           }}
-                          className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 border-2 border-dashed transition-colors border-input text-muted-foreground hover:border-indigo-500 hover:text-indigo-600 dark:border-input text-muted-foreground hover:border-indigo-500 hover:text-indigo-500 dark:text-indigo-400`}
+                          className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 border-2 border-dashed transition-colors border-input text-muted-foreground hover:border-primary hover:text-primary dark:border-input text-muted-foreground hover:border-primary hover:text-primary`}
                           title="Adicionar código"
                         >
                           <Plus className="w-3 h-3" />
@@ -11346,17 +11237,17 @@ export default function TextAnalysisApp() {
                   onClick={() => setAddingCodeToSegment(null)}
                 />
                 <div 
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border-2 border-indigo-500 rounded-2xl shadow-2xl p-5 w-[360px] max-h-[80vh] flex flex-col"
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background border-2 border-primary rounded-2xl shadow-2xl p-5 w-[360px] max-h-[80vh] flex flex-col"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
                     <div className="flex items-center gap-2">
-                      <Plus className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                      <Plus className="w-5 h-5 text-primary" />
                       <span className="text-lg font-semibold text-foreground">Adicionar Código</span>
                     </div>
                     <button 
                       onClick={() => setAddingCodeToSegment(null)}
-                      className="w-10 h-10 flex items-center justify-center bg-red-500/30 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all"
+                      className="w-10 h-10 flex items-center justify-center bg-destructive/30 hover:bg-destructive text-destructive hover:text-white rounded-xl transition-all"
                     >
                       <X className="w-6 h-6" />
                     </button>
@@ -11369,7 +11260,7 @@ export default function TextAnalysisApp() {
                       value={codeSearchTerm}
                       onChange={(e) => setCodeSearchTerm(e.target.value)}
                       placeholder="Buscar código..."
-                      className="w-full pl-12 pr-4 py-3 bg-card border-2 border-input rounded-xl text-base text-foreground focus:outline-none focus:border-indigo-500 placeholder-muted-foreground"
+                      className="w-full pl-12 pr-4 py-3 bg-card border-2 border-input rounded-xl text-base text-foreground focus:outline-none focus:border-primary placeholder-muted-foreground"
                       autoFocus
                     />
                   </div>
@@ -11383,7 +11274,7 @@ export default function TextAnalysisApp() {
                           key={code.id}
                           onClick={() => !alreadyHasCode && addCodeToExistingSegment(addingCodeToSegment, code)}
                           disabled={alreadyHasCode}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left border-2 ${alreadyHasCode ? 'opacity-50 cursor-not-allowed border-transparent bg-card' : 'border-transparent hover:border-indigo-500/50 hover:bg-accent/80'}`}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left border-2 ${alreadyHasCode ? 'opacity-50 cursor-not-allowed border-transparent bg-card' : 'border-transparent hover:border-primary/50 hover:bg-accent/80'}`}
                         >
                           <span 
                             className="w-5 h-5 rounded-full flex-shrink-0 ring-2 ring-white/30"
@@ -11394,7 +11285,7 @@ export default function TextAnalysisApp() {
                             <p className="text-sm text-muted-foreground truncate">{code.categoryName}</p>
                           </div>
                           {alreadyHasCode ? (
-                            <Check className="w-5 h-5 text-green-400" />
+                            <Check className="w-5 h-5 text-primary" />
                           ) : (
                             <ChevronRight className="w-5 h-5 text-muted-foreground" />
                           )}
@@ -11413,7 +11304,7 @@ export default function TextAnalysisApp() {
           <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold flex items-center gap-2">
-                <Target className="w-5 h-5 text-green-400" />
+                <Target className="w-5 h-5 text-primary" />
                 Radar de Categorias
               </h3>
               <ExportVisualizationButton 
@@ -11444,7 +11335,7 @@ export default function TextAnalysisApp() {
           <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold flex items-center gap-2">
-                <CircleDot className="w-5 h-5 text-amber-400" />
+                <CircleDot className="w-5 h-5 text-muted-foreground" />
                 Sunburst de Códigos
               </h3>
               <ExportVisualizationButton 
@@ -11476,7 +11367,7 @@ export default function TextAnalysisApp() {
           <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <GitBranch className="w-5 h-5 text-emerald-400" />
+                <GitBranch className="w-5 h-5 text-primary" />
                 Dendrograma de Clustering Hierárquico
               </h3>
               <div className="flex items-center gap-3 flex-wrap">
@@ -11485,7 +11376,7 @@ export default function TextAnalysisApp() {
                   <select 
                     value={dendrogramMethod}
                     onChange={(e) => setDendrogramMethod(e.target.value)}
-                    className="px-3 py-1.5 bg-secondary border border-input rounded-lg text-sm focus:border-emerald-500 focus:outline-none"
+                    className="px-3 py-1.5 bg-secondary border border-input rounded-lg text-sm focus:border-primary focus:outline-none"
                   >
                     <option value="ward">Ward (Variância Mínima)</option>
                     <option value="complete">Complete (Máxima Distância)</option>
@@ -11522,7 +11413,7 @@ export default function TextAnalysisApp() {
                     </button>
                     <button
                       onClick={exportDendrogramDocx}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm flex items-center gap-1.5 transition-colors"
+                      className="px-3 py-1.5 bg-primary hover:bg-primary/80 rounded-lg text-sm flex items-center gap-1.5 transition-colors"
                       title="Exportar relatório metodológico (DOCX)"
                     >
                       <FileText className="w-4 h-4" />
@@ -11536,7 +11427,7 @@ export default function TextAnalysisApp() {
             {isDendrogramLoading ? (
               <div className="flex items-center justify-center text-muted-foreground h-64">
                 <div className="text-center">
-                  <Loader2 className="w-12 h-12 mx-auto mb-3 animate-spin text-emerald-400" />
+                  <Loader2 className="w-12 h-12 mx-auto mb-3 animate-spin text-primary" />
                   <p>Calculando clustering hierárquico...</p>
                   <p className="text-sm mt-2 text-muted-foreground">Método: {dendrogramMethod}</p>
                 </div>
@@ -11557,26 +11448,26 @@ export default function TextAnalysisApp() {
                 {/* Informações da Análise */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-card rounded-xl p-4 border border-border">
-                    <div className="text-2xl font-bold text-emerald-400">{dendrogramData.words.length}</div>
+                    <div className="text-2xl font-bold text-primary">{dendrogramData.words.length}</div>
                     <div className="text-sm text-muted-foreground">Termos Analisados</div>
                   </div>
                   <div className="bg-card rounded-xl p-4 border border-border">
-                    <div className="text-2xl font-bold text-indigo-500 dark:text-indigo-400">{dendrogramData.linkageMatrix.length}</div>
+                    <div className="text-2xl font-bold text-primary">{dendrogramData.linkageMatrix.length}</div>
                     <div className="text-sm text-muted-foreground">Fusões de Clusters</div>
                   </div>
                   <div className="bg-card rounded-xl p-4 border border-border">
-                    <div className="text-2xl font-bold text-violet-500 dark:text-violet-400">{dendrogramData.windowSize}</div>
+                    <div className="text-2xl font-bold text-primary">{dendrogramData.windowSize}</div>
                     <div className="text-sm text-muted-foreground">Janela Coocorrência</div>
                   </div>
                   <div className="bg-card rounded-xl p-4 border border-border">
-                    <div className="text-2xl font-bold text-amber-400 capitalize">{dendrogramData.method}</div>
+                    <div className="text-2xl font-bold text-muted-foreground capitalize">{dendrogramData.method}</div>
                     <div className="text-sm text-muted-foreground">Método de Linkage</div>
                   </div>
                 </div>
                 
                 {/* Tabela de Estatísticas */}
                 <div className="bg-card rounded-xl p-4 border border-border">
-                  <h4 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
                     <Hash className="w-4 h-4" />
                     Estatísticas dos Termos (Top 10)
                   </h4>
@@ -11597,13 +11488,13 @@ export default function TextAnalysisApp() {
                           <tr key={stat.word} className="border-b border-border/50 hover:bg-accent/30">
                             <td className="py-2 pr-4 text-muted-foreground">{stat.rank}</td>
                             <td className="py-2 pr-4 font-medium text-foreground">{stat.word}</td>
-                            <td className="py-2 pr-4 text-indigo-500 dark:text-indigo-400">{stat.frequency}</td>
-                            <td className="py-2 pr-4 text-violet-500 dark:text-violet-400">{stat.cooccurrenceSum}</td>
+                            <td className="py-2 pr-4 text-primary">{stat.frequency}</td>
+                            <td className="py-2 pr-4 text-primary">{stat.cooccurrenceSum}</td>
                             <td className="py-2 pr-4">
-                              <span className="text-emerald-400">{stat.strongestConnection}</span>
+                              <span className="text-primary">{stat.strongestConnection}</span>
                               <span className="text-muted-foreground text-xs ml-1">({stat.strongestConnectionValue})</span>
                             </td>
-                            <td className="py-2 pr-4 text-amber-400">{stat.avgDistance}</td>
+                            <td className="py-2 pr-4 text-muted-foreground">{stat.avgDistance}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -11615,8 +11506,8 @@ export default function TextAnalysisApp() {
                 </div>
                 
                 {/* Nota metodológica */}
-                <div className="p-4 bg-emerald-900/20 rounded-xl border border-emerald-700/30">
-                  <h4 className="text-sm font-medium text-emerald-400 mb-2">📊 Interpretação</h4>
+                <div className="p-4 bg-primary/10 rounded-xl border border-primary/30">
+                  <h4 className="text-sm font-medium text-primary mb-2">📊 Interpretação</h4>
                   <p className="text-sm text-foreground/80">
                     Termos próximos no dendrograma compartilham padrões de coocorrência similares. 
                     A altura de fusão indica dissimilaridade: fusões baixas = termos semanticamente relacionados.
@@ -11641,7 +11532,7 @@ export default function TextAnalysisApp() {
           <div className="space-y-6">
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Search className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <Search className="w-5 h-5 text-primary" />
                 KWIC - Keyword in Context
               </h3>
               <div className="flex gap-3">
@@ -11651,11 +11542,11 @@ export default function TextAnalysisApp() {
                   onChange={(e) => setKwicKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && performKWICSearch()}
                   placeholder="Digite uma palavra-chave..."
-                  className="flex-1 px-4 py-3 bg-secondary border border-input rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
+                  className="flex-1 px-4 py-3 bg-secondary border border-input rounded-xl focus:border-primary focus:outline-none transition-colors"
                 />
                 <button
                   onClick={performKWICSearch}
-                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-medium transition-colors"
+                  className="px-6 py-3 bg-primary hover:bg-primary rounded-xl font-medium transition-colors"
                 >
                   Buscar
                 </button>
@@ -11671,7 +11562,7 @@ export default function TextAnalysisApp() {
                   {(kwicResults || []).map((result, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-sm font-mono bg-muted/30 p-3 rounded-lg">
                       <span className="text-right text-muted-foreground flex-1 truncate">{result.left}</span>
-                      <span className="px-2 py-1 bg-indigo-600/20 text-cyan-300 rounded font-bold whitespace-nowrap">
+                      <span className="px-2 py-1 bg-primary/20 text-primary rounded font-bold whitespace-nowrap">
                         {result.keyword}
                       </span>
                       <span className="text-left text-muted-foreground flex-1 truncate">{result.right}</span>
@@ -11687,11 +11578,11 @@ export default function TextAnalysisApp() {
         {activeTab === 'export' && analysisResults && analysisResults.wordFrequency && (
           <div className="space-y-6">
             {/* Botão principal - Baixar Tudo */}
-            <div className="bg-gradient-to-r from-indigo-500/20 to-violet-500/20 rounded-xl p-4 sm:p-6 border border-indigo-500/30">
+            <div className="bg-primary/10 rounded-xl p-4 sm:p-6 border border-primary/30">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Download className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                    <Download className="w-5 h-5 text-primary" />
                     Exportação Completa
                   </h3>
                   <p className="text-muted-foreground text-sm mt-1">
@@ -11701,7 +11592,7 @@ export default function TextAnalysisApp() {
                 <button
                   onClick={exportAllAsZip}
                   disabled={isProcessing}
-                  className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-medium rounded-xl hover:from-indigo-400 hover:to-violet-500 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary/80 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center gap-2"
                 >
                   {isProcessing ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -11716,7 +11607,7 @@ export default function TextAnalysisApp() {
             {/* Dados Textuais */}
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <FileText className="w-5 h-5 text-primary" />
                 Dados Textuais
               </h3>
               <div className="grid md:grid-cols-2 gap-4">
@@ -11724,7 +11615,7 @@ export default function TextAnalysisApp() {
                 <div className="bg-muted rounded-xl p-4 border border-input">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                      <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <div className="font-medium">Corpus IRaMuTeQ</div>
@@ -11743,7 +11634,7 @@ export default function TextAnalysisApp() {
                 <div className="bg-muted rounded-xl p-4 border border-input">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <BarChart3 className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+                      <BarChart3 className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <div className="font-medium">Frequências</div>
@@ -11770,7 +11661,7 @@ export default function TextAnalysisApp() {
                 <div className="bg-muted rounded-xl p-4 border border-input">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Network className="w-5 h-5 text-green-400" />
+                      <Network className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <div className="font-medium">Coocorrências</div>
@@ -11798,7 +11689,7 @@ export default function TextAnalysisApp() {
                   <div className="bg-muted rounded-xl p-4 border border-input">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                        <Layers className="w-5 h-5 text-amber-400" />
+                        <Layers className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div>
                         <div className="font-medium">CHD/Reinert</div>
@@ -11847,7 +11738,7 @@ export default function TextAnalysisApp() {
                 <div className="bg-muted rounded-xl p-4 border border-input">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                      <Sparkles className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <div className="font-medium">Análise Completa</div>
@@ -11867,7 +11758,7 @@ export default function TextAnalysisApp() {
             {/* Visualizações como Imagem */}
             <div className={`bg-card rounded-xl p-4 sm:p-6 border border-border`}>
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <PieChart className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <PieChart className="w-5 h-5 text-primary" />
                 Visualizações como Imagem
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
@@ -11878,7 +11769,7 @@ export default function TextAnalysisApp() {
                 <div className="bg-muted rounded-xl p-4 border border-input">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Cloud className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                      <Cloud className="w-5 h-5 text-primary" />
                     </div>
                     <div className="font-medium">Nuvem de Palavras</div>
                   </div>
@@ -11902,7 +11793,7 @@ export default function TextAnalysisApp() {
                 <div className="bg-muted rounded-xl p-4 border border-input">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Network className="w-5 h-5 text-green-400" />
+                      <Network className="w-5 h-5 text-primary" />
                     </div>
                     <div className="font-medium">Rede de Similitude</div>
                   </div>
@@ -11926,7 +11817,7 @@ export default function TextAnalysisApp() {
                 <div className="bg-muted rounded-xl p-4 border border-input">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      <Layers className="w-5 h-5 text-amber-400" />
+                      <Layers className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div className="font-medium">CHD/Reinert</div>
                   </div>
@@ -11964,10 +11855,10 @@ export default function TextAnalysisApp() {
             <div className="flex-shrink-0 flex items-center justify-between p-4 md:p-6 border-b border-border bg-background rounded-t-2xl sticky top-0 z-10">
               <div>
                 <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
-                  <Search className="w-5 h-5 md:w-6 md:h-6 text-indigo-500 dark:text-indigo-400" />
+                  <Search className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                   Análise de Incidências
                   {incidenceAnalysis && (
-                    <span className="ml-2 px-3 py-1 bg-indigo-600/20 text-cyan-300 rounded-full text-sm font-medium">
+                    <span className="ml-2 px-3 py-1 bg-primary/20 text-primary rounded-full text-sm font-medium">
                       "{incidenceAnalysis.word}"
                     </span>
                   )}
@@ -11988,7 +11879,7 @@ export default function TextAnalysisApp() {
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
             {isAnalyzingIncidence ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="w-12 h-12 text-indigo-500 dark:text-indigo-400 animate-spin mb-4" />
+                <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
                 <p className="text-muted-foreground">Analisando todas as incidências e variações...</p>
               </div>
             ) : incidenceAnalysis ? (
@@ -11996,19 +11887,19 @@ export default function TextAnalysisApp() {
                 {/* Estatísticas Resumidas */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="bg-card rounded-xl p-4 border border-border">
-                    <div className="text-3xl font-bold text-indigo-500 dark:text-indigo-400">{incidenceAnalysis.statistics.totalOccurrences}</div>
+                    <div className="text-3xl font-bold text-primary">{incidenceAnalysis.statistics.totalOccurrences}</div>
                     <div className={`text-sm text-muted-foreground`}>Total de Ocorrências</div>
                   </div>
                   <div className="bg-card rounded-xl p-4 border border-border">
-                    <div className="text-3xl font-bold text-violet-500 dark:text-violet-400">{incidenceAnalysis.statistics.uniqueVariationsFound || 1}</div>
+                    <div className="text-3xl font-bold text-primary">{incidenceAnalysis.statistics.uniqueVariationsFound || 1}</div>
                     <div className={`text-sm text-muted-foreground`}>Variações Encontradas</div>
                   </div>
                   <div className="bg-card rounded-xl p-4 border border-border">
-                    <div className="text-3xl font-bold text-green-400">{incidenceAnalysis.statistics.documentsWithWord}</div>
+                    <div className="text-3xl font-bold text-primary">{incidenceAnalysis.statistics.documentsWithWord}</div>
                     <div className={`text-sm text-muted-foreground`}>Documentos</div>
                   </div>
                   <div className="bg-card rounded-xl p-4 border border-border">
-                    <div className="text-3xl font-bold text-amber-400">{incidenceAnalysis.statistics.coveragePercentage}</div>
+                    <div className="text-3xl font-bold text-muted-foreground">{incidenceAnalysis.statistics.coveragePercentage}</div>
                     <div className={`text-sm text-muted-foreground`}>Cobertura</div>
                   </div>
                   <div className="bg-card rounded-xl p-4 border border-border">
@@ -12019,8 +11910,8 @@ export default function TextAnalysisApp() {
                 
                 {/* Variações Encontradas */}
                 {incidenceAnalysis.statistics.variationBreakdown && incidenceAnalysis.statistics.variationBreakdown.length > 0 && (
-                  <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 rounded-xl p-4 border border-violet-300 dark:border-violet-700">
-                    <h4 className="font-semibold text-violet-400 mb-3 flex items-center gap-2">
+                  <div className="bg-primary/10 rounded-xl p-4 border border-primary/30">
+                    <h4 className="font-semibold text-primary mb-3 flex items-center gap-2">
                       <Layers className="w-4 h-4" />
                       Variações Morfológicas Agrupadas
                     </h4>
@@ -12031,7 +11922,7 @@ export default function TextAnalysisApp() {
                       {incidenceAnalysis.statistics.variationBreakdown.map((v, idx) => (
                         <div key={idx} className="flex items-center justify-between bg-card rounded-lg px-3 py-2">
                           <div className="flex items-center gap-3">
-                            <span className="font-mono text-cyan-300 font-medium">{v.variation}</span>
+                            <span className="font-mono text-primary font-medium">{v.variation}</span>
                             <span className="text-xs text-muted-foreground">
                               ({v.originalForms.join(', ')})
                             </span>
@@ -12048,7 +11939,7 @@ export default function TextAnalysisApp() {
                 
                 {/* Metodologia */}
                 <div className="bg-card/30 rounded-xl p-4 border border-input">
-                  <h4 className="font-semibold text-cyan-300 mb-2 flex items-center gap-2">
+                  <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
                     <BookOpen className="w-4 h-4" />
                     Metodologia Aplicada
                   </h4>
@@ -12065,7 +11956,7 @@ export default function TextAnalysisApp() {
                   {incidenceAnalysis.variationsSearched && incidenceAnalysis.variationsSearched.length > 1 && (
                     <div className="mt-3 p-3 bg-muted rounded-lg text-xs">
                       <span className="text-muted-foreground">Variações buscadas: </span>
-                      <span className="text-cyan-300 font-mono">{incidenceAnalysis.variationsSearched.join(', ')}</span>
+                      <span className="text-primary font-mono">{incidenceAnalysis.variationsSearched.join(', ')}</span>
                     </div>
                   )}
                   <div className="mt-3 p-3 bg-muted rounded-lg font-mono text-xs text-foreground/80">
@@ -12077,19 +11968,19 @@ export default function TextAnalysisApp() {
                 {/* Lista de Todas as Ocorrências */}
                 <div>
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <Hash className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                    <Hash className="w-4 h-4 text-primary" />
                     Todas as Ocorrências ({incidenceAnalysis.allContexts?.length || 0})
                   </h4>
                   <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
                     {(incidenceAnalysis.allContexts || []).map((occ, idx) => (
-                      <div key={idx} className="bg-card rounded-lg p-4 border border-border hover:border-indigo-500/30 transition-colors">
+                      <div key={idx} className="bg-card rounded-lg p-4 border border-border hover:border-primary/30 transition-colors">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-mono bg-secondary px-2 py-1 rounded">
                               #{idx + 1}
                             </span>
                             {!occ.isExactMatch && (
-                              <span className="text-xs bg-violet-500/20 text-violet-400 px-2 py-1 rounded">
+                              <span className="text-xs bg-primary/50/20 text-primary px-2 py-1 rounded">
                                 variação
                               </span>
                             )}
@@ -12103,7 +11994,7 @@ export default function TextAnalysisApp() {
                         <div className="font-mono text-sm">
                           <span className="text-muted-foreground">...</span>
                           <span className="text-foreground/80">{occ.contextBefore}</span>
-                          <span className={`px-1 rounded font-bold ${occ.isExactMatch ? 'bg-indigo-600/30 text-cyan-200' : 'bg-violet-500/30 text-purple-200'}`}>
+                          <span className={`px-1 rounded font-bold ${occ.isExactMatch ? 'bg-primary/30 text-primary' : 'bg-primary/50/30 text-primary'}`}>
                             {occ.matchedText}
                           </span>
                           <span className="text-foreground/80">{occ.contextAfter}</span>
@@ -12121,14 +12012,14 @@ export default function TextAnalysisApp() {
                 {incidenceAnalysis.occurrencesByDocument?.length > 0 && (
                   <div>
                     <h4 className="font-semibold mb-3 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                      <FileText className="w-4 h-4 text-primary" />
                       Distribuição por Documento
                     </h4>
                     <div className="space-y-2">
                       {(incidenceAnalysis.occurrencesByDocument || []).map((doc, idx) => (
                         <div key={idx} className="flex items-center gap-3 bg-card/30 rounded-lg p-3">
                           <span className="text-sm font-medium text-foreground/80 flex-1 truncate">{doc.documentName}</span>
-                          <span className="text-indigo-500 dark:text-indigo-400 font-bold">{doc.count}x</span>
+                          <span className="text-primary font-bold">{doc.count}x</span>
                           <span className="text-xs text-muted-foreground">{doc.relativeFrequency}</span>
                         </div>
                       ))}
@@ -12152,7 +12043,7 @@ export default function TextAnalysisApp() {
                   </button>
                   <button
                     onClick={exportScientificReport}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 rounded-lg transition-colors font-medium text-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 rounded-lg transition-colors font-medium text-sm"
                   >
                     <FileText className="w-4 h-4" />
                     Relatório Científico
