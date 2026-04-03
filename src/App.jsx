@@ -6283,6 +6283,247 @@ const AFCVisualization = ({ afcData, width = 800, height = 600, isDarkMode = tru
   );
 };
 
+// ==================== SANKEY DIAGRAM ====================
+
+const calculateSankey = (documents, wordFrequency, cooccurrences, stopwords = null, options = {}) => {
+  if (!documents || documents.length < 1 || !wordFrequency || wordFrequency.length < 5 || !cooccurrences || cooccurrences.length < 3) {
+    return null;
+  }
+
+  // Build document → word flows (top words per document)
+  const topGlobalWords = new Set(wordFrequency.slice(0, 40).map(w => w.word));
+  const docFlows = [];
+  const wordToWordFlows = [];
+
+  documents.forEach((doc, docIdx) => {
+    const docWords = cleanText(doc.content, options, stopwords);
+    const wordCounts = {};
+    docWords.forEach(w => { if (topGlobalWords.has(w)) wordCounts[w] = (wordCounts[w] || 0) + 1; });
+
+    // Top 8 words per document
+    const topDocWords = Object.entries(wordCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+
+    topDocWords.forEach(([word, count]) => {
+      docFlows.push({
+        source: `doc_${docIdx}`,
+        sourceLabel: doc.name ? doc.name.replace(/\.[^.]+$/, '').substring(0, 20) : `Doc ${docIdx + 1}`,
+        target: `word_${word}`,
+        targetLabel: word,
+        value: count,
+        layer: 0
+      });
+    });
+  });
+
+  // Build word → word flows from cooccurrences (top connections)
+  const usedWords = new Set(docFlows.map(f => f.targetLabel));
+  cooccurrences.slice(0, 30).forEach(co => {
+    if (usedWords.has(co.source) && usedWords.has(co.target)) {
+      wordToWordFlows.push({
+        source: `word_${co.source}`,
+        sourceLabel: co.source,
+        target: `cooc_${co.target}`,
+        targetLabel: co.target,
+        value: co.weight,
+        layer: 1
+      });
+    }
+  });
+
+  // Collect all nodes
+  const nodeMap = new Map();
+  const addNode = (id, label, layer) => {
+    if (!nodeMap.has(id)) nodeMap.set(id, { id, label, layer, value: 0 });
+  };
+
+  [...docFlows, ...wordToWordFlows].forEach(f => {
+    addNode(f.source, f.sourceLabel, f.layer);
+    addNode(f.target, f.targetLabel, f.layer + 1);
+    nodeMap.get(f.source).value += f.value;
+    nodeMap.get(f.target).value += f.value;
+  });
+
+  const nodes = Array.from(nodeMap.values());
+  const links = [...docFlows, ...wordToWordFlows].filter(f => f.value > 0);
+
+  if (nodes.length < 3 || links.length < 2) return null;
+
+  return { nodes, links };
+};
+
+const SankeyVisualization = ({ sankeyData, width = 800, height = 500, isDarkMode = true }) => {
+  const [hoveredLink, setHoveredLink] = useState(null);
+  const [hoveredNode, setHoveredNode] = useState(null);
+
+  const fg = isDarkMode ? 'oklch(0.929 0.013 255.51)' : 'oklch(0.280 0.037 260.03)';
+  const muted = isDarkMode ? 'oklch(0.714 0.019 261.32)' : 'oklch(0.551 0.023 264.36)';
+  const border = isDarkMode ? 'oklch(0.446 0.026 256.80)' : 'oklch(0.872 0.009 258.34)';
+  const tooltipBg = isDarkMode ? 'oklch(0.208 0.040 265.75 / 0.95)' : 'oklch(1.000 0 0 / 0.95)';
+  const colors = ['oklch(0.585 0.204 277.12)', 'oklch(0.457 0.215 277.02)', 'oklch(0.359 0.135 278.70)'];
+
+  const layout = useMemo(() => {
+    if (!sankeyData) return null;
+    const { nodes, links } = sankeyData;
+
+    // Group nodes by layer
+    const layers = {};
+    nodes.forEach(n => {
+      if (!layers[n.layer]) layers[n.layer] = [];
+      layers[n.layer].push({ ...n });
+    });
+
+    const layerKeys = Object.keys(layers).map(Number).sort((a, b) => a - b);
+    const numLayers = layerKeys.length;
+    const margin = { top: 30, right: 30, bottom: 30, left: 30 };
+    const plotW = width - margin.left - margin.right;
+    const plotH = height - margin.top - margin.bottom;
+    const nodeWidth = 18;
+    const layerSpacing = (plotW - nodeWidth) / Math.max(numLayers - 1, 1);
+
+    // Position nodes
+    const positionedNodes = new Map();
+    layerKeys.forEach((layerKey, layerIdx) => {
+      const layerNodes = layers[layerKey];
+      const totalValue = layerNodes.reduce((s, n) => s + n.value, 0) || 1;
+      const nodePadding = 8;
+      const availableH = plotH - (layerNodes.length - 1) * nodePadding;
+
+      let yOffset = margin.top;
+      layerNodes
+        .sort((a, b) => b.value - a.value)
+        .forEach(node => {
+          const nodeH = Math.max(12, (node.value / totalValue) * availableH);
+          positionedNodes.set(node.id, {
+            ...node,
+            x: margin.left + layerIdx * layerSpacing,
+            y: yOffset,
+            w: nodeWidth,
+            h: nodeH,
+            color: colors[layerIdx % colors.length]
+          });
+          yOffset += nodeH + nodePadding;
+        });
+    });
+
+    // Create link paths
+    const linkPaths = links.map((link, idx) => {
+      const src = positionedNodes.get(link.source);
+      const tgt = positionedNodes.get(link.target);
+      if (!src || !tgt) return null;
+
+      // Calculate vertical position within source/target nodes
+      const srcOutTotal = links.filter(l => l.source === link.source).reduce((s, l) => s + l.value, 0) || 1;
+      const tgtInTotal = links.filter(l => l.target === link.target).reduce((s, l) => s + l.value, 0) || 1;
+
+      const srcOutBefore = links.filter((l, i) => l.source === link.source && i < idx).reduce((s, l) => s + l.value, 0);
+      const tgtInBefore = links.filter((l, i) => l.target === link.target && i < idx).reduce((s, l) => s + l.value, 0);
+
+      const linkH = Math.max(2, (link.value / srcOutTotal) * src.h);
+      const srcY = src.y + (srcOutBefore / srcOutTotal) * src.h;
+      const tgtY = tgt.y + (tgtInBefore / tgtInTotal) * tgt.h;
+      const tgtLinkH = Math.max(2, (link.value / tgtInTotal) * tgt.h);
+
+      const x0 = src.x + src.w;
+      const x1 = tgt.x;
+      const midX = (x0 + x1) / 2;
+
+      const path = `M ${x0} ${srcY}
+        C ${midX} ${srcY}, ${midX} ${tgtY}, ${x1} ${tgtY}
+        L ${x1} ${tgtY + tgtLinkH}
+        C ${midX} ${tgtY + tgtLinkH}, ${midX} ${srcY + linkH}, ${x0} ${srcY + linkH}
+        Z`;
+
+      return { ...link, path, srcNode: src, tgtNode: tgt, idx };
+    }).filter(Boolean);
+
+    return { nodes: Array.from(positionedNodes.values()), links: linkPaths };
+  }, [sankeyData, width, height, colors]);
+
+  if (!sankeyData || !layout) {
+    return (
+      <div className="flex items-center justify-center text-muted-foreground" style={{ width, height }}>
+        <div className="text-center">
+          <p>Dados insuficientes para Sankey</p>
+          <p className="text-sm mt-2">Necessário corpus processado com coocorrências</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <svg width={width} height={height} className="bg-background/30 rounded-xl">
+        {/* Links */}
+        {layout.links.map((link, idx) => {
+          const isHovered = hoveredLink === idx || hoveredNode === link.source || hoveredNode === link.target;
+          return (
+            <path
+              key={`link-${idx}`}
+              d={link.path}
+              fill={link.srcNode.color}
+              fillOpacity={hoveredLink !== null || hoveredNode ? (isHovered ? 0.5 : 0.05) : 0.25}
+              stroke="none"
+              onMouseEnter={() => setHoveredLink(idx)}
+              onMouseLeave={() => setHoveredLink(null)}
+              style={{ cursor: 'pointer', transition: 'fill-opacity 0.2s' }}
+            />
+          );
+        })}
+
+        {/* Nodes */}
+        {layout.nodes.map(node => {
+          const isHovered = hoveredNode === node.id;
+          const isConnected = hoveredNode && layout.links.some(l =>
+            (l.source === hoveredNode && l.target === node.id) ||
+            (l.target === hoveredNode && l.source === node.id)
+          );
+          return (
+            <g key={node.id}
+              onMouseEnter={() => setHoveredNode(node.id)}
+              onMouseLeave={() => setHoveredNode(null)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={node.x} y={node.y}
+                width={node.w} height={node.h}
+                fill={node.color}
+                opacity={hoveredNode ? (isHovered || isConnected ? 1 : 0.3) : 0.85}
+                rx={3}
+                style={{ transition: 'opacity 0.2s' }}
+              />
+              <text
+                x={node.layer === 0 ? node.x - 4 : node.x + node.w + 4}
+                y={node.y + node.h / 2 + 4}
+                textAnchor={node.layer === 0 ? 'end' : 'start'}
+                fill={fg}
+                fontSize={Math.max(9, Math.min(12, node.h - 2))}
+                fontWeight={isHovered ? 600 : 400}
+                opacity={hoveredNode ? (isHovered || isConnected ? 1 : 0.25) : 0.85}
+                style={{ pointerEvents: 'none', transition: 'opacity 0.2s' }}
+              >
+                {node.label}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Tooltip */}
+        {hoveredLink !== null && layout.links[hoveredLink] && (
+          <g transform={`translate(${width - 200}, 10)`}>
+            <rect x={0} y={0} width={190} height={55} rx={8} fill={tooltipBg} stroke={layout.links[hoveredLink].srcNode.color} strokeWidth={1} />
+            <text x={10} y={18} fill={fg} fontSize={11} fontWeight={600}>
+              {layout.links[hoveredLink].sourceLabel} → {layout.links[hoveredLink].targetLabel}
+            </text>
+            <text x={10} y={36} fill={muted} fontSize={10}>Fluxo: {layout.links[hoveredLink].value}</text>
+          </g>
+        )}
+      </svg>
+    </div>
+  );
+};
+
 // ==================== VISUALIZAÇÃO DE ANÁLISE DE SENTIMENTOS ====================
 
 const SentimentVisualization = ({ sentiment, width = 700, height = 400, isDarkMode = true }) => {
@@ -7080,6 +7321,7 @@ export default function TextAnalysisApp() {
   const [wordTreeData, setWordTreeData] = useState(null);
   const [wordTreeKeyword, setWordTreeKeyword] = useState('');
   const [afcData, setAfcData] = useState(null);
+  const [sankeyData, setSankeyData] = useState(null);
   
   // Estado para persistência de documentos
   const [isLoadingStorage, setIsLoadingStorage] = useState(true);
@@ -8263,7 +8505,11 @@ export default function TextAnalysisApp() {
       // ========== AFC ==========
       const afcResult = calculateAFC(documents, wordFrequency, stopwordsSet, cleaningOptions);
       setAfcData(afcResult);
-      
+
+      // Sankey
+      const sankeyResult = calculateSankey(documents, wordFrequency, cooccurrences, stopwordsSet, cleaningOptions);
+      setSankeyData(sankeyResult);
+
       // Armazenar análise de rede separadamente para acesso rápido
       setNetworkAnalysis({
         graph,
@@ -9555,6 +9801,7 @@ export default function TextAnalysisApp() {
     netadvanced: { title: "Centralidade de Rede", description: "Métricas avançadas: degree, betweenness e closeness. Identifica palavras mais importantes e influentes.", steps: ["Gere a rede de co-ocorrência primeiro", "Compare métricas de centralidade", "Identifique palavras-ponte e hubs"], tips: ["Betweenness identifica pontes entre tópicos"] },
     heatmap: { title: "Heatmap", description: "Matriz de co-ocorrência com cores representando frequências. Identifica pares de palavras mais associados.", steps: ["Processe o corpus", "Use a escala de cores para identificar associações", "Passe o mouse para ver valores"], tips: ["Combine com análise de rede para confirmar padrões"] },
     afc: { title: "Análise Fatorial de Correspondência", description: "Técnica multivariada para visualizar associações entre palavras e documentos em espaço bidimensional.", steps: ["Prepare corpus com documentos bem definidos", "Execute a AFC", "Interprete o mapa fatorial"], tips: ["Eixos representam dimensões conceituais interpretáveis"] },
+    sankey: { title: "Diagrama Sankey", description: "Visualiza fluxos entre documentos e palavras-chave, mostrando como termos se distribuem pelo corpus.", steps: ["Processe o corpus", "Visualize os fluxos documento → palavra → coocorrência", "Analise a distribuição de termos"], tips: ["Largura dos fluxos é proporcional à frequência"] },
     associations: { title: "Associações de Palavras", description: "Palavras estatisticamente associadas usando testes como chi-quadrado. Coocorrências significativas além do acaso.", steps: ["Selecione palavras-alvo", "Visualize associações estatísticas", "Interprete força e direção"], tips: ["Testes evitam interpretações baseadas só em frequência"] },
     sentiment: { title: "Análise de Sentimentos", description: "Classifique trechos por polaridade (positivo, negativo, neutro) e intensidade emocional.", steps: ["Execute a análise sobre o corpus", "Visualize distribuição de sentimentos", "Analise palavras por sentimento"], tips: ["Revise manualmente para validar resultados"] },
     tfidf: { title: "TF-IDF", description: "Importância relativa de palavras ponderando frequência no documento vs. no corpus. Identifica termos distintivos.", steps: ["Execute o cálculo de TF-IDF", "Visualize palavras mais relevantes por documento", "Compare perfis entre documentos"], tips: ["Ideal para identificar termos especializados por documento"] },
@@ -9579,6 +9826,7 @@ export default function TextAnalysisApp() {
     { id: 'netadvanced', label: 'Centralidade', icon: Target, disabled: !networkAnalysis },
     { id: 'heatmap', label: 'Heatmap', icon: Grid, disabled: !analysisResults },
     { id: 'afc', label: 'AFC', icon: Sparkles, disabled: !afcData },
+    { id: 'sankey', label: 'Sankey', icon: Activity, disabled: !sankeyData },
     { id: 'associations', label: 'Associações', icon: Activity, disabled: !statisticalAnalysis },
     { id: 'sentiment', label: 'Sentimentos', icon: PieChart, disabled: !sentimentAnalysis },
     { id: 'tfidf', label: 'TF-IDF', icon: TrendingUp, disabled: !statisticalAnalysis },
@@ -9713,8 +9961,8 @@ export default function TextAnalysisApp() {
                 {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                 {isDarkMode ? 'Modo Escuro' : 'Modo Claro'}
               </span>
-              <div className={`w-10 h-5 rounded-full relative transition-colors bg-muted dark:bg-primary`}>
-                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform left-0.5 dark:left-5`} />
+              <div className={`w-10 h-5 rounded-full relative transition-colors ${isDarkMode ? 'bg-primary' : 'bg-input border border-border'}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full shadow transition-transform ${isDarkMode ? 'left-5 bg-white' : 'left-0.5 bg-primary'}`} />
               </div>
             </button>
           </div>
@@ -10457,7 +10705,29 @@ export default function TextAnalysisApp() {
             </div>
           </div>
         )}
-        
+
+        {/* Sankey Tab */}
+        {activeTab === 'sankey' && sankeyData && (
+          <div className={`rounded-xl p-4 sm:p-6 border bg-card border-border`}>
+            <VisualizationHeader vizKey="sankey" icon={Activity} extraContent={
+              <ExportVisualizationButton
+                vizId="sankey"
+                filename="sankey-fluxos"
+                data={sankeyData.links.map(l => ({
+                  origem: l.sourceLabel,
+                  destino: l.targetLabel,
+                  fluxo: l.value
+                }))}
+              />
+            } />
+            <div data-viz="sankey" className={`overflow-hidden rounded-xl p-4 bg-muted`}>
+              <ResponsiveViz minHeight={400}>
+                {(w, h) => <SankeyVisualization sankeyData={sankeyData} width={w} height={h} isDarkMode={isDarkMode} />}
+              </ResponsiveViz>
+            </div>
+          </div>
+        )}
+
         {/* Treemap Tab */}
         {activeTab === 'treemap' && analysisResults && analysisResults.wordFrequency && (
           <div className={`rounded-xl p-4 sm:p-6 border bg-card border-border`}>
